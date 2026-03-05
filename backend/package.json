@@ -1,0 +1,27 @@
+{
+  "name": "ahmed-centralized-backend",
+  "version": "1.0.0",
+  "description": "Centralized product data API for Ahmed Al Maghribi GCC storefronts",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "db:migrate": "mysql -u %DB_USER% -p%DB_PASSWORD% %DB_NAME% < src/db/migrations/001_schema.sql"
+  },
+  "keywords": [],
+  "author": "Ahmed Al Maghribi",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "morgan": "^1.10.1",
+    "multer": "^2.1.0",
+    "mysql2": "^3.18.2",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
