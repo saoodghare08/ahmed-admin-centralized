@@ -1,0 +1,217 @@
+/* ── Fonts ────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+
+/* ── Tailwind theme tokens ────────────────────────────────── */
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  /* Brand: gold/amber for light, same for dark */
+  --color-brand:        #a6792d;
+  --color-brand-light:  #c99a4c;
+  --color-brand-dark:   #7d581f;
+
+  /* Semantic surface tokens — mapped by JS via data-theme on <html> */
+  --color-bg:           var(--bg);
+  --color-surface:      var(--surface);
+  --color-surface-2:    var(--surface-2);
+  --color-border:       var(--border);
+  --color-border-soft:  var(--border-soft);
+  --color-text:         var(--text);
+  --color-text-muted:   var(--text-muted);
+  --color-text-subtle:  var(--text-subtle);
+}
+
+/* ── LIGHT theme ──────────────────────────────────────────── */
+:root,
+[data-theme="light"] {
+  --bg:          #f8f6f1;
+  --surface:     #ffffff;
+  --surface-2:   #f1ede4;
+  --border:      #e0d5c4;
+  --border-soft: #ede8de;
+  --text:        #1a1209;
+  --text-muted:  #6b5c40;
+  --text-subtle: #b8a48a;
+  color-scheme: light;
+}
+
+/* ── DARK theme (warmer, not pitch black) ─────────────────── */
+[data-theme="dark"] {
+  --bg:          #1c1710;
+  --surface:     #252016;
+  --surface-2:   #2e2818;
+  --border:      #3d3521;
+  --border-soft: #332c1a;
+  --text:        #f0e8d6;
+  --text-muted:  #b8a480;
+  --text-subtle: #6b5c40;
+  color-scheme: dark;
+}
+
+/* ── Base reset ─────────────────────────────────────────────── */
+@layer base {
+  * { box-sizing: border-box; }
+
+  html {
+    font-family: var(--font-sans);
+    background-color: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+  }
+
+  /* RTL */
+  [dir="rtl"] { font-family: var(--font-sans); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-soft); }
+}
+
+/* ── Semantic utility classes ────────────────────────────────
+   Use these instead of hard-coded zinc-* classes so both
+   themes get consistent styling.
+   ─────────────────────────────────────────────────────────── */
+@layer components {
+
+  /* Surfaces */
+  .t-bg       { background-color: var(--bg); }
+  .t-surface  { background-color: var(--surface); }
+  .t-surface2 { background-color: var(--surface-2); }
+
+  /* Borders */
+  .t-border     { border-color: var(--border); }
+  .t-border-soft{ border-color: var(--border-soft); }
+
+  /* Text */
+  .t-text        { color: var(--text); }
+  .t-text-muted  { color: var(--text-muted); }
+  .t-text-subtle { color: var(--text-subtle); }
+
+  /* Brand accent */
+  .t-brand       { color: var(--color-brand); }
+  .t-bg-brand    { background-color: var(--color-brand); }
+
+  /* Input — used across all form pages */
+  .t-input {
+    width: 100%;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--text);
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  .t-input::placeholder { color: var(--text-subtle); }
+  .t-input:focus        { border-color: var(--color-brand); }
+
+  /* Card / panel */
+  .t-card {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+  }
+
+  /* Primary button */
+  .t-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--color-brand);
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    transition: background-color 0.15s, box-shadow 0.15s;
+    border: none;
+    cursor: pointer;
+  }
+  .t-btn-primary:hover {
+    background-color: var(--color-brand-light);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--color-brand) 35%, transparent);
+  }
+  .t-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Ghost / secondary button */
+  .t-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    background-color: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .t-btn-ghost:hover { color: var(--text); border-color: var(--color-brand); }
+
+  /* Nav link */
+  .t-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .t-nav-link:hover { color: var(--text); background-color: var(--surface-2); }
+  .t-nav-link.active {
+    background-color: color-mix(in srgb, var(--color-brand) 12%, transparent);
+    color: var(--color-brand);
+    border: 1px solid color-mix(in srgb, var(--color-brand) 22%, transparent);
+  }
+
+  /* Badge */
+  .t-badge-active {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 0.125rem 0.5rem; border-radius: 9999px;
+    font-size: 0.6875rem; font-weight: 600;
+    background: color-mix(in srgb, #22c55e 12%, transparent);
+    color: #22c55e;
+    border: 1px solid color-mix(in srgb, #22c55e 20%, transparent);
+  }
+  .t-badge-inactive {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 0.125rem 0.5rem; border-radius: 9999px;
+    font-size: 0.6875rem; font-weight: 600;
+    background: color-mix(in srgb, #ef4444 12%, transparent);
+    color: #ef4444;
+    border: 1px solid color-mix(in srgb, #ef4444 20%, transparent);
+  }
+
+  /* Table */
+  .t-th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-subtle);
+  }
+  .t-td {
+    padding: 0.75rem 1rem;
+    font-size: 0.8125rem;
+    color: var(--text);
+    border-top: 1px solid var(--border-soft);
+  }
+}
