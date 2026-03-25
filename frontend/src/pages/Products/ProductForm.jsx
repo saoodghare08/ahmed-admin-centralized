@@ -6,8 +6,9 @@ import api from '../../api/client'
 import {
   getProduct, createProduct, updateProduct,
   updateAllPrices, getPricing,
-  getCountryConfigs,
+  getCountryConfigs, updateVisibility, updateSEO,
   deleteMedia, setPrimaryMedia,
+  getProductStock, updateProductStock,
 } from '../../api'
 import GalleryPicker from '../../components/GalleryPicker'
 import ImageUploader from '../../components/ImageUploader'
@@ -23,7 +24,7 @@ const COUNTRIES = [
   { id: 6, code: 'OM', name: 'Oman',    currency_id: 6, currency: 'OMR', flag: '🇴🇲', decimals: 3 },
 ]
 
-const TABS = ['Core', 'Fragrance', 'Countries']
+const TABS = ['Core', 'Fragrance', 'Media', 'SEO', 'Inventory']
 
 const EMPTY = {
   fgd: '', barcode: '', slug: '', name_en: '', name_ar: '',
@@ -78,19 +79,22 @@ function SectionCard({ title, children }) {
   )
 }
 
-// ── Tab: Core Info ────────────────────────────────────────────
-function CoreTab({ form, set, categories, isEdit, prices, setPrices, mediaList, setMediaList, productId }) {
-  const selectedCat = categories?.find(c => c.id === Number(form.category_id))
-  const [pickerOpen, setPickerOpen] = useState(false)
-
+const resolveUrl = (src) => {
   const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/api\/?$/, '')
-  const resolveUrl = (src) => {
-    if (!src) return null
-    if (src.startsWith('http') || src.startsWith('data:')) return src
-    return `${API_ORIGIN}${src.startsWith('/') ? '' : '/'}${src}`
-  }
+  if (!src) return null
+  if (src.startsWith('http') || src.startsWith('data:')) return src
+  return `${API_ORIGIN}${src.startsWith('/') ? '' : '/'}${src}`
+}
+
+// ── Tab: Core Info ────────────────────────────────────────────
+function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, setConfigs }) {
+  const updateVisibility = (countryId, val) =>
+    setConfigs(prev => prev.map(c => c.country_id === countryId ? { ...c, is_visible: val } : c))
+  const selectedCat = categories?.find(c => c.id === Number(form.category_id))
   return (
     <div className="grid grid-cols-1 gap-5">
+      
+
       <div className="grid grid-cols-2 gap-5">
         <SectionCard title="Identification">
           <Field label="FGD Code" required>
@@ -159,18 +163,24 @@ function CoreTab({ form, set, categories, isEdit, prices, setPrices, mediaList, 
         </div>
       </SectionCard>
 
-      <SectionCard title="Descriptions">
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Description (English)">
-            <textarea className="t-input resize-none h-28" value={form.description_en}
-              onChange={e => set('description_en', e.target.value)} placeholder="English description…" />
-          </Field>
-          <Field label="Description (Arabic)">
-            <textarea className="t-input resize-none h-28 text-right" dir="rtl" value={form.description_ar}
-              onChange={e => set('description_ar', e.target.value)} placeholder="الوصف بالعربي…" />
-          </Field>
+      <SectionCard title="Regional Visibility">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+          {configs.map(c => {
+            const country = COUNTRIES.find(co => co.id === c.country_id)
+            return (
+              <div key={c.country_id} className="flex flex-col gap-2 p-3 rounded-xl bg-black/5 border border-black/5">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{country?.flag}</span>
+                  <span className="text-[11px] font-bold">{country?.code}</span>
+                </div>
+                <Toggle checked={!!c.is_visible} onChange={v => updateVisibility(c.country_id, v ? 1 : 0)} label="Visible" />
+              </div>
+            )
+          })}
         </div>
       </SectionCard>
+
+      
 
       <SectionCard title="Tags & Attributes">
         <div className="flex flex-col gap-5">
@@ -227,55 +237,72 @@ function CoreTab({ form, set, categories, isEdit, prices, setPrices, mediaList, 
         </div>
       </SectionCard>
 
-      <SectionCard title="Media">
-        <div className="flex flex-col gap-3">
-          {/* Gallery grid */}
+    </div>
+  )
+}
+
+// ── Tab: Media ────────────────────────────────────────────────
+function MediaTab({ mediaList, setMediaList, productId, setPrimaryMedia, deleteMedia }) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+  return (
+    <div className="flex flex-col gap-6">
+      <SectionCard title="Product Images" hint="Manage visual assets">
+        <div className="flex flex-col gap-5">
           {mediaList.length > 0 && (
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
               {mediaList.map((item, idx) => (
                 <div key={item.id ?? idx}
-                  className="group relative rounded-lg overflow-hidden aspect-square cursor-pointer"
-                  style={{ border: item.is_primary ? '2px solid var(--color-brand)' : '2px solid var(--border)', backgroundColor: 'var(--surface-2)' }}>
+                  className="group relative rounded-2xl overflow-hidden aspect-square cursor-pointer border transition-all duration-300"
+                  style={{ 
+                    borderColor: item.is_primary ? 'var(--color-brand)' : 'var(--border)', 
+                    backgroundColor: 'var(--surface-2)',
+                    boxShadow: item.is_primary ? '0 10px 20px -10px rgba(var(--color-brand-rgb), 0.3)' : 'none'
+                  }}>
                   <img src={resolveUrl(item.url)} alt="" className="w-full h-full object-cover" />
                   {item.is_primary && (
-                    <div className="absolute top-1 left-1 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md leading-none"
+                    <div className="absolute top-2 left-2 text-white text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-widest shadow-lg"
                       style={{ backgroundColor: 'var(--color-brand)' }}>Primary</div>
                   )}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-1"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}>
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-2 px-2"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }}>
                     {!item.is_primary && (
                       <button type="button"
                         onClick={async () => {
                           if (item.id) { try { await setPrimaryMedia(item.id) } catch { /* ignore */ } }
                           setMediaList(prev => prev.map((m, i) => ({ ...m, is_primary: i === idx ? 1 : 0 })))
                         }}
-                        className="text-[10px] font-semibold text-white px-2 py-1 rounded"
-                        style={{ backgroundColor: 'var(--color-brand)' }}>Primary</button>
+                        className="w-full text-[10px] font-black text-white px-3 py-1.5 rounded-full uppercase tracking-tighter"
+                        style={{ backgroundColor: 'var(--color-brand)' }}>Set Primary</button>
                     )}
                     <button type="button"
                       onClick={async () => {
                         if (item.id) { try { await deleteMedia(item.id) } catch { /* ignore */ } }
                         setMediaList(prev => prev.filter((_, i) => i !== idx))
                       }}
-                      className="text-[10px] font-semibold text-white px-2 py-1 rounded bg-red-500 hover:bg-red-400">Remove</button>
+                      className="w-full text-[10px] font-black text-white px-3 py-1.5 rounded-full bg-red-500 hover:bg-red-400 uppercase tracking-tighter">Remove</button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-          {/* Add button */}
+          
           <button type="button" onClick={() => setPickerOpen(true)}
-            className="w-full rounded-xl flex flex-col items-center justify-center gap-2 py-6 transition-colors"
+            className="w-full rounded-2xl flex flex-col items-center justify-center gap-3 py-10 transition-all duration-300 hover:shadow-xl group"
             style={{ border: '2px dashed var(--border)', backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-brand)'; e.currentTarget.style.color = 'var(--color-brand)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)' }}>
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-            </svg>
-            <span className="text-[12px] font-medium">Add from Gallery</span>
-            <span className="text-[10px]" style={{ color: 'var(--text-subtle)' }}>Multi-select · Click to select, then press Select</span>
+            <div className="w-12 h-12 rounded-2xl bg-black/5 flex items-center justify-center group-hover:bg-brand/10 transition-colors">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+              </svg>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-[14px] font-bold tracking-tight">Add from Gallery</span>
+              <span className="text-[10px] uppercase font-black tracking-widest opacity-30">Multi-select enabled</span>
+            </div>
           </button>
         </div>
+        
         <GalleryPicker open={pickerOpen} onClose={() => setPickerOpen(false)} multiple={true}
           onSelect={async (paths) => {
             const arr = Array.isArray(paths) ? paths : [paths]
@@ -297,7 +324,6 @@ function CoreTab({ form, set, categories, isEdit, prices, setPrices, mediaList, 
                   newItems.push({ url, is_primary: isPrimary, media_type: 'image' })
                 }
               } else {
-                // No product ID yet (new product not saved) — queue locally
                 newItems.push({ url, is_primary: isPrimary, media_type: 'image' })
               }
             }
@@ -373,52 +399,137 @@ function FragranceTab({ notes, setNotes }) {
   )
 }
 
-// ── Tab: Countries ────────────────────────────────────────────
-function CountriesTab({ configs, setConfigs }) {
+// ── Tab: SEO ──────────────────────────────────────────────────
+function SEOTab({ configs, setConfigs }) {
+  const [expandedId, setExpandedId] = useState(null)
+  
   const update = (countryId, field, val) =>
     setConfigs(prev => prev.map(c => c.country_id === countryId ? { ...c, [field]: val } : c))
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       {configs.map(c => {
         const country = COUNTRIES.find(co => co.id === c.country_id)
+        const isExpanded = expandedId === c.country_id
+        const hasData = c.slug_override || c.meta_title_en || c.meta_desc_en
+        
         return (
-          <div key={c.country_id} className="rounded-xl p-5 flex flex-col gap-3"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{country?.flag}</span>
-                <span className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{country?.name} ({country?.code})</span>
+          <div key={c.country_id} 
+            className="rounded-2xl border transition-all duration-300 overflow-hidden" 
+            style={{ 
+              borderColor: isExpanded ? 'var(--color-brand)' : 'var(--border)', 
+              backgroundColor: isExpanded ? 'rgba(var(--color-brand-rgb), 0.02)' : 'var(--surface)',
+              boxShadow: isExpanded ? '0 10px 30px -15px rgba(0,0,0,0.1)' : 'none'
+            }}
+          >
+            {/* Accordion Header */}
+            <div 
+              onClick={() => setExpandedId(isExpanded ? null : c.country_id)}
+              className="flex items-center justify-between p-4 cursor-pointer select-none hover:bg-black/2 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-black/5 flex items-center justify-center text-xl shadow-inner">
+                  {country?.flag}
+                </div>
+                <div>
+                  <h4 className="text-[14px] font-bold tracking-tight" style={{ color: 'var(--text)' }}>
+                    {country?.name} <span className="text-[10px] opacity-30 ml-1 uppercase">{country?.code}</span>
+                  </h4>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {hasData ? (
+                      <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-emerald-500" /> Configured
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-black opacity-20 uppercase tracking-widest">Incomplete</span>
+                    )}
+                  </div>
+                </div>
               </div>
-              <Toggle checked={!!c.is_visible} onChange={v => update(c.country_id, 'is_visible', v ? 1 : 0)} label="Visible" />
+              <div className="flex items-center gap-3">
+                 <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                    <svg className="w-5 h-5 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                    </svg>
+                 </div>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Slug Override" hint="leave blank to use global">
-                <input className="t-input font-mono text-[12px]" value={c.slug_override || ''}
-                  onChange={e => update(c.country_id, 'slug_override', e.target.value)} placeholder="country-specific-slug" />
-              </Field>
-              <Field label="Sort Order">
-                <input className="t-input" type="number" value={c.sort_order || 0}
-                  onChange={e => update(c.country_id, 'sort_order', Number(e.target.value))} />
-              </Field>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Meta Title (EN)">
-                <input className="t-input" value={c.meta_title_en || ''} onChange={e => update(c.country_id, 'meta_title_en', e.target.value)} placeholder="SEO title…" />
-              </Field>
-              <Field label="Meta Title (AR)">
-                <input className="t-input text-right" dir="rtl" value={c.meta_title_ar || ''} onChange={e => update(c.country_id, 'meta_title_ar', e.target.value)} placeholder="عنوان SEO…" />
-              </Field>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Meta Desc (EN)">
-                <textarea className="t-input resize-none h-16" value={c.meta_desc_en || ''} onChange={e => update(c.country_id, 'meta_desc_en', e.target.value)} placeholder="Meta description…" />
-              </Field>
-              <Field label="Meta Desc (AR)">
-                <textarea className="t-input resize-none h-16 text-right" dir="rtl" value={c.meta_desc_ar || ''} onChange={e => update(c.country_id, 'meta_desc_ar', e.target.value)} placeholder="وصف الميتا…" />
-              </Field>
+
+            {/* Accordion Content */}
+            <div 
+              className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[800px] opacity-100 border-t' : 'max-h-0 opacity-0 pointers-events-none'}`} 
+              style={{ borderColor: 'var(--border)' }}
+            >
+              <div className="p-6 flex flex-col gap-6">
+                <div className="grid grid-cols-2 gap-5">
+                   <Field label="Regional URL Slug" hint="Leave blank to use global slug">
+                      <div className="relative">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-black opacity-20 uppercase tracking-tighter">URL /</div>
+                        <input className="t-input font-mono text-[12px] pl-14" value={c.slug_override || ''}
+                          onChange={e => update(c.country_id, 'slug_override', e.target.value)} placeholder="localized-slug-here" />
+                      </div>
+                   </Field>
+                   <Field label="Display Sort Order" hint="Ranking in list">
+                      <input className="t-input font-bold" type="number" value={c.sort_order || 0}
+                        onChange={e => update(c.country_id, 'sort_order', Number(e.target.value))} />
+                   </Field>
+                </div>
+
+                <div className="grid grid-cols-2 gap-5">
+                  <Field label="Meta Title (English)">
+                    <input className="t-input" value={c.meta_title_en || ''} 
+                      onChange={e => update(c.country_id, 'meta_title_en', e.target.value)} placeholder="SEO head title..." />
+                  </Field>
+                  <Field label="Meta Title (Arabic)">
+                    <input className="t-input text-right font-medium" dir="rtl" value={c.meta_title_ar || ''} 
+                      onChange={e => update(c.country_id, 'meta_title_ar', e.target.value)} placeholder="عنوان الصفحة..." />
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-2 gap-5">
+                  <Field label="Meta Description (English)">
+                    <textarea className="t-input resize-none h-24 leading-relaxed" value={c.meta_desc_en || ''} 
+                      onChange={e => update(c.country_id, 'meta_desc_en', e.target.value)} placeholder="Short summary for Google..." />
+                  </Field>
+                  <Field label="Meta Description (Arabic)">
+                    <textarea className="t-input resize-none h-24 text-right leading-relaxed font-medium" dir="rtl" value={c.meta_desc_ar || ''} 
+                      onChange={e => update(c.country_id, 'meta_desc_ar', e.target.value)} placeholder="وصف الميتا..." />
+                  </Field>
+                </div>
+              </div>
             </div>
           </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Tab: Inventory ────────────────────────────────────────────
+function InventoryTab({ stocks, setStocks }) {
+  const update = (countryId, val) =>
+    setStocks(prev => prev.map(s => s.country_id === countryId ? { ...s, quantity: Number(val) } : s))
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
+      {stocks.map(s => {
+        const country = COUNTRIES.find(c => c.id === s.country_id)
+        return (
+          <SectionCard key={s.country_id} title={`${country?.name} Stock`}>
+             <Field label="Quantity in Hand" hint="units available">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl leading-none">{country?.flag}</span>
+                  <input 
+                    type="number" 
+                    className="t-input font-bold" 
+                    value={s.quantity ?? ''} 
+                    onChange={e => update(s.country_id, e.target.value)}
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+             </Field>
+          </SectionCard>
         )
       })}
     </div>
@@ -441,12 +552,13 @@ export default function ProductForm() {
   const [mediaList, setMediaList] = useState([])
   const [configs, setConfigs] = useState(COUNTRIES.map(c => ({ country_id: c.id, is_visible: 1, slug_override: '', meta_title_en: '', meta_title_ar: '', meta_desc_en: '', meta_desc_ar: '', sort_order: 0 })))
   const [prices, setPrices]   = useState(COUNTRIES.map(c => ({ country_id: c.id, currency_id: c.currency_id, regular_price: '' })))
+  const [stocks, setStocks]   = useState(COUNTRIES.map(c => ({ country_id: c.id, quantity: 0 })))
 
   // Dirty tracking via ref (no extra state = no re-render loops)
   const savedRef  = useRef(null)
-  const snap      = (f, n, c, p) => JSON.stringify({ f, n, c, p })
-  const isDirty   = savedRef.current !== null && savedRef.current !== snap(form, notes, configs, prices)
-  const markClean = () => { savedRef.current = snap(form, notes, configs, prices) }
+  const snap      = (f, n, c, p, s) => JSON.stringify({ f, n, c, p, s })
+  const isDirty   = savedRef.current !== null && savedRef.current !== snap(form, notes, configs, prices, stocks)
+  const markClean = () => { savedRef.current = snap(form, notes, configs, prices, stocks) }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -528,9 +640,24 @@ export default function ProductForm() {
     }))
   }, [pricingData, resetKey])
 
+  // Fetch stock
+  const { data: stockData } = useQuery({
+    queryKey: ['stock', id],
+    queryFn:  () => getProductStock(id),
+    enabled:  !!isEdit,
+    select:   r => r?.data || r || [],
+  })
+  useEffect(() => {
+    if (!Array.isArray(stockData) || !stockData.length) return
+    setStocks(COUNTRIES.map(c => {
+      const saved = stockData.find(s => s.country_id === c.id)
+      return saved ? { country_id: c.id, quantity: saved.quantity } : { country_id: c.id, quantity: 0 }
+    }))
+  }, [stockData, resetKey])
+
   // Tracker for the latest state to avoid closure bugs in the timeout snapshot
   const latestState = useRef()
-  latestState.current = { form, notes, configs, prices }
+  latestState.current = { form, notes, configs, prices, stocks }
 
   // Mark clean snapshot once all data is in state
   // For new products: immediately after mount
@@ -540,7 +667,8 @@ export default function ProductForm() {
       { ...EMPTY, attributes: [] },
       { top: { ...EMPTY_NOTE }, heart: { ...EMPTY_NOTE }, base: { ...EMPTY_NOTE } },
       COUNTRIES.map(c => ({ country_id: c.id, is_visible: 1, slug_override: '', meta_title_en: '', meta_title_ar: '', meta_desc_en: '', meta_desc_ar: '', sort_order: 0 })),
-      COUNTRIES.map(c => ({ country_id: c.id, currency_id: c.currency_id, regular_price: '' }))
+      COUNTRIES.map(c => ({ country_id: c.id, currency_id: c.currency_id, regular_price: '' })),
+      COUNTRIES.map(c => ({ country_id: c.id, quantity: 0 }))
     )
   }, [isEdit])
 
@@ -549,12 +677,12 @@ export default function ProductForm() {
     if (!isEdit || !productData || !ccData || !pricingData) return
     const t = setTimeout(() => {
       if (savedRef.current === null) {
-        const { form, notes, configs, prices } = latestState.current
-        savedRef.current = snap(form, notes, configs, prices)
+        const { form, notes, configs, prices, stocks } = latestState.current
+        savedRef.current = snap(form, notes, configs, prices, stocks)
       }
     }, 150) // Increased slightly to guarantee all tab mapping effects have flushed to DOM
     return () => clearTimeout(t)
-  }, [isEdit, productData, ccData, pricingData, resetKey])
+  }, [isEdit, productData, ccData, pricingData, stockData, resetKey])
 
   // Beforeunload guard
   useEffect(() => {
@@ -606,6 +734,9 @@ export default function ProductForm() {
         toast.success('Product created') 
       }
 
+      // Sync stock on save
+      await updateProductStock(finalProductId, stocks)
+
       // After create/update: persist any pending media (not yet in DB) to product_media table
       const pendingMedia = mediaList.filter(m => !m.id)
       if (pendingMedia.length && finalProductId) {
@@ -643,7 +774,16 @@ export default function ProductForm() {
             image_url: notes[type]?.image_url || null,
           }))
         }),
-        api.put(`/products/${finalProductId}/countries`, { configs }),
+        updateVisibility(finalProductId, configs.map(c => ({ country_id: c.country_id, is_visible: c.is_visible }))),
+        updateSEO(finalProductId, configs.map(c => ({
+          country_id: c.country_id, 
+          slug_override: c.slug_override,
+          meta_title_en: c.meta_title_en,
+          meta_title_ar: c.meta_title_ar,
+          meta_desc_en: c.meta_desc_en,
+          meta_desc_ar: c.meta_desc_ar,
+          sort_order: c.sort_order
+        }))),
         updateAllPrices(finalProductId, prices.filter(p => p.regular_price).map(p => ({
           ...p, regular_price: Number(p.regular_price)
         }))),
@@ -679,7 +819,8 @@ export default function ProductForm() {
     if (!isEdit) {
       setForm({ ...EMPTY, attributes: [] })
       setNotes({ top: { ...EMPTY_NOTE }, heart: { ...EMPTY_NOTE }, base: { ...EMPTY_NOTE } })
-      savedRef.current = snap({ ...EMPTY, attributes: [] }, { top: { ...EMPTY_NOTE }, heart: { ...EMPTY_NOTE }, base: { ...EMPTY_NOTE } }, configs, prices)
+      setStocks(COUNTRIES.map(c => ({ country_id: c.id, quantity: 0 })))
+      savedRef.current = snap({ ...EMPTY, attributes: [] }, { top: { ...EMPTY_NOTE }, heart: { ...EMPTY_NOTE }, base: { ...EMPTY_NOTE } }, configs, prices, stocks)
     } else {
       setResetKey(k => k + 1)
     }
@@ -779,9 +920,11 @@ export default function ProductForm() {
 
       {/* ── Tab content ── */}
       <div className="flex-1 overflow-y-auto px-8 py-6">
-        {tab === 'Core'      && <CoreTab form={form} set={set} categories={catData} isEdit={isEdit} prices={prices} setPrices={setPrices} mediaList={mediaList} setMediaList={setMediaList} productId={isEdit ? id : createdId} />}
+        {tab === 'Core'      && <CoreTab form={form} set={set} categories={catData} isEdit={isEdit} prices={prices} setPrices={setPrices} configs={configs} setConfigs={setConfigs} />}
         {tab === 'Fragrance' && <FragranceTab notes={notes} setNotes={setNotes} />}
-        {tab === 'Countries' && <CountriesTab configs={configs} setConfigs={setConfigs} />}
+        {tab === 'Media'     && <MediaTab mediaList={mediaList} setMediaList={setMediaList} productId={isEdit ? id : createdId} setPrimaryMedia={setPrimaryMedia} deleteMedia={deleteMedia} />}
+        {tab === 'SEO'       && <SEOTab configs={configs} setConfigs={setConfigs} />}
+        {tab === 'Inventory' && <InventoryTab stocks={stocks} setStocks={setStocks} />}
       </div>
     </div>
   )

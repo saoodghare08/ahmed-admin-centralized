@@ -61,11 +61,21 @@ async function buildProduct(productId, countryCode) {
     [productId]
   );
 
+  // Stock
+  const [stock] = await db.query(
+    `SELECT ps.*, co.code AS country_code
+     FROM product_stock ps
+     JOIN countries co ON co.id = ps.country_id
+     WHERE ps.product_id = ?`,
+    [productId]
+  );
+
   return { 
     ...product, 
     fragrance_notes: notes, 
     price, 
     media,
+    stock,
     country_visibility,
     country_slug
   };
@@ -78,42 +88,62 @@ router.get('/', async (req, res, next) => {
   try {
     const { country, category, subcategory, featured, search, page = 1, limit = 20, admin } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
+    // Define Sort
+    const allowedSort = ['id', 'fgd', 'name_en', 'category_name_en', 'price'];
+    let sortBy    = allowedSort.includes(req.query.sort) ? req.query.sort : 'id';
+    let sortOrder = req.query.order?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+    let joinClause = `
+      LEFT JOIN categories c ON c.id = p.category_id
+      LEFT JOIN subcategories sc ON sc.id = p.subcategory_id
+    `;
     const params = [];
 
-    let query = `
-      SELECT DISTINCT p.id
-      FROM products p`;
-
     if (country) {
-      query += `
+      joinClause += `
       LEFT JOIN product_country pc ON pc.product_id = p.id
         AND pc.country_id = (SELECT id FROM countries WHERE code = ?)`;
       params.push(country.toUpperCase());
     }
 
-    if (!admin) {
-      query += ` WHERE p.is_active = 1`;
+    // Map sort fields to columns
+    let sortCol = `p.id`;
+    if (sortBy === 'fgd') sortCol = 'p.fgd';
+    if (sortBy === 'name_en') sortCol = 'p.name_en';
+    if (sortBy === 'category_name_en') sortCol = 'c.name_en';
+    if (sortBy === 'price') {
+      if (country) {
+        joinClause += `
+        LEFT JOIN product_prices pp ON pp.product_id = p.id 
+          AND pp.country_id = (SELECT id FROM countries WHERE code = ?)`;
+        params.push(country.toUpperCase());
+        sortCol = 'pp.regular_price';
+      } else {
+        sortCol = 'p.id';
+      }
     }
 
-    if (country)    { query += ` AND (pc.is_visible IS NULL OR pc.is_visible = 1)`; }
-    if (category)    { query += ` AND p.category_id = ?`;    params.push(category); }
-    if (subcategory) { query += ` AND p.subcategory_id = ?`; params.push(subcategory); }
-    if (featured)    { query += ` AND p.is_featured = 1`; }
+    let whereClause = ` WHERE 1=1`;
+    if (!admin) { whereClause += ` AND p.is_active = 1`; }
+    if (country && !admin) { whereClause += ` AND (pc.is_visible IS NULL OR pc.is_visible = 1)`; }
+    if (category)    { whereClause += ` AND p.category_id = ?`;    params.push(category); }
+    if (subcategory) { whereClause += ` AND p.subcategory_id = ?`; params.push(subcategory); }
+    if (featured)    { whereClause += ` AND p.is_featured = 1`; }
     if (search) {
-      query += ` AND (p.name_en LIKE ? OR p.name_ar LIKE ? OR p.fgd LIKE ?)`;
-      const searchStr = `%${search}%`;
-      params.push(searchStr, searchStr, searchStr);
+      whereClause += ` AND (p.name_en LIKE ? OR p.name_ar LIKE ? OR p.fgd LIKE ?)`;
+      const s = `%${search}%`;
+      params.push(s, s, s);
     }
 
-    // Total count
-    const [[{ total }]] = await db.query(
-      `SELECT COUNT(*) AS total FROM (${query}) t`, params
-    );
+    // Total Count using a subquery for distinctness
+    const countQuery = `SELECT COUNT(DISTINCT p.id) AS total FROM products p ${joinClause} ${whereClause}`;
+    const [[{ total }]] = await db.query(countQuery, params);
 
-    query += ` ORDER BY p.id DESC LIMIT ? OFFSET ?`;
-    params.push(parseInt(limit), offset);
-
-    const [idRows] = await db.query(query, params);
+    // Final Query: Select ID and the sort column so DISTINCT can include it
+    const selectClause = sortCol === 'p.id' ? 'DISTINCT p.id' : `DISTINCT p.id, ${sortCol}`;
+    const mainQuery = `SELECT ${selectClause} FROM products p ${joinClause} ${whereClause} ORDER BY ${sortCol} ${sortOrder} LIMIT ? OFFSET ?`;
+    
+    const [idRows] = await db.query(mainQuery, [...params, parseInt(limit), offset]);
     const ids = idRows.map(r => r.id);
 
     // Build full product data for each
@@ -191,6 +221,16 @@ router.post('/', async (req, res, next) => {
         `INSERT INTO product_prices (product_id, country_id, currency_id, regular_price)
          VALUES (?, ?, ?, ?)`,
         [productId, p.country_id, p.currency_id, p.regular_price]
+      );
+    }
+    
+    // Stock
+    const stocks = req.body.stock || [];
+    for (const s of stocks) {
+      await conn.query(
+        `INSERT INTO product_stock (product_id, country_id, quantity)
+         VALUES (?, ?, ?)`,
+        [productId, s.country_id, s.quantity || 0]
       );
     }
 
@@ -318,33 +358,86 @@ router.get('/:id/countries', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// PUT /api/products/:id/countries — upsert all country configs
-router.put('/:id/countries', async (req, res, next) => {
+// PUT /api/products/:id/visibility
+router.put('/:id/visibility', async (req, res, next) => {
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
-    const configs = req.body.configs || [];
-    for (const cc of configs) {
+    const vis = req.body.visibility || [];
+    for (const v of vis) {
+      await conn.query(
+        `INSERT INTO product_country (product_id, country_id, is_visible)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE is_visible = VALUES(is_visible)`,
+        [req.params.id, v.country_id, v.is_visible ?? 1]
+      );
+    }
+    await conn.commit();
+    res.json({ message: 'Visibility saved' });
+  } catch (err) { await conn.rollback(); next(err); }
+  finally { conn.release(); }
+});
+
+// PUT /api/products/:id/seo
+router.put('/:id/seo', async (req, res, next) => {
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    const seo = req.body.seo || [];
+    for (const s of seo) {
       await conn.query(
         `INSERT INTO product_country
-          (product_id, country_id, is_visible, slug_override,
-           meta_title_en, meta_title_ar, meta_desc_en, meta_desc_ar, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (product_id, country_id, slug_override, meta_title_en, meta_title_ar, meta_desc_en, meta_desc_ar, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
-           is_visible = VALUES(is_visible),
            slug_override = VALUES(slug_override),
            meta_title_en = VALUES(meta_title_en),
            meta_title_ar = VALUES(meta_title_ar),
            meta_desc_en = VALUES(meta_desc_en),
            meta_desc_ar = VALUES(meta_desc_ar),
            sort_order = VALUES(sort_order)`,
-        [req.params.id, cc.country_id, cc.is_visible ?? 1, cc.slug_override || null,
-         cc.meta_title_en || null, cc.meta_title_ar || null,
-         cc.meta_desc_en || null, cc.meta_desc_ar || null, cc.sort_order || 0]
+        [req.params.id, s.country_id, s.slug_override || null,
+         s.meta_title_en || null, s.meta_title_ar || null,
+         s.meta_desc_en || null, s.meta_desc_ar || null, s.sort_order || 0]
       );
     }
     await conn.commit();
-    res.json({ message: 'Country configs saved' });
+    res.json({ message: 'SEO data saved' });
+  } catch (err) { await conn.rollback(); next(err); }
+  finally { conn.release(); }
+});
+
+// ── PRODUCT STOCK ──────────────────────────────────────────
+// GET /api/products/:id/stock
+router.get('/:id/stock', async (req, res, next) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT ps.*, co.code AS country_code, co.name_en AS country_name
+       FROM product_stock ps
+       JOIN countries co ON co.id = ps.country_id
+       WHERE ps.product_id = ? ORDER BY co.id`,
+      [req.params.id]
+    );
+    res.json({ data: rows });
+  } catch (err) { next(err); }
+});
+
+// PUT /api/products/:id/stock
+router.put('/:id/stock', async (req, res, next) => {
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    const stocks = req.body.stocks || [];
+    for (const s of stocks) {
+      await conn.query(
+        `INSERT INTO product_stock (product_id, country_id, quantity)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)`,
+        [req.params.id, s.country_id, s.quantity || 0]
+      );
+    }
+    await conn.commit();
+    res.json({ message: 'Stock saved' });
   } catch (err) { await conn.rollback(); next(err); }
   finally { conn.release(); }
 });
