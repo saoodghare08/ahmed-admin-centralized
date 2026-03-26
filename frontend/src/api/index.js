@@ -25,7 +25,7 @@ export const toggleProduct = (id, country) => api.patch(`/products/${id}/toggle$
 export const deleteProduct = (id) => api.delete(`/products/${id}`);
 
 // ── Categories ──────────────────────────────────────────────
-export const getCategories = (country) => api.get('/categories', { params: { country } });
+export const getCategories = (params) => api.get('/categories', { params });
 export const getCategory = (id) => api.get(`/categories/${id}`);
 export const createCategory = (data) => api.post('/categories', data);
 export const updateCategory = (id, data) => api.put(`/categories/${id}`, data);
@@ -64,7 +64,12 @@ export const setSizes = (productId, sizes) => api.put(`/products/${productId}/si
 
 // ── Product Country Config ───────────────────────────────────
 export const getCountryConfigs = (productId) => api.get(`/products/${productId}/countries`);
-export const setCountryConfigs = (productId, configs) => api.put(`/products/${productId}/countries`, { configs });
+export const updateVisibility = (productId, visibility) => api.put(`/products/${productId}/visibility`, { visibility });
+export const updateSEO = (productId, seo) => api.put(`/products/${productId}/seo`, { seo });
+
+// ── Product Stock ────────────────────────────────────────────
+export const getProductStock = (productId) => api.get(`/products/${productId}/stock`);
+export const updateProductStock = (productId, stocks) => api.put(`/products/${productId}/stock`, { stocks });
 
 // ── Bundles ─────────────────────────────────────────────────
 export const getBundles = () => api.get('/bundles');

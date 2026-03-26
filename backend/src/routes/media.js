@@ -108,9 +108,9 @@ router.delete('/:mediaId', async (req, res, next) => {
     const [[media]] = await db.query(`SELECT * FROM product_media WHERE id = ?`, [req.params.mediaId]);
     if (!media) return res.status(404).json({ error: 'Media not found' });
 
-    // Delete file from disk
-    const filePath = path.join(__dirname, '../../public', media.url);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    // We no longer delete the file from disk, only the database record
+    // const filePath = path.join(__dirname, '../../public', media.url);
+    // if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
     await db.query(`DELETE FROM product_media WHERE id = ?`, [req.params.mediaId]);
     
