@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import db from '../config/db.js';
+import { logAudit } from '../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -55,6 +56,10 @@ router.post('/upload', upload.single('file'), async (req, res, next) => {
          isVideo ? 'video' : 'image', is_primary, sort_order]
       );
       insertId = result.insertId;
+      
+      await logAudit(req, 'create', 'media', result.insertId, {
+        product_id, size_id, url, alt_en, alt_ar, is_primary, sort_order
+      });
     }
 
     res.status(201).json({ data: { id: insertId, url } });
@@ -77,6 +82,11 @@ router.post('/link', async (req, res, next) => {
     if (is_primary) {
       await db.query(`UPDATE product_media SET is_primary = 0 WHERE product_id = ? AND id != ?`, [product_id, result.insertId]);
     }
+    
+    await logAudit(req, 'create', 'media', result.insertId, {
+      product_id, url, size_id, alt_en, alt_ar, is_primary, sort_order
+    });
+
     res.status(201).json({ data: { id: result.insertId, url } });
   } catch (err) { next(err); }
 });
@@ -103,6 +113,9 @@ router.delete('/:mediaId', async (req, res, next) => {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
     await db.query(`DELETE FROM product_media WHERE id = ?`, [req.params.mediaId]);
+    
+    await logAudit(req, 'delete', 'media', req.params.mediaId, { url: media.url, product_id: media.product_id });
+    
     res.json({ message: 'Media deleted' });
   } catch (err) { next(err); }
 });
@@ -115,6 +128,9 @@ router.patch('/:mediaId/sort', async (req, res, next) => {
       `UPDATE product_media SET sort_order = ?, is_primary = ? WHERE id = ?`,
       [sort_order ?? 0, is_primary ?? 0, req.params.mediaId]
     );
+    
+    await logAudit(req, 'update', 'media', req.params.mediaId, { action: 'update_sort_and_primary', sort_order, is_primary });
+
     res.json({ message: 'Updated' });
   } catch (err) { next(err); }
 });
@@ -126,6 +142,9 @@ router.patch('/:mediaId/primary', async (req, res, next) => {
     if (!media) return res.status(404).json({ error: 'Media not found' });
     await db.query(`UPDATE product_media SET is_primary = 0 WHERE product_id = ?`, [media.product_id]);
     await db.query(`UPDATE product_media SET is_primary = 1 WHERE id = ?`, [req.params.mediaId]);
+    
+    await logAudit(req, 'update', 'media', req.params.mediaId, { action: 'set_primary', product_id: media.product_id });
+
     res.json({ message: 'Primary set' });
   } catch (err) { next(err); }
 });

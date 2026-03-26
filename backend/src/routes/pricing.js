@@ -1,5 +1,6 @@
 import express from 'express';
 import db from '../config/db.js';
+import { logAudit } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -36,6 +37,9 @@ router.put('/:productId', async (req, res, next) => {
         [productId, p.country_id, p.currency_id, p.regular_price]
       );
     }
+    
+    await logAudit(req, 'update', 'pricing', productId, { action: 'bulk_update_prices', prices });
+    
     res.json({ message: 'Prices updated' });
   } catch (err) { next(err); }
 });
@@ -52,6 +56,13 @@ router.patch('/:productId/country/:countryId', async (req, res, next) => {
          regular_price = VALUES(regular_price)`,
       [req.params.productId, req.params.countryId, currency_id, regular_price]
     );
+    
+    await logAudit(req, 'update', 'pricing', req.params.productId, { 
+      action: 'update_country_price', 
+      country_id: req.params.countryId, 
+      regular_price 
+    });
+
     res.json({ message: 'Price updated' });
   } catch (err) { next(err); }
 });
