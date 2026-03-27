@@ -20,6 +20,12 @@ async function buildProduct(productId, countryCode) {
   );
   if (!product) return null;
 
+  if (typeof product.attributes === 'string') {
+    try { product.attributes = JSON.parse(product.attributes); } catch (e) { product.attributes = {}; }
+  }
+  if (typeof product.tags === 'string') {
+    try { product.tags = JSON.parse(product.tags); } catch (e) { product.tags = []; }
+  }
 
   // Fragrance notes
   const [notes] = await db.query(
