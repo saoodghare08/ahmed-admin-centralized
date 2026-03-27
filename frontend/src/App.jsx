@@ -9,6 +9,7 @@ import Analytics from './pages/Analytics'
 import Users from './pages/Users'
 import AuditLogs from './pages/AuditLogs'
 import Login from './pages/Login'
+import Campaigns from './pages/Campaigns'
 import { useTheme } from './context/useTheme'
 import { useAuth } from './context/AuthContext'
 
@@ -73,6 +74,13 @@ const NAV = [
     to: '/audit-logs', label: 'Audit Logs', module: 'audit_logs', adminOnly: true, icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    )
+  },
+  {
+    to: '/campaigns', label: 'Campaigns', icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 18H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 12h7.5" />
       </svg>
     )
   },
@@ -195,6 +203,7 @@ export default function App() {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/users" element={<Users />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
+            <Route path="/campaigns/*" element={<Campaigns />} />
           </Routes>
         </div>
       </main>

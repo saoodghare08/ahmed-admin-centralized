@@ -8,19 +8,21 @@ import errorHandler from './middleware/errorHandler.js';
 import { authenticate, authorize } from './middleware/auth.js';
 import { seedAdmin } from './scripts/seedAdmin.js';
 
-import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
 import auditRoutes from './routes/audit.js';
-import countries from './routes/countries.js';
-import categories from './routes/categories.js';
-import products from './routes/products.js';
-import pricing from './routes/pricing.js';
-import media from './routes/media.js';
-import bundles from './routes/bundles.js';
-import sales from './routes/sales.js';
-import gallery from './routes/gallery.js';
-import importRoute from './routes/import.js';
-import analytics from './routes/analytics.js';
+import countries from './routes/admin/countries.js';
+import categories from './routes/admin/categories.js';
+import products from './routes/admin/products.js';
+import pricing from './routes/admin/pricing.js';
+import media from './routes/admin/media.js';
+import bundles from './routes/admin/bundles.js';
+import sales from './routes/admin/sales.js';
+import gallery from './routes/admin/gallery.js';
+import importRoute from './routes/admin/import.js';
+import analytics from './routes/admin/analytics.js';
+import campaigns from './routes/admin/campaigns.js';
+import storefrontCampaigns from './routes/storefront/campaigns.js';
+import authRoutes from './routes/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,6 +59,8 @@ app.use('/api/import',     authenticate, authorize('products'), importRoute);
 app.use('/api/analytics',  authenticate, authorize('analytics'), analytics);
 app.use('/api/users',      authenticate, usersRoutes);
 app.use('/api/audit-logs', authenticate, auditRoutes);
+app.use('/api/campaigns', campaigns);
+app.use('/api/storefront/campaigns', storefrontCampaigns);
 
 // ── Error Handler ───────────────────────────────────────────
 app.use(errorHandler);

@@ -3,8 +3,8 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import db from '../config/db.js';
-import { logAudit } from '../middleware/auth.js';
+import db from '../../config/db.js';
+import { logAudit } from '../../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);

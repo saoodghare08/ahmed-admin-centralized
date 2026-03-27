@@ -97,3 +97,14 @@ export const getCategoryMonthly = (params) => api.get('/analytics/category-month
 export const getAnalyticsCategories = () => api.get('/analytics/categories');
 export const searchProducts = (params) => api.get('/analytics/product-search', { params });
 export const getProductMonthlySales = (params) => api.get('/analytics/product-monthly', { params });
+
+// ── Campaigns ──────────────────────────────────────────────
+export const getCampaigns = (params) => api.get('/campaigns', { params });
+export const getCampaign = (id) => api.get(`/campaigns/${id}`);
+export const createCampaign = (data) => api.post('/campaigns', data);
+export const updateCampaign = (id, data) => api.put(`/campaigns/${id}`, data);
+export const deleteCampaign = (id) => api.delete(`/campaigns/${id}`);
+export const updateCampaignStatus = (id, status) => api.patch(`/campaigns/${id}/status`, { status });
+export const validateCampaign = (data) => api.post('/campaigns/validate', data);
+export const previewCampaign = (id, data) => api.post(`/campaigns/${id}/preview`, data);
+export const searchCampaignProducts = (params) => api.get('/campaigns/products/search', { params });

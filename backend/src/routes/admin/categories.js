@@ -1,8 +1,8 @@
 import express from 'express';
-import db from '../config/db.js';
+import db from '../../config/db.js';
 import multer from 'multer';
 import xlsx from 'xlsx';
-import { logAudit } from '../middleware/auth.js';
+import { logAudit } from '../../middleware/auth.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
