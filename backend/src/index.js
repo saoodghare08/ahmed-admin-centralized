@@ -6,16 +6,18 @@ import { fileURLToPath } from 'url';
 import morgan from 'morgan';
 import errorHandler from './middleware/errorHandler.js';
 
-import countries from './routes/countries.js';
-import categories from './routes/categories.js';
-import products from './routes/products.js';
-import pricing from './routes/pricing.js';
-import media from './routes/media.js';
-import bundles from './routes/bundles.js';
-import sales from './routes/sales.js';
-import gallery from './routes/gallery.js';
-import importRoute from './routes/import.js';
-import analytics from './routes/analytics.js';
+import countries from './routes/admin/countries.js';
+import categories from './routes/admin/categories.js';
+import products from './routes/admin/products.js';
+import pricing from './routes/admin/pricing.js';
+import media from './routes/admin/media.js';
+import bundles from './routes/admin/bundles.js';
+import sales from './routes/admin/sales.js';
+import gallery from './routes/admin/gallery.js';
+import importRoute from './routes/admin/import.js';
+import analytics from './routes/admin/analytics.js';
+import campaigns from './routes/admin/campaigns.js';
+import storefrontCampaigns from './routes/storefront/campaigns.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,6 +50,8 @@ app.use('/api/sales', sales);
 app.use('/api/gallery', gallery);
 app.use('/api/import', importRoute);
 app.use('/api/analytics', analytics);
+app.use('/api/campaigns', campaigns);
+app.use('/api/storefront/campaigns', storefrontCampaigns);
 
 // ── Error Handler ───────────────────────────────────────────
 app.use(errorHandler);

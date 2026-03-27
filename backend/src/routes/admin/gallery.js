@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
 const router  = express.Router();
-const GALLERY = path.resolve(__dirname, '../../public/gallery');
+const GALLERY = path.resolve(__dirname, '../../../public/gallery');
 
 // ── Safety: resolve & validate path stays inside GALLERY ─────
 function safePath(rel = '') {
