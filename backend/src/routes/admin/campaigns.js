@@ -170,7 +170,12 @@ router.get('/:id', async (req, res, next) => {
     if (campaign.type === 'discount') {
       const [[rules]] = await db.query(`SELECT * FROM campaign_discount_rules WHERE campaign_id = ?`, [id]);
       campaign.discount_rules = rules || null;
-      const [overrides] = await db.query(`SELECT * FROM campaign_product_overrides WHERE campaign_id = ?`, [id]);
+      const [overrides] = await db.query(
+        `SELECT po.*, p.name_en AS product_name, p.fgd AS product_fgd
+         FROM campaign_product_overrides po
+         JOIN products p ON p.id = po.product_id
+         WHERE po.campaign_id = ?`, [id]
+      );
       campaign.product_overrides = overrides;
     } else if (campaign.type === 'bxgy') {
       const [[rules]] = await db.query(`SELECT * FROM campaign_bxgy_rules WHERE campaign_id = ?`, [id]);
@@ -477,18 +482,23 @@ router.post('/:id/preview', async (req, res, next) => {
 
     if (scope.some(s => s.scope_type === 'all')) {
       productFilter = '';
-    } else if (scope.length > 0) {
+    } else {
       const conditions = [];
       const catIds = scope.filter(s => s.scope_type === 'category').map(s => s.scope_ref_id);
       const subIds = scope.filter(s => s.scope_type === 'subcategory').map(s => s.scope_ref_id);
       const prodIds = scope.filter(s => s.scope_type === 'product').map(s => s.scope_ref_id);
+      const overrideIds = product_overrides.map(o => o.product_id);
+
       if (catIds.length) { conditions.push(`p.category_id IN (?)`); pParams.push(catIds); }
       if (subIds.length) { conditions.push(`p.subcategory_id IN (?)`); pParams.push(subIds); }
-      if (prodIds.length) { conditions.push(`p.id IN (?)`); pParams.push(prodIds); }
+      if (prodIds.length || overrideIds.length) { 
+        const allProdIds = [...new Set([...prodIds, ...overrideIds])];
+        conditions.push(`p.id IN (?)`); 
+        pParams.push(allProdIds); 
+      }
+
       if (conditions.length) productFilter = `AND (${conditions.join(' OR ')})`;
-      else productFilter = `AND 1=0`; // No valid filters
-    } else {
-      productFilter = `AND 1=0`;
+      else productFilter = `AND 1=0`;
     }
 
     // Fetch affected products with prices (respecting per-country visibility)

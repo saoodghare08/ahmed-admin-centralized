@@ -61,6 +61,8 @@ export default function CampaignForm() {
   // Local product search state
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
+  const [overrideQuery, setOverrideQuery] = useState('')
+  const [overrideResults, setOverrideResults] = useState([])
 
   // Data fetching
   const { data: countries } = useQuery({ queryKey: ['countries'], queryFn: getCountries })
@@ -85,7 +87,11 @@ export default function CampaignForm() {
         discount_rules: d.discount_rules || INITIAL_STATE.discount_rules,
         bxgy_rules: d.bxgy_rules || INITIAL_STATE.bxgy_rules,
         foc_rules: d.foc_rules || INITIAL_STATE.foc_rules,
-        product_overrides: d.product_overrides || [],
+        product_overrides: d.product_overrides?.map(o => ({
+            ...o,
+            _label: o.product_name,
+            _fgd: o.product_fgd
+        })) || [],
         bxgy_products: {
             buy: d.bxgy_products?.buy?.map(p => p.product_id) || [],
             get: d.bxgy_products?.get?.map(p => p.product_id) || []
@@ -115,6 +121,34 @@ export default function CampaignForm() {
       ...prev,
       scope: prev.scope.filter((_, i) => i !== index)
     }))
+  }
+
+  const handleOverrideAdd = (p) => {
+    if (formData.product_overrides.some(o => o.product_id === p.id)) return
+    setFormData(prev => ({
+      ...prev,
+      product_overrides: [...prev.product_overrides, {
+        product_id: p.id,
+        _label: p.name_en,
+        _fgd: p.fgd,
+        discount_type: prev.discount_rules.discount_type,
+        discount_value: prev.discount_rules.discount_value
+      }]
+    }))
+  }
+
+  const removeOverride = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      product_overrides: prev.product_overrides.filter((_, i) => i !== index)
+    }))
+  }
+
+  const handleOverrideSearch = async (q) => {
+    setOverrideQuery(q)
+    if (q.length < 2) return setOverrideResults([])
+    const res = await searchCampaignProducts({ q })
+    setOverrideResults(res.data || [])
   }
 
   const validate = async () => {
@@ -299,24 +333,101 @@ export default function CampaignForm() {
 
             {/* DISCOUNT SPECIFIC */}
             {formData.type === 'discount' && (
-              <div className="grid grid-cols-2 gap-8">
-                 <div className="space-y-4">
-                    <label className="text-[11px] font-black uppercase tracking-wider text-text-muted">Promotion Value</label>
-                    <div className="flex gap-2">
-                       <button onClick={() => setFormData({...formData, discount_rules: {...formData.discount_rules, discount_type: 'percentage'}})} className={`flex-1 py-3 rounded-xl border font-black text-[14px] transition-all ${formData.discount_rules.discount_type === 'percentage' ? 'border-brand bg-brand/5 text-brand' : 'bg-surface-2'}`}>% Percentage</button>
-                       <button onClick={() => setFormData({...formData, discount_rules: {...formData.discount_rules, discount_type: 'fixed'}})} className={`flex-1 py-3 rounded-xl border font-black text-[14px] transition-all ${formData.discount_rules.discount_type === 'fixed' ? 'border-brand bg-brand/5 text-brand' : 'bg-surface-2'}`}>Fixed Amount</button>
+              <div className="flex flex-col gap-8">
+                 <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                       <label className="text-[11px] font-black uppercase tracking-wider text-text-muted">Promotion Value</label>
+                       <div className="flex gap-2">
+                          <button onClick={() => setFormData({...formData, discount_rules: {...formData.discount_rules, discount_type: 'percentage'}})} className={`flex-1 py-3 rounded-xl border font-black text-[14px] transition-all ${formData.discount_rules.discount_type === 'percentage' ? 'border-brand bg-brand/5 text-brand' : 'bg-surface-2'}`}>% Percentage</button>
+                          <button onClick={() => setFormData({...formData, discount_rules: {...formData.discount_rules, discount_type: 'fixed'}})} className={`flex-1 py-3 rounded-xl border font-black text-[14px] transition-all ${formData.discount_rules.discount_type === 'fixed' ? 'border-brand bg-brand/5 text-brand' : 'bg-surface-2'}`}>Fixed Amount</button>
+                       </div>
+                       <div className="relative">
+                          <input type="number" className="t-input text-lg font-black" value={formData.discount_rules.discount_value} onChange={e => setFormData({...formData, discount_rules: {...formData.discount_rules, discount_value: parseFloat(e.target.value) || 0}})} />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-text-subtle">{formData.discount_rules.discount_type === 'percentage' ? '%' : 'AED/Local'}</span>
+                       </div>
                     </div>
-                    <div className="relative">
-                       <input type="number" className="t-input text-lg font-black" value={formData.discount_rules.discount_value} onChange={e => setFormData({...formData, discount_rules: {...formData.discount_rules, discount_value: parseFloat(e.target.value) || 0}})} />
-                       <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-text-subtle">{formData.discount_rules.discount_type === 'percentage' ? '%' : 'AED/Local'}</span>
+                    <div className="space-y-4">
+                       <label className="text-[11px] font-black uppercase tracking-wider text-text-muted">Advanced Constraints</label>
+                       <div className="space-y-1.5">
+                          <span className="text-[10px] font-bold opacity-40">Minimum Price Floor</span>
+                          <input type="number" className="t-input" value={formData.discount_rules.min_price} onChange={e => setFormData({...formData, discount_rules: {...formData.discount_rules, min_price: parseFloat(e.target.value) || 0}})} placeholder="No product will go below this" />
+                       </div>
                     </div>
                  </div>
-                 <div className="space-y-4">
-                    <label className="text-[11px] font-black uppercase tracking-wider text-text-muted">Advanced Constraints</label>
-                    <div className="space-y-1.5">
-                       <span className="text-[10px] font-bold opacity-40">Minimum Price Floor</span>
-                       <input type="number" className="t-input" value={formData.discount_rules.min_price} onChange={e => setFormData({...formData, discount_rules: {...formData.discount_rules, min_price: parseFloat(e.target.value) || 0}})} placeholder="No product will go below this" />
+
+                 {/* Overrides Section */}
+                 <div className="space-y-6 pt-8 border-t" style={{ borderColor: 'var(--border-soft)' }}>
+                    <div className="flex flex-col gap-1">
+                      <h3 className="text-[11px] font-black uppercase tracking-widest text-brand">Product Specific Overrides</h3>
+                      <p className="text-[10px] opacity-40">Set custom discount values for specific products, ignoring global rules.</p>
                     </div>
+                    
+                    <div className="relative">
+                      <div className="flex items-center gap-2">
+                         <div className="relative flex-1">
+                            <input type="text" value={overrideQuery} onChange={e => handleOverrideSearch(e.target.value)} placeholder="Search product to override..." className="t-input border-brand/20 bg-brand/5" />
+                            {overrideResults.length > 0 && (
+                               <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-brand/20 rounded-xl shadow-xl z-50 max-h-60 overflow-auto">
+                                  {overrideResults.map(p => (
+                                     <div key={p.id} onClick={() => { handleOverrideAdd(p); setOverrideResults([]); setOverrideQuery('') }} className="px-4 py-3 hover:bg-brand/5 cursor-pointer border-b last:border-0 flex items-center justify-between transition-colors">
+                                        <div className="flex flex-col">
+                                           <span className="text-[12px] font-bold">{p.name_en}</span>
+                                           <span className="text-[10px] opacity-40 font-mono">#{p.fgd}</span>
+                                        </div>
+                                        <span className="text-[10px] font-black text-brand uppercase">+ Add Override</span>
+                                     </div>
+                                  ))}
+                               </div>
+                            )}
+                         </div>
+                      </div>
+                    </div>
+
+                    {formData.product_overrides.length > 0 && (
+                      <div className="space-y-2">
+                         {formData.product_overrides.map((o, idx) => (
+                            <div key={o.product_id} className="flex items-center gap-4 p-3 bg-surface-2 rounded-xl border border-border/50 group hover:border-brand/30 transition-all">
+                               <div className="flex-1 flex flex-col">
+                                  <span className="text-[12px] font-bold">{o._label}</span>
+                                  <span className="text-[10px] opacity-40 font-mono">#{o._fgd}</span>
+                               </div>
+                               
+                               <div className="flex items-center gap-2">
+                                  <select 
+                                    value={o.discount_type} 
+                                    onChange={e => {
+                                      const newOverrides = [...formData.product_overrides]
+                                      newOverrides[idx].discount_type = e.target.value
+                                      setFormData({ ...formData, product_overrides: newOverrides })
+                                    }}
+                                    className="text-[11px] font-bold bg-white border border-border rounded-lg px-2 py-1 outline-none"
+                                  >
+                                     <option value="percentage">%</option>
+                                     <option value="fixed">Fixed</option>
+                                  </select>
+                                  <div className="relative w-24">
+                                     <input 
+                                       type="number" 
+                                       value={o.discount_value} 
+                                       onChange={e => {
+                                          const newOverrides = [...formData.product_overrides]
+                                          newOverrides[idx].discount_value = parseFloat(e.target.value) || 0
+                                          setFormData({ ...formData, product_overrides: newOverrides })
+                                       }}
+                                       className="t-input h-8 text-[12px] font-black pl-2 pr-6" 
+                                     />
+                                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold opacity-30">
+                                        {o.discount_type === 'percentage' ? '%' : 'AED'}
+                                     </span>
+                                  </div>
+                                  <button onClick={() => removeOverride(idx)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                                  </button>
+                               </div>
+                            </div>
+                         ))}
+                      </div>
+                    )}
                  </div>
               </div>
             )}

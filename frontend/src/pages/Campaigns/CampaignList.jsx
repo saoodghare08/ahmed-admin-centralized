@@ -1,6 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getCampaigns, updateCampaignStatus, deleteCampaign } from '../../api'
+import { getCampaigns, updateCampaignStatus, deleteCampaign, getCountries, getCampaign } from '../../api'
+import CampaignPreview from './CampaignPreview'
 import toast from 'react-hot-toast'
 import Swal from 'sweetalert2'
 import { useState, useEffect } from 'react'
@@ -51,6 +52,38 @@ function SortIcon({ sortBy, col, sortOrder }) {
   return <span className="ml-1" style={{ color: 'var(--color-brand)' }}>{sortOrder === 'asc' ? '↑' : '↓'}</span>
 }
 
+function CampaignPreviewWrapper({ campaignId, countries }) {
+  const { data: campaignDetails, isLoading, isError } = useQuery({
+    queryKey: ['campaign-full', campaignId],
+    queryFn: () => getCampaign(campaignId),
+    enabled: !!campaignId
+  })
+
+  if (isLoading) return <div className="p-10 text-center animate-pulse opacity-40 font-bold text-[11px] uppercase tracking-widest">Loading campaign details...</div>
+  if (isError) return <div className="p-10 text-center text-red-500 font-bold text-[11px]">Failed to load campaign data.</div>
+
+  const campaign = campaignDetails?.data
+  if (!campaign) return null
+
+  // Map to the format CampaignPreview expects (same as CampaignForm's INITIAL_STATE)
+  const tempState = {
+    ...campaign,
+    countries: campaign.countries?.map(c => c.id) || [],
+    scope: campaign.scope || [],
+    discount_rules: campaign.discount_rules || { discount_type: 'percentage', discount_value: 0, min_price: 0 },
+    bxgy_rules: campaign.bxgy_rules || { buy_qty: 2, get_qty: 1, get_discount_type: 'free', get_discount_value: 0, is_repeatable: false, max_repeats: '', allow_overlap: false },
+    foc_rules: campaign.foc_rules || { cart_min: 0, cart_max: '', selection_mode: 'auto', max_free_items: 1 },
+    product_overrides: campaign.product_overrides || [],
+    bxgy_products: {
+      buy: campaign.bxgy_products?.buy?.map(p => p.product_id) || [],
+      get: campaign.bxgy_products?.get?.map(p => p.product_id) || []
+    },
+    foc_products: campaign.foc_products?.map(p => p.product_id) || []
+  }
+
+  return <CampaignPreview campaignId={campaignId} tempState={tempState} countries={countries} />
+}
+
 export default function CampaignList() {
   const qc = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -64,6 +97,10 @@ export default function CampaignList() {
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'created_at')
   const [sortOrder, setSortOrder] = useState(searchParams.get('order') || 'desc')
   const [expanded, setExpanded] = useState(null)
+  const [showPreview, setShowPreview] = useState(null)
+
+  const { data: countriesData } = useQuery({ queryKey: ['countries'], queryFn: getCountries })
+  const countries = countriesData?.data || []
 
   useEffect(() => {
     const p = new URLSearchParams()
@@ -367,23 +404,52 @@ export default function CampaignList() {
 
                 {/* Expanded row */}
                 {expanded === c.id && (
-                  <div className="px-6 py-4 border-b" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)' }}>
-                    <div className="grid grid-cols-3 gap-4 text-[11px]">
-                      <div>
-                        <span className="font-bold uppercase tracking-widest opacity-40 block mb-1">Details</span>
-                        <p><span className="font-semibold">ID:</span> #{c.id}</p>
-                        <p><span className="font-semibold">Stackable:</span> {c.is_stackable ? 'Yes' : 'No'}</p>
-                        {c.max_uses && <p><span className="font-semibold">Max Uses:</span> {c.current_uses}/{c.max_uses}</p>}
+                  <div className="px-6 py-4 border-b space-y-6" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)' }}>
+                    <div className="grid grid-cols-3 gap-6 text-[11px]">
+                      <div className="space-y-2">
+                        <span className="font-black uppercase tracking-widest opacity-40 block mb-1">Configuration</span>
+                        <div className="space-y-1">
+                          <p><span className="font-bold opacity-60">ID:</span> <span className="font-mono">#{c.id}</span></p>
+                          <p><span className="font-bold opacity-60">Stackable:</span> {c.is_stackable ? 'Yes' : 'No'}</p>
+                          {c.max_uses && <p><span className="font-bold opacity-60">Max Uses:</span> {c.current_uses}/{c.max_uses}</p>}
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-bold uppercase tracking-widest opacity-40 block mb-1">Scope</span>
-                        <p>{c.scope_summary}</p>
+                      <div className="space-y-2">
+                        <span className="font-black uppercase tracking-widest opacity-40 block mb-1">Target Scope</span>
+                        <div className="p-3 rounded-lg bg-surface border border-border/50 font-bold" style={{ color: 'var(--color-brand)' }}>
+                          {c.scope_summary}
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-bold uppercase tracking-widest opacity-40 block mb-1">Created</span>
-                        <p>{formatDate(c.created_at)}</p>
-                        {c.notes && <p className="mt-1 opacity-60">{c.notes}</p>}
+                      <div className="space-y-2">
+                        <span className="font-black uppercase tracking-widest opacity-40 block mb-1">History</span>
+                        <div className="space-y-1">
+                          <p><span className="font-bold opacity-60">Created:</span> {formatDate(c.created_at)}</p>
+                          {c.notes && <p className="mt-1 font-medium opacity-60 leading-relaxed italic">"{c.notes}"</p>}
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Preview Toggle */}
+                    <div className="flex flex-col gap-4 pt-4 border-t" style={{ borderColor: 'var(--border-soft)' }}>
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-[11px] font-black uppercase tracking-widest text-text-muted">Live Impact Preview</h4>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setShowPreview(showPreview === c.id ? null : c.id) }}
+                          className="px-4 py-1.5 rounded-xl text-[11px] font-black transition-all hover:scale-105 shadow-sm border border-brand/20 active:scale-95"
+                          style={{
+                            backgroundColor: showPreview === c.id ? 'var(--color-brand)' : 'var(--surface)',
+                            color: showPreview === c.id ? '#fff' : 'var(--color-brand)',
+                          }}
+                        >
+                          {showPreview === c.id ? 'Hide Preview' : 'Show Impact Preview →'}
+                        </button>
+                      </div>
+
+                      {showPreview === c.id && (
+                        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                          <CampaignPreviewWrapper campaignId={c.id} countries={countries} />
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

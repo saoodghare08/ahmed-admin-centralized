@@ -20,10 +20,10 @@ export default function CampaignPreview({ campaignId, tempState, countries }) {
       ...tempState, 
       country_id: activeCountry 
     }),
-    enabled: !!activeCountry && !!tempState.scope.length
+    enabled: !!activeCountry && (!!tempState.scope.length || !!tempState.product_overrides?.length)
   })
 
-  if (!tempState.scope.length) {
+  if (!tempState.scope.length && !tempState.product_overrides?.length) {
     return (
       <div className="p-12 text-center border-2 border-dashed border-border rounded-2xl bg-surface-2/20">
         <p className="text-[13px] font-bold opacity-30">Select at least one category or product to see impact.</p>
