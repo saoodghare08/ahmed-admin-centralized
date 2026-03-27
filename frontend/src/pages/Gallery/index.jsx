@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import Swal from 'sweetalert2'
+import api from '../../api/client'
 
 const API = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/api\/?$/, '')
 
@@ -92,10 +93,11 @@ function MoveModal({ item, onClose, onConfirm }) {
   const [data, setData]  = useState(null)
 
   const load = useCallback(async (p = '') => {
-    const res = await fetch(`${API}/api/gallery?path=${encodeURIComponent(p)}`)
-    const json = await res.json()
-    setData(json)
-    setDest(p)
+    try {
+      const json = await api.get(`/gallery?path=${encodeURIComponent(p)}`)
+      setData(json)
+      setDest(p)
+    } catch (e) { console.error('Move load err:', e) }
   }, [])
 
   useEffect(() => { async function init() { await load('') } init() }, [load])
@@ -212,11 +214,10 @@ export default function Gallery() {
   const load = useCallback(async (p = currentPath) => {
     setLoading(true)
     try {
-      const res  = await fetch(`${API}/api/gallery?path=${encodeURIComponent(p)}`)
-      const json = await res.json()
+      const json = await api.get(`/gallery?path=${encodeURIComponent(p)}`)
       setData(json)
       setCurrentPath(p)
-    } catch { toast.error('Failed to load gallery') }
+    } catch (e) { toast.error('Failed to load gallery') }
     finally { setLoading(false) }
   }, [currentPath])
 
@@ -229,12 +230,12 @@ export default function Gallery() {
     const form = new FormData()
     Array.from(files).forEach(f => form.append('files', f))
     try {
-      const res  = await fetch(`${API}/api/gallery/upload?path=${encodeURIComponent(currentPath)}`, { method: 'POST', body: form })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Upload failed')
+      const json = await api.post(`/gallery/upload?path=${encodeURIComponent(currentPath)}`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
       toast.success(`${json.data.length} file(s) uploaded`)
       load(currentPath)
-    } catch (e) { toast.error(e.message) }
+    } catch (e) { toast.error(e?.error || e?.message || 'Upload failed') }
     finally { setUploading(false) }
   }
 
@@ -243,12 +244,10 @@ export default function Gallery() {
     if (!name.trim()) { toast.error('Enter a folder name'); return }
     setNewFolderOpen(false)
     try {
-      const res  = await fetch(`${API}/api/gallery/folder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: currentPath, name: name.trim() }) })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error)
+      await api.post(`/gallery/folder`, { path: currentPath, name: name.trim() })
       toast.success('Folder created')
       load(currentPath)
-    } catch (e) { toast.error(e.message) }
+    } catch (e) { toast.error(e?.error || e?.message || 'Failed to create folder') }
   }
 
   // ── Delete ────────────────────────────────────────────────
@@ -264,13 +263,11 @@ export default function Gallery() {
     })
     if (!swalRes.isConfirmed) return
     try {
-      const endpoint = item.type === 'folder' ? '/api/gallery/folder' : '/api/gallery/file'
-      const res  = await fetch(`${API}${endpoint}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: item.path }) })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error)
+      const endpoint = item.type === 'folder' ? '/gallery/folder' : '/gallery/file'
+      await api.delete(endpoint, { data: { path: item.path } })
       toast.success('Deleted')
       load(currentPath)
-    } catch (e) { toast.error(e.message) }
+    } catch (e) { toast.error(e?.error || e?.message || 'Failed to delete') }
   }
 
   // ── Rename ────────────────────────────────────────────────
@@ -278,12 +275,10 @@ export default function Gallery() {
     const item = renaming; setRenaming(null)
     if (!newName.trim() || newName === item.name) return
     try {
-      const res  = await fetch(`${API}/api/gallery/rename`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: item.path, name: newName.trim() }) })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error)
+      await api.patch(`/gallery/rename`, { path: item.path, name: newName.trim() })
       toast.success('Renamed')
       load(currentPath)
-    } catch (e) { toast.error(e.message) }
+    } catch (e) { toast.error(e?.error || e?.message || 'Failed to rename') }
   }
 
   // ── Move (from modal or drag-drop) ────────────────────────
@@ -291,12 +286,10 @@ export default function Gallery() {
     if (item.type === 'folder' && dest.startsWith(item.path)) { toast.error("Can't move a folder into itself"); return }
     if (dest === currentPath || dest === item.path.replace('/'+item.name,'') || (currentPath === '' && dest === '')) { setMoving(null); return }
     try {
-      const res  = await fetch(`${API}/api/gallery/move`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: item.path, dest }) })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error)
+      await api.patch(`/gallery/move`, { path: item.path, dest })
       toast.success('Moved')
       load(currentPath)
-    } catch (e) { toast.error(e.message) }
+    } catch (e) { toast.error(e?.error || e?.message || 'Failed to move') }
     setMoving(null)
   }
 
