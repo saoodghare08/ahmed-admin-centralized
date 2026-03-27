@@ -8,7 +8,6 @@ import errorHandler from './middleware/errorHandler.js';
 import { authenticate, authorize } from './middleware/auth.js';
 import { seedAdmin } from './scripts/seedAdmin.js';
 
-import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
 import auditRoutes from './routes/audit.js';
 import countries from './routes/admin/countries.js';
@@ -23,6 +22,7 @@ import importRoute from './routes/admin/import.js';
 import analytics from './routes/admin/analytics.js';
 import campaigns from './routes/admin/campaigns.js';
 import storefrontCampaigns from './routes/storefront/campaigns.js';
+import authRoutes from './routes/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
