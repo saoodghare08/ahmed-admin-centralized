@@ -1,5 +1,6 @@
 import express from 'express';
 import db from '../../config/db.js';
+import { logAudit } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -19,6 +20,12 @@ async function buildProduct(productId, countryCode) {
   );
   if (!product) return null;
 
+  if (typeof product.attributes === 'string') {
+    try { product.attributes = JSON.parse(product.attributes); } catch (e) { product.attributes = {}; }
+  }
+  if (typeof product.tags === 'string') {
+    try { product.tags = JSON.parse(product.tags); } catch (e) { product.tags = []; }
+  }
 
   // Fragrance notes
   const [notes] = await db.query(
@@ -235,6 +242,11 @@ router.post('/', async (req, res, next) => {
     }
 
     await conn.commit();
+    
+    await logAudit(req, 'create', 'products', productId, {
+      name_en, name_ar, fgd, barcode, slug, category_id, subcategory_id
+    });
+
     res.status(201).json({ data: { id: productId } });
   } catch (err) {
     await conn.rollback();
@@ -269,6 +281,11 @@ router.put('/:id', async (req, res, next) => {
        size_label_en || null, size_label_ar || null,
        req.params.id]
     );
+    
+    await logAudit(req, 'update', 'products', req.params.id, {
+      name_en, name_ar, fgd, barcode, slug, category_id, subcategory_id, is_active, is_featured
+    });
+
     res.json({ message: 'Product updated' });
   } catch (err) { next(err); }
 });
@@ -285,11 +302,17 @@ router.patch('/:id/toggle', async (req, res, next) => {
          WHERE pc.product_id = ? AND co.code = ?`,
         [req.params.id, country.toUpperCase()]
       );
+      
+      await logAudit(req, 'update', 'products', req.params.id, { action: 'toggle_country_visibility', country });
+
       res.json({ message: 'Country visibility toggled' });
     } else {
       await db.query(
         `UPDATE products SET is_active = NOT is_active WHERE id = ?`, [req.params.id]
       );
+      
+      await logAudit(req, 'update', 'products', req.params.id, { action: 'toggle_global_active' });
+
       res.json({ message: 'Global active status toggled' });
     }
   } catch (err) { next(err); }
@@ -299,6 +322,9 @@ router.patch('/:id/toggle', async (req, res, next) => {
 router.delete('/:id', async (req, res, next) => {
   try {
     await db.query(`DELETE FROM products WHERE id = ?`, [req.params.id]);
+    
+    await logAudit(req, 'delete', 'products', req.params.id, { action: 'delete_product' });
+
     res.json({ message: 'Product deleted' });
   } catch (err) { next(err); }
 });
@@ -338,6 +364,9 @@ router.put('/:id/notes', async (req, res, next) => {
       );
     }
     await conn.commit();
+    
+    await logAudit(req, 'update', 'products', req.params.id, { action: 'update_fragrance_notes', count: notes.length });
+
     res.json({ message: 'Notes saved' });
   } catch (err) { await conn.rollback(); next(err); }
   finally { conn.release(); }
@@ -402,6 +431,10 @@ router.put('/:id/seo', async (req, res, next) => {
       );
     }
     await conn.commit();
+    
+    await logAudit(req, 'update', 'products', req.params.id, { action: 'update_country_configs', count: configs.length });
+
+    res.json({ message: 'Country configs saved' });
     res.json({ message: 'SEO data saved' });
   } catch (err) { await conn.rollback(); next(err); }
   finally { conn.release(); }

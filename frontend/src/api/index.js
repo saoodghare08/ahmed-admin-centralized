@@ -1,5 +1,21 @@
 import api from './client'
 
+// ── Auth ────────────────────────────────────────────────────
+export const login = (creds) => api.post('/auth/login', creds);
+export const getMe = () => api.get('/auth/me');
+
+// ── Users ───────────────────────────────────────────────────
+export const getUsers = () => api.get('/users');
+export const getUser = (id) => api.get(`/users/${id}`);
+export const createUser = (data) => api.post('/users', data);
+export const updateUser = (id, data) => api.put(`/users/${id}`, data);
+export const resetUserPassword = (id, password) => api.put(`/users/${id}/password`, { password });
+export const deleteUser = (id) => api.delete(`/users/${id}`);
+export const hardDeleteUser = (id) => api.delete(`/users/${id}/hard`);
+
+// ── Audit Logs ──────────────────────────────────────────────
+export const getAuditLogs = (params) => api.get('/audit-logs', { params });
+
 // ── Products ────────────────────────────────────────────────
 export const getProducts = (params) => api.get('/products', { params });
 export const getProduct = (id) => api.get(`/products/${id}`);

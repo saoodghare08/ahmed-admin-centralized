@@ -2,6 +2,7 @@ import express from 'express';
 import db from '../../config/db.js';
 import multer from 'multer';
 import xlsx from 'xlsx';
+import { logAudit } from '../middleware/auth.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
@@ -164,6 +165,9 @@ router.post('/', async (req, res, next) => {
       `INSERT INTO categories (slug, name_en, name_ar, image_url, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?)`,
       [slug, name_en, name_ar, image_url || null, sort_order ?? 0, is_active ?? 1,]
     );
+    
+    await logAudit(req, 'create', 'categories', result.insertId, { slug, name_en, name_ar, image_url, sort_order, is_active });
+
     res.status(201).json({ data: { id: result.insertId } });
   } catch (err) { next(err); }
 });
@@ -197,6 +201,9 @@ router.put('/:id', async (req, res, next) => {
       `UPDATE categories SET slug=?, name_en=?, name_ar=?, image_url=?, sort_order=?, is_active=? WHERE id=?`,
       [slug, name_en, name_ar, image_url || null, sort_order ?? 0, is_active ?? 1, req.params.id]
     );
+    
+    await logAudit(req, 'update', 'categories', req.params.id, { slug, name_en, name_ar, image_url, sort_order, is_active });
+
     res.json({ message: 'Category updated' });
   } catch (err) { next(err); }
 });
@@ -226,6 +233,8 @@ router.delete('/:id', async (req, res, next) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Category not found' });
     }
+    
+    await logAudit(req, 'delete', 'categories', categoryId, { action: 'delete_category_and_subcategories' });
 
     res.json({ message: 'Category and all associated subcategories deleted' });
   } catch (err) {
@@ -246,6 +255,9 @@ router.post('/:id/subcategories', async (req, res, next) => {
       `INSERT INTO subcategories (category_id, slug, name_en, name_ar, image_url, sort_order) VALUES (?, ?, ?, ?, ?, ?)`,
       [req.params.id, slug, name_en, name_ar, image_url || null, sort_order || 0]
     );
+    
+    await logAudit(req, 'create', 'subcategories', result.insertId, { category_id: req.params.id, slug, name_en, name_ar, image_url, sort_order });
+
     res.status(201).json({ data: { id: result.insertId } });
   } catch (err) { next(err); }
 });
@@ -282,6 +294,9 @@ router.put('/subcategories/:subId', async (req, res, next) => {
       `UPDATE subcategories SET slug=?, name_en=?, name_ar=?, image_url=?, sort_order=?, is_active=? WHERE id=?`,
       [slug, name_en, name_ar, image_url || null, sort_order ?? 0, is_active ?? 1, req.params.subId]
     );
+    
+    await logAudit(req, 'update', 'subcategories', req.params.subId, { slug, name_en, name_ar, image_url, sort_order, is_active });
+
     res.json({ message: 'Subcategory updated' });
   } catch (err) { next(err); }
 });
@@ -290,6 +305,9 @@ router.put('/subcategories/:subId', async (req, res, next) => {
 router.delete('/subcategories/:subId', async (req, res, next) => {
   try {
     await db.query(`DELETE FROM subcategories WHERE id = ?`, [req.params.subId]);
+    
+    await logAudit(req, 'delete', 'subcategories', req.params.subId, {});
+
     res.json({ message: 'Subcategory deleted' });
   } catch (err) { next(err); }
 });

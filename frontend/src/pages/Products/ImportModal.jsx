@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api')
+import api from '../../api/client'
 
 // ── Status badge ───────────────────────────────────────────────
 function Badge({ status }) {
@@ -30,8 +30,20 @@ export default function ImportModal({ onClose }) {
   const [loading, setLoading] = useState(false)
 
   // ── Template download ──────────────────────────────────────
-  const downloadTemplate = () => {
-    window.open(`${API_BASE}/import/template`, '_blank')
+  const downloadTemplate = async () => {
+    try {
+      const blob = await api.get('/import/template', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'products_import_template.xlsx')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      toast.error('Failed to download template')
+    }
   }
 
   // ── Dry-run on file select ─────────────────────────────────
@@ -41,13 +53,13 @@ export default function ImportModal({ onClose }) {
     try {
       const fd = new FormData()
       fd.append('file', selectedFile)
-      const res = await fetch(`${API_BASE}/import/products?dry_run=true`, { method: 'POST', body: fd })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Preview failed')
+      const data = await api.post('/import/products?dry_run=true', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
       setPreview(data)
       setStep(2)
     } catch (e) {
-      toast.error(e.message)
+      toast.error(e?.error || e?.message || 'Preview failed')
     } finally {
       setLoading(false)
     }
@@ -64,14 +76,14 @@ export default function ImportModal({ onClose }) {
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const res = await fetch(`${API_BASE}/import/products?dry_run=false`, { method: 'POST', body: fd })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Import failed')
+      const data = await api.post('/import/products?dry_run=false', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
       setResult(data)
       setStep(3)
       if (data.summary.inserted > 0) qc.invalidateQueries({ queryKey: ['products'] })
     } catch (e) {
-      toast.error(e.message)
+      toast.error(e?.error || e?.message || 'Import failed')
     } finally {
       setLoading(false)
     }
