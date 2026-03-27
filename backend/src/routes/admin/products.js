@@ -77,6 +77,9 @@ async function buildProduct(productId, countryCode) {
     [productId]
   );
 
+  // Bundle status
+  const [bundleRows] = await db.query(`SELECT id FROM bundles WHERE product_id = ?`, [productId]);
+
   return { 
     ...product, 
     fragrance_notes: notes, 
@@ -84,7 +87,8 @@ async function buildProduct(productId, countryCode) {
     media,
     stock,
     country_visibility,
-    country_slug
+    country_slug,
+    is_bundle: bundleRows.length > 0
   };
 }
 

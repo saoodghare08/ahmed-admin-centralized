@@ -72,7 +72,7 @@ export const getProductStock = (productId) => api.get(`/products/${productId}/st
 export const updateProductStock = (productId, stocks) => api.put(`/products/${productId}/stock`, { stocks });
 
 // ── Bundles ─────────────────────────────────────────────────
-export const getBundles = () => api.get('/bundles');
+export const getBundles = (params) => api.get('/bundles', { params });
 export const getBundle = (productId) => api.get(`/bundles/${productId}`);
 export const createBundle = (data) => api.post('/bundles', data);
 export const updateBundle = (bundleId, items) => api.put(`/bundles/${bundleId}/items`, { items });

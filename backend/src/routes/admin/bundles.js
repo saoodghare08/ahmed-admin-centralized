@@ -6,12 +6,34 @@ const router = express.Router();
 // GET /api/bundles — all bundles with their items
 router.get('/', async (req, res, next) => {
   try {
+    const { q = '', page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+    const params = [];
+    let where = 'WHERE 1=1';
+
+    if (q) {
+      where += ` AND (p.name_en LIKE ? OR p.name_ar LIKE ? OR p.fgd LIKE ?)`;
+      params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+    }
+
+    // Get total count for pagination
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(b.id) AS total
+       FROM bundles b
+       JOIN products p ON p.id = b.product_id
+       ${where}`, params
+    );
+
+    // Get paginated results
     const [bundles] = await db.query(
       `SELECT b.id AS bundle_id, p.id AS product_id, p.name_en, p.name_ar, p.fgd, p.slug
        FROM bundles b
        JOIN products p ON p.id = b.product_id
-       ORDER BY b.id DESC`
+       ${where}
+       ORDER BY b.id DESC
+       LIMIT ? OFFSET ?`, [...params, parseInt(limit), offset]
     );
+
     for (const bundle of bundles) {
       const [items] = await db.query(
         `SELECT bi.*,
@@ -24,7 +46,16 @@ router.get('/', async (req, res, next) => {
       );
       bundle.items = items;
     }
-    res.json({ data: bundles });
+
+    res.json({ 
+      data: bundles,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / limit)
+      }
+    });
   } catch (err) { next(err); }
 });
 

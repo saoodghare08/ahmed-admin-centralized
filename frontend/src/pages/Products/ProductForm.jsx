@@ -9,6 +9,7 @@ import {
   getCountryConfigs, updateVisibility, updateSEO,
   deleteMedia, setPrimaryMedia,
   getProductStock, updateProductStock,
+  getBundle, createBundle, updateBundle, deleteBundle
 } from '../../api'
 import GalleryPicker from '../../components/GalleryPicker'
 import ImageUploader from '../../components/ImageUploader'
@@ -24,13 +25,14 @@ const COUNTRIES = [
   { id: 6, code: 'OM', name: 'Oman',    currency_id: 6, currency: 'OMR', flag: '🇴🇲', decimals: 3 },
 ]
 
-const TABS = ['Core', 'Fragrance', 'Media', 'SEO', 'Inventory']
+const TABS = ['Core', 'Fragrance', 'Media', 'SEO', 'Inventory', 'Composition']
 
 const EMPTY = {
   fgd: '', barcode: '', slug: '', name_en: '', name_ar: '',
   description_en: '', description_ar: '',
   category_id: '', subcategory_id: null,
   is_active: true, is_featured: false,
+  is_bundle: false,
   tags: '',
   size_label_en: '', size_label_ar: ''
 }
@@ -117,6 +119,9 @@ function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, se
           <div className="grid grid-cols-2 gap-3">
             <Toggle checked={form.is_active} onChange={v => set('is_active', v)} label="Active" />
             <Toggle checked={form.is_featured} onChange={v => set('is_featured', v)} label="Featured" />
+          </div>
+          <div className="pt-2 border-t border-black/5">
+            <Toggle checked={form.is_bundle} onChange={v => set('is_bundle', v)} label="Is Bundle / Gift-set" />
           </div>
         </SectionCard>
 
@@ -536,6 +541,127 @@ function InventoryTab({ stocks, setStocks }) {
   )
 }
 
+// ── Tab: Composition ──────────────────────────────────────────
+function CompositionTab({ composition, setComposition }) {
+  const [productSearch, setProductSearch] = useState('')
+  const [productResults, setProductResults] = useState([])
+  const [customItem, setCustomItem] = useState('')
+
+  const handleSearch = async (q) => {
+    setProductSearch(q)
+    if (q.length < 2) { setProductResults([]); return }
+    const res = await api.get('/campaigns/products/search', { params: { q } })
+    setProductResults(res.data?.data || [])
+  }
+
+  const addProduct = (p) => {
+    if (composition.some(item => item.product_id === p.id)) {
+      toast.error('Product already in bundle')
+      return
+    }
+    setComposition([...composition, {
+      product_id: p.id,
+      product_name_en: p.name_en,
+      product_fgd: p.fgd,
+      qty: 1,
+      sort_order: composition.length
+    }])
+    setProductSearch('')
+    setProductResults([])
+  }
+
+  const addCustom = () => {
+    if (!customItem.trim()) return
+    setComposition([...composition, {
+      product_id: null,
+      component_name_en: customItem.trim(),
+      qty: 1,
+      sort_order: composition.length
+    }])
+    setCustomItem('')
+  }
+
+  const removeItem = (idx) => {
+    setComposition(composition.filter((_, i) => i !== idx))
+  }
+
+  const updateQty = (idx, qty) => {
+    const next = [...composition]
+    next[idx].qty = parseInt(qty) || 1
+    setComposition(next)
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <SectionCard title="Add Components" hint="Search for products or add standalone items">
+        <div className="grid grid-cols-2 gap-5">
+           <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-slate-400">Search Products</label>
+              <div className="relative">
+                <input 
+                  type="text" 
+                  value={productSearch} 
+                  onChange={e => handleSearch(e.target.value)} 
+                  placeholder="e.g. Perfume name..." 
+                  className="t-input h-11"
+                />
+                {productResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 max-h-60 overflow-auto">
+                    {productResults.map(p => (
+                      <div key={p.id} onClick={() => addProduct(p)} className="p-3 hover:bg-brand/5 cursor-pointer border-b last:border-0 flex items-center justify-between">
+                        <div><p className="font-bold text-sm truncate">{p.name_en}</p><p className="font-mono text-[9px] opacity-40">#{p.fgd}</p></div>
+                        <span className="text-[9px] font-black text-brand uppercase">+ Add</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+           </div>
+           <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-slate-400">Add Standalone Item (Simple Text)</label>
+              <div className="flex gap-2">
+                 <input 
+                   type="text" 
+                   value={customItem} 
+                   onChange={e => setCustomItem(e.target.value)} 
+                   placeholder="e.g. Gift Bag, Box..." 
+                   className="t-input h-11"
+                 />
+                 <button onClick={addCustom} className="t-btn-primary h-11 px-6 whitespace-nowrap text-[12px]">Add Item</button>
+              </div>
+           </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Composition List">
+         <div className="flex flex-col gap-2">
+            {composition.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-4 p-3 bg-white rounded-xl border border-slate-100 shadow-sm group">
+                 <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-[11px] font-black text-slate-300">{idx + 1}</div>
+                 <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-bold text-slate-700 truncate">{item.product_name_en || item.component_name_en}</p>
+                    <div className="flex items-center gap-2">
+                       {item.product_id ? (
+                         <span className="text-[9px] font-black text-blue-500 uppercase px-1.5 py-0.5 bg-blue-50 rounded border border-blue-100">Linked Product #{item.product_fgd}</span>
+                       ) : (
+                         <span className="text-[9px] font-black text-slate-400 uppercase px-1.5 py-0.5 bg-slate-50 rounded border border-slate-100">Standalone Item</span>
+                       )}
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-slate-300 uppercase">Qty</span>
+                    <input type="number" className="w-14 h-9 t-input text-center text-sm font-black" value={item.qty} onChange={e => updateQty(idx, e.target.value)} />
+                 </div>
+                 <button onClick={() => removeItem(idx)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">×</button>
+              </div>
+            ))}
+            {composition.length === 0 && <div className="p-12 text-center border-2 border-dashed border-slate-100 rounded-xl bg-slate-50/50 italic text-slate-300 text-sm">No components added yet.</div>}
+         </div>
+      </SectionCard>
+    </div>
+  )
+}
+
 // ── Main ProductForm ────────────────────────────────────────────
 export default function ProductForm() {
   const { id } = useParams()
@@ -553,6 +679,7 @@ export default function ProductForm() {
   const [configs, setConfigs] = useState(COUNTRIES.map(c => ({ country_id: c.id, is_visible: 1, slug_override: '', meta_title_en: '', meta_title_ar: '', meta_desc_en: '', meta_desc_ar: '', sort_order: 0 })))
   const [prices, setPrices]   = useState(COUNTRIES.map(c => ({ country_id: c.id, currency_id: c.currency_id, regular_price: '' })))
   const [stocks, setStocks]   = useState(COUNTRIES.map(c => ({ country_id: c.id, quantity: 0 })))
+  const [composition, setComposition] = useState([])
 
   // Dirty tracking via ref (no extra state = no re-render loops)
   const savedRef  = useRef(null)
@@ -585,6 +712,7 @@ export default function ProductForm() {
       description_en: p.description_en || '', description_ar: p.description_ar || '',
       category_id: p.category_id || '', subcategory_id: p.subcategory_id || null,
       is_active: !!p.is_active, is_featured: !!p.is_featured,
+      is_bundle: !!p.is_bundle,
       size_label_en: p.size_label_en || '', size_label_ar: p.size_label_ar || '',
       tags: Array.isArray(p.tags) ? p.tags.join(', ') : (p.tags || ''),
       attributes: p.attributes ? Object.entries(p.attributes).map(([k,v]) => ({ key: k, value: String(v) })) : [],
@@ -607,6 +735,11 @@ export default function ProductForm() {
     setMediaList(p.media?.length ? p.media : [])
     // Snapshot will be set once configs+prices effects also fire (see combined effect)
   }, [productData, resetKey])
+
+  // Reset tab if Composition is hidden while active
+  useEffect(() => {
+    if (!form.is_bundle && tab === 'Composition') setTab('Core')
+  }, [form.is_bundle, tab])
 
   // Fetch country configs
   const { data: ccData } = useQuery({
@@ -654,6 +787,17 @@ export default function ProductForm() {
       return saved ? { country_id: c.id, quantity: saved.quantity } : { country_id: c.id, quantity: 0 }
     }))
   }, [stockData, resetKey])
+
+  // Fetch bundle composition
+  const { data: bundleData } = useQuery({
+    queryKey: ['bundle', id],
+    queryFn:  () => getBundle(id),
+    enabled:  !!isEdit && !!productData?.data?.is_bundle,
+    select:   r => r?.data || null,
+  })
+  useEffect(() => {
+    setComposition(bundleData?.items || [])
+  }, [bundleData, resetKey])
 
   // Tracker for the latest state to avoid closure bugs in the timeout snapshot
   const latestState = useRef()
@@ -789,6 +933,19 @@ export default function ProductForm() {
         }))),
       ])
 
+      // Sync Composition / Bundle
+      if (form.is_bundle) {
+        if (bundleData?.bundle_id) {
+          await updateBundle(bundleData.bundle_id, composition)
+        } else {
+          await createBundle({ product_id: finalProductId, items: composition })
+        }
+      } else if (bundleData?.bundle_id) {
+        // Was a bundle, but now unticked. Should we delete?
+        // Let's call the delete API (which I imported earlier but removed, I should use it or update items to empty)
+        await deleteBundle(finalProductId)
+      }
+
       // Mark clean after successful save
       markClean()
 
@@ -903,7 +1060,7 @@ export default function ProductForm() {
 
       {/* ── Tabs ── */}
       <div className="flex gap-0.5 px-8 pt-4 pb-0" style={{ borderBottom: '1px solid var(--border)' }}>
-        {TABS.map(t => (
+        {TABS.filter(t => t !== 'Composition' || form.is_bundle).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className="px-4 py-2 text-[13px] font-semibold rounded-t-lg transition-all duration-150"
             style={tab === t
@@ -925,6 +1082,7 @@ export default function ProductForm() {
         {tab === 'Media'     && <MediaTab mediaList={mediaList} setMediaList={setMediaList} productId={isEdit ? id : createdId} setPrimaryMedia={setPrimaryMedia} deleteMedia={deleteMedia} />}
         {tab === 'SEO'       && <SEOTab configs={configs} setConfigs={setConfigs} />}
         {tab === 'Inventory' && <InventoryTab stocks={stocks} setStocks={setStocks} />}
+        {tab === 'Composition' && <CompositionTab composition={composition} setComposition={setComposition} />}
       </div>
     </div>
   )
