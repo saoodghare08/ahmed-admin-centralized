@@ -130,7 +130,9 @@ router.get('/', async (req, res, next) => {
       }
     }
 
-    let whereClause = ` WHERE 1=1`;
+    let statusFilter = req.query.status === 'bin' ? 'bin' : 'active';
+    let whereClause = ` WHERE p.deleted_status = ?`;
+    params.push(statusFilter);
     if (!admin) { whereClause += ` AND p.is_active = 1`; }
     if (country && !admin) { whereClause += ` AND (pc.is_visible IS NULL OR pc.is_visible = 1)`; }
     if (category)    { whereClause += ` AND p.category_id = ?`;    params.push(category); }
@@ -318,14 +320,30 @@ router.patch('/:id/toggle', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// DELETE /api/products/:id
+// DELETE /api/products/:id (Soft delete to bin)
 router.delete('/:id', async (req, res, next) => {
   try {
-    await db.query(`DELETE FROM products WHERE id = ?`, [req.params.id]);
-    
-    await logAudit(req, 'delete', 'products', req.params.id, { action: 'delete_product' });
+    await db.query(`UPDATE products SET deleted_status = 'bin' WHERE id = ?`, [req.params.id]);
+    await logAudit(req, 'update', 'products', req.params.id, { action: 'move_to_bin' });
+    res.json({ message: 'Product moved to recycle bin' });
+  } catch (err) { next(err); }
+});
 
-    res.json({ message: 'Product deleted' });
+// DELETE /api/products/:id/permanent
+router.delete('/:id/permanent', async (req, res, next) => {
+  try {
+    await db.query(`UPDATE products SET deleted_status = 'permanent' WHERE id = ?`, [req.params.id]);
+    await logAudit(req, 'delete', 'products', req.params.id, { action: 'permanent_delete' });
+    res.json({ message: 'Product permanently deleted' });
+  } catch (err) { next(err); }
+});
+
+// PATCH /api/products/:id/restore
+router.patch('/:id/restore', async (req, res, next) => {
+  try {
+    await db.query(`UPDATE products SET deleted_status = 'active' WHERE id = ? AND deleted_status = 'bin'`, [req.params.id]);
+    await logAudit(req, 'update', 'products', req.params.id, { action: 'restore_from_bin' });
+    res.json({ message: 'Product restored' });
   } catch (err) { next(err); }
 });
 

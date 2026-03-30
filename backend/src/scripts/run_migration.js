@@ -7,7 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function runMigration() {
-  const sqlPath = path.join(__dirname, '..', 'db', 'migrations', '002_users_and_audit.sql');
+  const scriptName = process.argv[2] || '002_users_and_audit.sql';
+  const sqlPath = path.join(__dirname, '..', 'db', 'migrations', scriptName);
   const sql = fs.readFileSync(sqlPath, 'utf8');
   
   // Split statements by semicolon

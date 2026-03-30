@@ -78,7 +78,7 @@ const NAV = [
     )
   },
   {
-    to: '/campaigns', label: 'Campaigns', icon: (
+    to: '/campaigns', label: 'Campaigns', module: 'campaigns', icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 18H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 12h7.5" />
       </svg>
@@ -123,7 +123,10 @@ export default function App() {
   }
 
   // Filter nav items based on permissions
-  const visibleNav = NAV.filter(n => hasPermission(n.module))
+  const visibleNav = NAV.filter(n => {
+    if (n.adminOnly && user.role !== 'admin') return false;
+    return hasPermission(n.module);
+  })
 
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}>

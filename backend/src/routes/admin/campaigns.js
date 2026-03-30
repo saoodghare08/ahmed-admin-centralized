@@ -94,7 +94,9 @@ router.get('/', async (req, res, next) => {
     const offset = (Math.max(1, +page) - 1) * +limit;
     const params = [];
 
-    let where = 'WHERE 1=1';
+    const deletedStatus = req.query.deleted_status === 'bin' ? 'bin' : 'active';
+    let where = 'WHERE c.deleted_status = ?';
+    params.push(deletedStatus);
     if (status) { where += ` AND c.status = ?`; params.push(status); }
     if (type) { where += ` AND c.type = ?`; params.push(type); }
     if (search) { where += ` AND (c.name_en LIKE ? OR c.name_ar LIKE ?)`; params.push(`%${search}%`, `%${search}%`); }
@@ -350,20 +352,36 @@ router.patch('/:id/status', async (req, res, next) => {
    ================================================================ */
 router.delete('/:id', async (req, res, next) => {
   try {
-    // Only drafts can be hard-deleted; others get archived
-    const [[campaign]] = await db.query(`SELECT status FROM campaigns WHERE id = ?`, [req.params.id]);
+    const [[campaign]] = await db.query(`SELECT id FROM campaigns WHERE id = ?`, [req.params.id]);
     if (!campaign) return res.status(404).json({ error: 'Not found' });
 
-    if (campaign.status === 'draft') {
-      await db.query(`DELETE FROM campaigns WHERE id = ?`, [req.params.id]);
-      res.json({ message: 'Campaign deleted' });
-    } else {
-      await db.query(`UPDATE campaigns SET status = 'archived', updated_at = NOW() WHERE id = ?`, [req.params.id]);
-      await db.query(
-        `INSERT INTO campaign_history (campaign_id, action) VALUES (?, 'archived')`, [req.params.id]
-      );
-      res.json({ message: 'Campaign archived' });
-    }
+    await db.query(`UPDATE campaigns SET deleted_status = 'bin', updated_at = NOW() WHERE id = ?`, [req.params.id]);
+    await db.query(
+      `INSERT INTO campaign_history (campaign_id, action) VALUES (?, 'moved_to_bin')`, [req.params.id]
+    );
+    res.json({ message: 'Campaign moved to recycle bin' });
+  } catch (err) { next(err); }
+});
+
+router.delete('/:id/permanent', async (req, res, next) => {
+  try {
+    const [result] = await db.query(`UPDATE campaigns SET deleted_status = 'permanent', updated_at = NOW() WHERE id = ? AND deleted_status = 'bin'`, [req.params.id]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found in bin' });
+    await db.query(
+      `INSERT INTO campaign_history (campaign_id, action) VALUES (?, 'permanently_deleted')`, [req.params.id]
+    );
+    res.json({ message: 'Campaign permanently deleted' });
+  } catch (err) { next(err); }
+});
+
+router.patch('/:id/restore', async (req, res, next) => {
+  try {
+    const [result] = await db.query(`UPDATE campaigns SET deleted_status = 'active', updated_at = NOW() WHERE id = ? AND deleted_status = 'bin'`, [req.params.id]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found in bin' });
+    await db.query(
+      `INSERT INTO campaign_history (campaign_id, action) VALUES (?, 'restored_from_bin')`, [req.params.id]
+    );
+    res.json({ message: 'Campaign restored' });
   } catch (err) { next(err); }
 });
 

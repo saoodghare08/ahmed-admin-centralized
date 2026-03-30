@@ -1,6 +1,6 @@
 import { Routes, Route, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getProducts, toggleProduct, deleteProduct } from '../../api'
+import { getProducts, toggleProduct, deleteProduct, restoreProduct, hardDeleteProduct } from '../../api'
 import toast from 'react-hot-toast'
 import Swal from 'sweetalert2'
 import { useState, useEffect } from 'react'
@@ -33,6 +33,10 @@ function ProductList() {
   const [search, setSearch]   = useState(searchParams.get('search') || '')
   const [debouncedSearch] = useDebounce(search, 500)
   const [showImport, setShowImport] = useState(false)
+  const [showBin, setShowBin] = useState(false)
+
+  const [selectedProductIds, setSelectedProductIds] = useState(() => new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
   
   const [catId, setCatId] = useState(searchParams.get('catId') || '')
   const [subId, setSubId] = useState(searchParams.get('subId') || '')
@@ -62,7 +66,7 @@ function ProductList() {
   })
 
   const { data, isLoading } = useQuery({
-    queryKey: ['products', country, page, debouncedSearch, catId, subId, sortBy, sortOrder, limit],
+    queryKey: ['products', country, page, debouncedSearch, catId, subId, sortBy, sortOrder, limit, showBin],
     queryFn:  () => getProducts({ 
       country, 
       page, 
@@ -72,6 +76,7 @@ function ProductList() {
       subcategory: subId,
       sort: sortBy,
       order: sortOrder,
+      status: showBin ? 'bin' : undefined,
       admin: true 
     }),
   })
@@ -79,9 +84,119 @@ function ProductList() {
   // Prevent multiple refetches by using QC invalidate
   const refresh = () => qc.invalidateQueries({ queryKey: ['products'] })
 
+  const clearSelection = () => {
+    setSelectedProductIds(new Set())
+    setBulkLoading(false)
+  }
+
   const handleToggle = async (id) => { 
     await toggleProduct(id, country)
     toast.success(`${country} visibility toggled`)
+    refresh()
+  }
+
+  const visibleProductIds = (data?.data || []).map(p => p.id)
+  const allVisibleSelected = visibleProductIds.length > 0 && visibleProductIds.every(id => selectedProductIds.has(id))
+
+  const toggleSelected = (id) => {
+    setSelectedProductIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const handleSelectAllVisible = () => {
+    setSelectedProductIds(prev => {
+      const next = new Set(prev)
+      if (allVisibleSelected) visibleProductIds.forEach(id => next.delete(id))
+      else visibleProductIds.forEach(id => next.add(id))
+      return next
+    })
+  }
+
+  const bulkMoveToBin = async () => {
+    const ids = Array.from(selectedProductIds)
+    if (!ids.length) return
+
+    const res = await Swal.fire({
+      title: 'Move selected to recycle bin?',
+      text: 'Selected products will be moved to the recycle bin.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: 'var(--surface-2)',
+      confirmButtonText: 'Yes, move to bin!',
+    })
+    if (!res.isConfirmed) return
+
+    setBulkLoading(true)
+    const results = await Promise.allSettled(ids.map(id => deleteProduct(id)))
+    setBulkLoading(false)
+
+    const ok = results.filter(r => r.status === 'fulfilled').length
+    const failed = results.length - ok
+    if (ok) toast.success(`Moved ${ok} product(s) to bin`)
+    if (failed) toast.error(`Failed to move ${failed} product(s)`)
+
+    clearSelection()
+    refresh()
+  }
+
+  const bulkRestore = async () => {
+    const ids = Array.from(selectedProductIds)
+    if (!ids.length) return
+
+    const res = await Swal.fire({
+      title: 'Restore selected products?',
+      text: 'Selected products will be restored from the recycle bin.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: 'var(--surface-2)',
+      confirmButtonText: 'Yes, restore!',
+    })
+    if (!res.isConfirmed) return
+
+    setBulkLoading(true)
+    const results = await Promise.allSettled(ids.map(id => restoreProduct(id)))
+    setBulkLoading(false)
+
+    const ok = results.filter(r => r.status === 'fulfilled').length
+    const failed = results.length - ok
+    if (ok) toast.success(`Restored ${ok} product(s)`)
+    if (failed) toast.error(`Failed to restore ${failed} product(s)`)
+
+    clearSelection()
+    refresh()
+  }
+
+  const bulkHardDelete = async () => {
+    const ids = Array.from(selectedProductIds)
+    if (!ids.length) return
+
+    const res = await Swal.fire({
+      title: 'Permanently delete selected products?',
+      text: 'This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: 'var(--surface-2)',
+      confirmButtonText: 'Yes, delete forever!',
+    })
+    if (!res.isConfirmed) return
+
+    setBulkLoading(true)
+    const results = await Promise.allSettled(ids.map(id => hardDeleteProduct(id)))
+    setBulkLoading(false)
+
+    const ok = results.filter(r => r.status === 'fulfilled').length
+    const failed = results.length - ok
+    if (ok) toast.success(`Deleted ${ok} product(s) permanently`)
+    if (failed) toast.error(`Failed to delete ${failed} product(s) permanently`)
+
+    clearSelection()
     refresh()
   }
 
@@ -99,11 +214,38 @@ function ProductList() {
     if (res.isConfirmed) {
       try {
         await deleteProduct(id)
-        toast.success('Product deleted')
+        toast.success('Product moved to bin')
         refresh()
       } catch {
         toast.error('Failed to delete product')
       }
+    }
+  }
+
+  const handleRestore = async (id) => {
+    try {
+      await restoreProduct(id)
+      toast.success('Product restored successfully')
+      refresh()
+    } catch { toast.error('Failed to restore product') }
+  }
+
+  const handleHardDelete = async (id) => {
+    const res = await Swal.fire({
+      title: 'Permanently Delete?',
+      text: 'This action cannot be undone and will erase it from the database forever.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete forever!'
+    })
+    
+    if (res.isConfirmed) {
+      try {
+        await hardDeleteProduct(id)
+        toast.success('Product permanently deleted')
+        refresh()
+      } catch { toast.error('Failed to delete permanently') }
     }
   }
 
@@ -114,6 +256,7 @@ function ProductList() {
       setSortBy(key)
       setSortOrder('DESC')
     }
+    clearSelection()
     setPage(1)
   }
 
@@ -131,17 +274,31 @@ function ProductList() {
       {/* ── Product Page Toolbar ─────────────────────────────────── */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4">
-          <div className="flex flex-col gap-1">
+           <div className="flex flex-col gap-1">
              <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
                 Products
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/5 text-black/50 uppercase tracking-widest leading-none">
-                  Inventory
-                </span>
+                {showBin ? (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 uppercase tracking-widest leading-none flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                    Recycle Bin
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/5 text-black/50 uppercase tracking-widest leading-none">
+                    Inventory
+                  </span>
+                )}
              </h1>
              <p className="text-[12px] font-medium opacity-40">Manage global catalog, pricing, and visibility</p>
           </div>
           
           <div className="flex items-center gap-2">
+             <button
+               onClick={() => { clearSelection(); setShowBin(!showBin); setPage(1); }}
+               className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-bold transition-all shadow-sm border ${showBin ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' : 'bg-white text-black/60 border-black/10 hover:bg-black/5 active:scale-95'}`}
+             >
+               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+               {showBin ? 'Exit Bin' : 'View Bin'}
+             </button>
              <button 
                onClick={() => setShowImport(true)}
                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-bold transition-all bg-white border border-black/10 hover:bg-black/5 active:scale-95 shadow-sm"
@@ -170,7 +327,7 @@ function ProductList() {
                   type="search"
                   placeholder="Search SKU or Name..."
                   value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  onChange={(e) => { clearSelection(); setSearch(e.target.value); setPage(1); }}
                   className="w-full pl-9 pr-4 py-2 rounded-xl text-[12px] font-medium outline-none transition-all placeholder:text-black/20 bg-black/3 border-none focus:bg-black/6"
                 />
               </div>
@@ -181,7 +338,7 @@ function ProductList() {
               <div className="flex items-center gap-2">
                 <select 
                   value={catId} 
-                  onChange={(e) => { setCatId(e.target.value); setSubId(''); setPage(1); }}
+                  onChange={(e) => { clearSelection(); setCatId(e.target.value); setSubId(''); setPage(1); }}
                   className="px-3 py-2 rounded-xl text-[12px] font-bold transition-all cursor-pointer bg-black/5 border-none outline-none hover:bg-black/10"
                 >
                   <option value="">All Categories</option>
@@ -191,7 +348,7 @@ function ProductList() {
                 <select 
                   value={subId} 
                   disabled={!selectedCat || !selectedCat.subcategories?.length}
-                  onChange={(e) => { setSubId(e.target.value); setPage(1); }}
+                  onChange={(e) => { clearSelection(); setSubId(e.target.value); setPage(1); }}
                   className="px-3 py-2 rounded-xl text-[12px] font-bold transition-all cursor-pointer bg-black/5 border-none outline-none hover:bg-black/10 disabled:opacity-30"
                 >
                   <option value="">All Subcategories</option>
@@ -205,7 +362,7 @@ function ProductList() {
              {COUNTRIES.map(c => (
                 <button
                   key={c}
-                  onClick={() => { setCountry(c); setPage(1) }}
+                  onClick={() => { clearSelection(); setCountry(c); setPage(1) }}
                   className={`text-[11px] px-3 py-1.5 rounded-lg font-bold transition-all ${country === c ? 'bg-white text-black shadow-sm' : 'text-black/40 hover:text-black/60'}`}
                 >
                   <span className="mr-1.5">{FLAGS[c]}</span> {c}
@@ -233,7 +390,7 @@ function ProductList() {
                  <span className="text-[11px] font-bold opacity-30 uppercase tracking-widest">Show</span>
                  <select 
                    value={limit} 
-                   onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+                   onChange={(e) => { clearSelection(); setLimit(Number(e.target.value)); setPage(1); }}
                    className="px-2 py-1 rounded-lg text-[11px] font-bold outline-none cursor-pointer bg-black/5 hover:bg-black/10 transition-colors border-none"
                    style={{ color: 'var(--text)' }}
                  >
@@ -242,6 +399,42 @@ function ProductList() {
               </div>
            </div>
         </div>
+
+        {selectedProductIds.size > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 border-b bg-black/1" style={{ borderColor: 'var(--border)' }}>
+            <div className="text-[12px] font-medium opacity-70">
+              Selected <span style={{ color: 'var(--text)', fontWeight: 800 }}>{selectedProductIds.size}</span> product(s)
+            </div>
+            <div className="flex items-center gap-2">
+              {!showBin ? (
+                <button
+                  disabled={bulkLoading}
+                  onClick={bulkMoveToBin}
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50"
+                >
+                  {bulkLoading ? 'Moving...' : 'Move to Bin'}
+                </button>
+              ) : (
+                <>
+                  <button
+                    disabled={bulkLoading}
+                    onClick={bulkRestore}
+                    className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 transition-all disabled:opacity-50"
+                  >
+                    {bulkLoading ? 'Restoring...' : 'Restore'}
+                  </button>
+                  <button
+                    disabled={bulkLoading}
+                    onClick={bulkHardDelete}
+                    className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50"
+                  >
+                    {bulkLoading ? 'Deleting...' : 'Delete Forever'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Table Content */}
         {isLoading ? (
@@ -266,14 +459,27 @@ function ProductList() {
             {/* Header row */}
             <div className="grid grid-cols-12 gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest border-b bg-black/1" 
               style={{ color: 'var(--text-subtle)', borderColor: 'var(--border)' }}>
-              <div className="col-span-1 cursor-pointer select-none" onClick={() => handleSort('id')}>ID <SortIcon sortBy={sortBy} col="id" sortOrder={sortOrder} /></div>
+              <div className="col-span-1 cursor-pointer select-none" onClick={() => handleSort('id')}>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    disabled={bulkLoading || visibleProductIds.length === 0}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={handleSelectAllVisible}
+                    aria-label="Select all products"
+                    style={{ accentColor: 'var(--color-brand)' }}
+                  />
+                  ID <SortIcon sortBy={sortBy} col="id" sortOrder={sortOrder} />
+                </div>
+              </div>
               <div className="col-span-1 cursor-pointer select-none" onClick={() => handleSort('fgd')}>FGD <SortIcon sortBy={sortBy} col="fgd" sortOrder={sortOrder} /></div>
               <div className="col-span-1 font-bold">Img</div>
               <div className="col-span-3 cursor-pointer select-none" onClick={() => handleSort('name_en')}>Product (EN / AR) <SortIcon sortBy={sortBy} col="name_en" sortOrder={sortOrder} /></div>
               <div className="col-span-3 cursor-pointer select-none" onClick={() => handleSort('category_name_en')}>Category <SortIcon sortBy={sortBy} col="category_name_en" sortOrder={sortOrder} /></div>
               <div className="col-span-1 cursor-pointer select-none" onClick={() => handleSort('price')}>Price <SortIcon sortBy={sortBy} col="price" sortOrder={sortOrder} /></div>
-              <div className="col-span-1">Status</div>
-              <div className="col-span-1 text-right">Actions</div>
+              {!showBin && <div className="col-span-1">Status</div>}
+              <div className={showBin ? "col-span-2 text-right" : "col-span-1 text-right"}>Actions</div>
             </div>
 
             {data.data.map(p => {
@@ -287,10 +493,17 @@ function ProductList() {
                   style={{ borderColor: 'var(--border)' }}>
                   
                   {/* ID */}
-                  <div className="col-span-1">
-                    <span className="text-[11px] font-bold opacity-30">
-                      #{p.id}
-                    </span>
+                  <div className="col-span-1 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedProductIds.has(p.id)}
+                      disabled={bulkLoading}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => toggleSelected(p.id)}
+                      aria-label={`Select product ${p.id}`}
+                      style={{ accentColor: 'var(--color-brand)' }}
+                    />
+                    <span className="text-[11px] font-bold opacity-30">#{p.id}</span>
                   </div>
 
                   {/* FGD */}
@@ -340,53 +553,67 @@ function ProductList() {
                     )}
                   </div>
 
-                  {/* Status Label */}
-                  <div className="col-span-1">
-                    {isActiveLocal ? (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-600 border border-green-200 uppercase tracking-tight">Active</span>
-                    ) : (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 border border-gray-200 uppercase tracking-tight">Hidden</span>
-                    )}
-                  </div>
+                  {/* Status Label (HIDDEN in Bin to save space) */}
+                  {!showBin && (
+                    <div className="col-span-1">
+                      {isActiveLocal ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-600 border border-green-200 uppercase tracking-tight">Active</span>
+                      ) : (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 border border-gray-200 uppercase tracking-tight">Hidden</span>
+                      )}
+                    </div>
+                  )}
 
                   {/* Actions (Icon Buttons) */}
-                  <div className="col-span-1 flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                    <button 
-                      onClick={() => handleToggle(p.id)}
-                      title={isActiveLocal ? 'Hide Locally' : 'Show Locally'}
-                      className={`p-1.5 rounded-lg transition-all hover:scale-110 ${isActiveLocal ? 'text-amber-500 hover:bg-amber-50' : 'text-emerald-500 hover:bg-emerald-50'}`}
-                    >
-                      {isActiveLocal ? (
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.822 7.822L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.644C3.352 7.962 7.248 4.5 12 4.5s8.648 3.462 9.964 7.178a1.012 1.012 0 010 .644C20.648 16.038 16.752 19.5 12 19.5s-8.648-3.462-9.964-7.178z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      )}
-                    </button>
-                    
-                    <Link 
-                      to={`/products/${p.id}`} 
-                      title="Edit Product"
-                      className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 transition-all hover:scale-110"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                      </svg>
-                    </Link>
-                    
-                    <button 
-                      onClick={() => handleDelete(p.id)} 
-                      title="Delete Product"
-                      className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-all hover:scale-110"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                      </svg>
-                    </button>
+                  <div className={showBin ? "col-span-2 flex items-center justify-end gap-1.5" : "col-span-1 flex items-center justify-end gap-1.5"} onClick={(e) => e.stopPropagation()}>
+                    {showBin ? (
+                      <>
+                        <button 
+                          onClick={() => handleRestore(p.id)}
+                          title="Restore Product"
+                          className="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 transition-all hover:scale-105"
+                        >
+                          RESTORE
+                        </button>
+                        <button 
+                          onClick={() => handleHardDelete(p.id)}
+                          title="Delete Permanently"
+                          className="px-2 py-1 rounded-lg text-[10px] font-bold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-all hover:scale-105"
+                        >
+                          DELETE
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button 
+                          onClick={() => handleToggle(p.id)}
+                          title={isActiveLocal ? 'Hide Locally' : 'Show Locally'}
+                          className={`p-1.5 rounded-lg transition-all hover:scale-110 ${isActiveLocal ? 'text-amber-500 hover:bg-amber-50' : 'text-emerald-500 hover:bg-emerald-50'}`}
+                        >
+                          {isActiveLocal ? (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.822 7.822L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.644C3.352 7.962 7.248 4.5 12 4.5s8.648 3.462 9.964 7.178a1.012 1.012 0 010 .644C20.648 16.038 16.752 19.5 12 19.5s-8.648-3.462-9.964-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                          )}
+                        </button>
+                        
+                        <Link 
+                          to={`/products/${p.id}`} 
+                          title="Edit Product"
+                          className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 transition-all hover:scale-110"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                        </Link>
+                        
+                        <button 
+                          onClick={() => handleDelete(p.id)} 
+                          title="Move to Bin"
+                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-all hover:scale-110"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               )
@@ -409,7 +636,7 @@ function ProductList() {
                    value={page}
                    onChange={(e) => {
                      const p = Number(e.target.value)
-                     if (p >= 1 && p <= data.meta.pages) setPage(p)
+                     if (p >= 1 && p <= data.meta.pages) { clearSelection(); setPage(p) }
                    }}
                    className="w-12 px-1 py-1 rounded text-[12px] font-bold text-center outline-none bg-white border border-black/10"
                  />
@@ -419,7 +646,7 @@ function ProductList() {
             <div className="flex items-center gap-1">
               <button 
                 disabled={page === 1} 
-                onClick={() => setPage(p => p - 1)} 
+                onClick={() => { clearSelection(); setPage(p => p - 1) }} 
                 className="px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all disabled:opacity-20 bg-white border border-black/10 hover:bg-black/5 active:scale-95"
               >
                 ← Prev
@@ -436,7 +663,7 @@ function ProductList() {
                     return (
                       <button 
                         key={pNum}
-                        onClick={() => setPage(pNum)}
+                        onClick={() => { clearSelection(); setPage(pNum) }}
                         className={`w-7 h-7 rounded-lg text-[11px] font-bold transition-all mx-0.5 ${page === pNum ? 'bg-black text-white' : 'hover:bg-black/5 opacity-50'}`}
                       >
                         {pNum}
@@ -447,7 +674,7 @@ function ProductList() {
 
               <button 
                 disabled={page >= data.meta.pages} 
-                onClick={() => setPage(p => p + 1)} 
+                onClick={() => { clearSelection(); setPage(p => p + 1) }} 
                 className="px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all disabled:opacity-20 bg-white border border-black/10 hover:bg-black/5 active:scale-95"
               >
                 Next →

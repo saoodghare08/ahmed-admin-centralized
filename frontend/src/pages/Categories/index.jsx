@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createCategory, updateCategory, deleteCategory,
-         createSubcategory, updateSubcategory,
+import { createCategory, updateCategory, deleteCategory, restoreCategory, hardDeleteCategory,
+         createSubcategory, updateSubcategory, restoreSubcategory, hardDeleteSubcategory,
          reorderCategories, reorderSubcategories, importCategories } from '../../api'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import toast from 'react-hot-toast'
@@ -14,8 +14,8 @@ const toSlug = (str) =>
 
 // ── API helpers that need direct client access ───────────────
 import api from '../../api/client'
-const getAdminCategories = () => api.get('/categories?admin=1')
-const deleteSubcategory  = (subId) => api.delete(`/categories/subcategories/${subId}`)
+const getAdminCategories = (status) => api.get(`/categories?admin=1${status === 'bin' ? '&status=bin' : ''}`)
+const deleteSubcategoryAction  = (subId) => api.delete(`/categories/subcategories/${subId}`)
 
 
 // ── Input Component ──────────────────────────────────────────
@@ -239,16 +239,16 @@ export default function Categories() {
   const qc = useQueryClient()
   const [expanded, setExpanded] = useState([])
 
-  // Drawer state
   const [catDrawer, setCatDrawer]   = useState({ open: false, data: null })
   const [subDrawer, setSubDrawer]   = useState({ open: false, data: null, catId: null, catName: '' })
+  const [showBin, setShowBin]       = useState(false)
 
   const fileInputRef = useRef(null)
   const [importing, setImporting] = useState(false)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['categories-admin'],
-    queryFn:  getAdminCategories,
+    queryKey: ['categories-admin', showBin],
+    queryFn:  () => getAdminCategories(showBin ? 'bin' : undefined),
   })
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['categories-admin'] })
@@ -302,8 +302,34 @@ export default function Categories() {
     })
     if (!res.isConfirmed) return
     try {
-      await deleteSubcategory(id); toast.success('Subcategory deleted'); refresh()
+      await deleteSubcategoryAction(id); toast.success('Subcategory deleted'); refresh()
     } catch { toast.error('Cannot delete — products may be linked') }
+  }
+
+  const handleRestoreCat = async (id) => {
+    try { await restoreCategory(id); toast.success('Category restored'); refresh() }
+    catch { toast.error('Failed to restore category') }
+  }
+
+  const handleHardDeleteCat = async (id) => {
+    const res = await Swal.fire({ title: 'Permanently Delete?', text: 'This action cannot be undone and will erase it from the database forever.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Yes, delete forever!' })
+    if (res.isConfirmed) {
+      try { await hardDeleteCategory(id); toast.success('Permanently deleted'); refresh() }
+      catch { toast.error('Failed to delete permanently') }
+    }
+  }
+
+  const handleRestoreSub = async (id) => {
+    try { await restoreSubcategory(id); toast.success('Subcategory restored'); refresh() }
+    catch { toast.error('Failed to restore subcategory') }
+  }
+
+  const handleHardDeleteSub = async (id) => {
+    const res = await Swal.fire({ title: 'Permanently Delete?', text: 'This action cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Yes, delete forever!' })
+    if (res.isConfirmed) {
+      try { await hardDeleteSubcategory(id); toast.success('Permanently deleted'); refresh() }
+      catch { toast.error('Failed to delete permanently') }
+    }
   }
 
   const openAddSub = (cat, e) => {
@@ -363,12 +389,27 @@ export default function Categories() {
       {/* Header */}
       <div className="flex items-center justify-between mb-7">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Categories</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}>
+            Categories
+            {showBin ? (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 uppercase tracking-widest leading-none flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                Recycle Bin
+              </span>
+            ) : null}
+          </h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
             {categories.length} categories · Click row to expand subcategories
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+             onClick={() => setShowBin(!showBin)}
+             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-bold transition-all shadow-sm border ${showBin ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' : 'bg-white text-black/60 border-black/10 hover:bg-black/5 active:scale-95'}`}
+           >
+             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+             {showBin ? 'Exit Bin' : 'View Bin'}
+          </button>
           <input 
             type="file" 
             accept=".xlsx, .xls" 
@@ -403,7 +444,7 @@ export default function Categories() {
               <p className="text-[14px]">No categories yet</p>
             </div>
           ) : (
-            <Droppable droppableId="categoriesRoot" type="category">
+            <Droppable droppableId="categoriesRoot" type="category" isDropDisabled={showBin}>
               {(providedRoot) => (
                 <div ref={providedRoot.innerRef} {...providedRoot.droppableProps} className="flex flex-col gap-3">
                   {categories.map((cat, index) => (
@@ -458,27 +499,44 @@ export default function Categories() {
                             </div>
             
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={e => { e.stopPropagation(); openAddSub(cat, e) }}
-                                className="text-[12px] px-3 py-1.5 rounded-lg font-medium transition-all hover:scale-105"
-                                style={{ backgroundColor: 'color-mix(in srgb, var(--color-brand) 10%, transparent)', color: 'var(--color-brand)' }}
-                              >+ Add Sub</button>
-                              <button
-                                onClick={e => { e.stopPropagation(); setCatDrawer({ open: true, data: cat }) }}
-                                className="text-[12px] px-3 py-1.5 rounded-lg font-medium transition-all hover:bg-(--border)"
-                                style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text)' }}
-                              >Edit</button>
-                              <button
-                                onClick={e => { e.stopPropagation(); handleDeleteCat(cat.id) }}
-                                className="text-[12px] px-3 py-1.5 rounded-lg font-medium transition-all hover:scale-105"
-                                style={{ backgroundColor: '#ef4444', color: 'white' }}
-                              >Delete</button>
+                              {showBin ? (
+                                <>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); handleRestoreCat(cat.id) }}
+                                    className="text-[12px] px-3 py-1.5 rounded-lg font-medium transition-all hover:scale-105"
+                                    style={{ backgroundColor: 'color-mix(in srgb, #10b981 10%, transparent)', color: '#10b981' }}
+                                  >Restore</button>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); handleHardDeleteCat(cat.id) }}
+                                    className="text-[12px] px-3 py-1.5 rounded-lg font-medium transition-all hover:scale-105"
+                                    style={{ backgroundColor: '#ef4444', color: 'white' }}
+                                  >Delete Forever</button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); openAddSub(cat, e) }}
+                                    className="text-[12px] px-3 py-1.5 rounded-lg font-medium transition-all hover:scale-105"
+                                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-brand) 10%, transparent)', color: 'var(--color-brand)' }}
+                                  >+ Add Sub</button>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); setCatDrawer({ open: true, data: cat }) }}
+                                    className="text-[12px] px-3 py-1.5 rounded-lg font-medium transition-all hover:bg-(--border)"
+                                    style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text)' }}
+                                  >Edit</button>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); handleDeleteCat(cat.id) }}
+                                    className="text-[12px] px-3 py-1.5 rounded-lg font-medium transition-all hover:scale-105"
+                                    style={{ backgroundColor: '#ef4444', color: 'white' }}
+                                  >Delete</button>
+                                </>
+                              )}
                             </div>
                           </div>
             
                           {/* Subcategories Container */}
                           {expanded.includes(cat.id) && (
-                            <Droppable droppableId={String(cat.id)} type="subcategory">
+                            <Droppable droppableId={String(cat.id)} type="subcategory" isDropDisabled={showBin}>
                               {(provSubDrop, snapSubDrop) => (
                                 <div className="p-4 pt-0" style={{ backgroundColor: 'var(--surface)' }}>
                                   <div ref={provSubDrop.innerRef} {...provSubDrop.droppableProps} className={`mt-2 ml-3 pl-6 border-l-2 space-y-3 min-h-[60px] transition-colors rounded-br-xl ${snapSubDrop.isDraggingOver ? 'bg-black/5' : ''}`} style={{ borderColor: 'var(--border-soft)' }}>
@@ -516,14 +574,29 @@ export default function Categories() {
                                             </div>
                     
                                             <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                              <button
-                                                onClick={e => openEditSub(sub, cat, e)}
-                                                className="text-[11px] px-2.5 py-1 rounded border border-(--border) hover:bg-(--border) transition-colors text-(--text)"
-                                              >Edit</button>
-                                              <button
-                                                onClick={e => handleDeleteSub(sub.id, e)}
-                                                className="text-[11px] px-2.5 py-1 rounded border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
-                                              >Delete</button>
+                                              {showBin || sub.deleted_status === 'bin' ? (
+                                                <>
+                                                  <button
+                                                    onClick={e => { e.stopPropagation(); handleRestoreSub(sub.id) }}
+                                                    className="text-[11px] px-2.5 py-1 rounded bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                                                  >Restore</button>
+                                                  <button
+                                                    onClick={e => { e.stopPropagation(); handleHardDeleteSub(sub.id) }}
+                                                    className="text-[11px] px-2.5 py-1 rounded border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+                                                  >Delete Forever</button>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <button
+                                                    onClick={e => openEditSub(sub, cat, e)}
+                                                    className="text-[11px] px-2.5 py-1 rounded border border-(--border) hover:bg-(--border) transition-colors text-(--text)"
+                                                  >Edit</button>
+                                                  <button
+                                                    onClick={e => handleDeleteSub(sub.id, e)}
+                                                    className="text-[11px] px-2.5 py-1 rounded border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+                                                  >Delete</button>
+                                                </>
+                                              )}
                                             </div>
                                           </div>
                                         )}
