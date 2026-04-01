@@ -40,6 +40,7 @@ export function AuthProvider({ children }) {
 
   const hasPermission = useCallback((module) => {
     if (!user) return false;
+    if (module === 'dashboard') return true;
     if (user.role === 'admin') return true;
     return (user.permissions || []).includes(module);
   }, [user]);

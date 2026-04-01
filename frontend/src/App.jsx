@@ -10,10 +10,19 @@ import Users from './pages/Users'
 import AuditLogs from './pages/AuditLogs'
 import Login from './pages/Login'
 import Campaigns from './pages/Campaigns'
+import Dashboard from './pages/Dashboard'
 import { useTheme } from './context/useTheme'
 import { useAuth } from './context/AuthContext'
 
 const NAV = [
+  {
+    to: '/', label: 'Overview', module: 'dashboard', icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+      </svg>
+    )
+  },
   {
     to: '/products', label: 'Products', module: 'products', icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -93,7 +102,7 @@ function ThemeToggle() {
     <button
       onClick={toggle}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[12px] font-medium transition-all duration-150 t-text-muted hover:t-text"
+      className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 t-text-muted hover:t-text"
       style={{ color: 'var(--text-muted)' }}
     >
       <span className="text-base leading-none">
@@ -142,11 +151,11 @@ export default function App() {
         {/* Logo */}
         <div className="px-6 py-5" style={{ borderBottom: '1px solid var(--border)' }}>
           <div className="flex items-center gap-2.5 mb-0.5">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[11px] font-bold"
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[13px] font-bold"
               style={{ backgroundColor: 'var(--color-brand)' }}>A</div>
-            <p className="text-[13px] font-bold" style={{ color: 'var(--text)' }}>Ahmed Al Maghribi</p>
+            <p className="text-[15px] font-bold" style={{ color: 'var(--text)' }}>Ahmed Al Maghribi</p>
           </div>
-          <p className="text-[11px] ml-9.5" style={{ color: 'var(--text-subtle)' }}>Central Admin</p>
+          <p className="text-[12px] ml-10.5" style={{ color: 'var(--text-subtle)' }}>Central Admin</p>
         </div>
 
         {/* Nav */}
@@ -167,18 +176,18 @@ export default function App() {
         <div className="px-3 pb-4 flex flex-col gap-1" style={{ borderTop: '1px solid var(--border)', paddingTop: '0.75rem' }}>
           {/* User info */}
           <div className="flex items-center gap-2 px-3 py-2">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
               style={{ backgroundColor: 'var(--color-brand)' }}>
               {user.full_name?.charAt(0)?.toUpperCase() || user.username?.charAt(0)?.toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-semibold truncate" style={{ color: 'var(--text)' }}>{user.full_name || user.username}</p>
-              <p className="text-[10px] capitalize" style={{ color: 'var(--text-subtle)' }}>{user.role}</p>
+              <p className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{user.full_name || user.username}</p>
+              <p className="text-[11px] capitalize" style={{ color: 'var(--text-subtle)' }}>{user.role}</p>
             </div>
           </div>
           <button
             onClick={logout}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[12px] font-medium transition-all duration-150 hover:bg-red-50 dark:hover:bg-red-900/20"
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 t-action-red"
             style={{ color: 'var(--text-muted)' }}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -187,7 +196,7 @@ export default function App() {
             Sign out
           </button>
           <ThemeToggle />
-          <p className="text-[11px] px-3" style={{ color: 'var(--text-subtle)' }}>GCC · 6 Storefronts · Phase 1</p>
+          <p className="text-[12px] px-3" style={{ color: 'var(--text-subtle)' }}>GCC · 6 Storefronts · Phase 1</p>
         </div>
       </aside>
 
@@ -195,18 +204,18 @@ export default function App() {
       <main className="flex-1 ml-56 min-h-screen">
         <div className="py-10 px-6 max-w-6xl mx-auto w-full transition-all">
           <Routes>
-            <Route path="/" element={<Navigate to="/products" replace />} />
+            <Route path="/" element={<Dashboard />} />
             <Route path="/login" element={<Navigate to="/" replace />} />
-            <Route path="/products/*" element={<Products />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/bundles" element={<Bundles />} />
-            <Route path="/sales" element={<Sales />} />
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/users" element={<Users />} />
-            <Route path="/audit-logs" element={<AuditLogs />} />
-            <Route path="/campaigns/*" element={<Campaigns />} />
+            <Route path="/products/*" element={hasPermission('products') ? <Products /> : <Navigate to="/" replace />} />
+            <Route path="/categories" element={hasPermission('categories') ? <Categories /> : <Navigate to="/" replace />} />
+            <Route path="/pricing" element={hasPermission('pricing') ? <Pricing /> : <Navigate to="/" replace />} />
+            <Route path="/bundles" element={hasPermission('bundles') ? <Bundles /> : <Navigate to="/" replace />} />
+            <Route path="/sales" element={hasPermission('sales') ? <Sales /> : <Navigate to="/" replace />} />
+            <Route path="/gallery" element={hasPermission('gallery') ? <Gallery /> : <Navigate to="/" replace />} />
+            <Route path="/analytics" element={hasPermission('analytics') ? <Analytics /> : <Navigate to="/" replace />} />
+            <Route path="/users" element={user.role === 'admin' ? <Users /> : <Navigate to="/" replace />} />
+            <Route path="/audit-logs" element={hasPermission('audit_logs') ? <AuditLogs /> : <Navigate to="/" replace />} />
+            <Route path="/campaigns/*" element={hasPermission('campaigns') || user.role === 'admin' ? <Campaigns /> : <Navigate to="/" replace />} />
           </Routes>
         </div>
       </main>

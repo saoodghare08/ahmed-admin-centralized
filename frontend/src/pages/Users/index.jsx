@@ -6,7 +6,17 @@ import Swal from 'sweetalert2'
 import { useAuth } from '../../context/AuthContext'
 
 const ALL_MODULES = [
-  { key: 'products', label: 'Products' },
+  { 
+    key: 'products', 
+    label: 'Products',
+    subModules: [
+      { key: 'products.core', label: 'Core Tab' },
+      { key: 'products.fragrance', label: 'Fragrance Tab' },
+      { key: 'products.media', label: 'Media Tab' },
+      { key: 'products.seo', label: 'SEO Tab' },
+      { key: 'products.inventory', label: 'Inventory Tab' },
+    ]
+  },
   { key: 'categories', label: 'Categories' },
   { key: 'pricing', label: 'Pricing' },
   { key: 'bundles', label: 'Bundles' },
@@ -61,7 +71,12 @@ export default function Users() {
   }
 
   const selectAllPerms = () => {
-    setForm(prev => ({ ...prev, permissions: ALL_MODULES.map(m => m.key) }))
+    const allKeys = []
+    ALL_MODULES.forEach(m => {
+      allKeys.push(m.key)
+      if (m.subModules) m.subModules.forEach(sm => allKeys.push(sm.key))
+    })
+    setForm(prev => ({ ...prev, permissions: allKeys }))
   }
 
   const clearAllPerms = () => {
@@ -277,28 +292,54 @@ export default function Users() {
                       <button type="button" onClick={clearAllPerms} className="text-[10px] font-medium" style={{ color: 'var(--text-subtle)' }}>Clear</button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="grid grid-cols-2 gap-2" style={{ maxHeight: '300px', overflowY: 'auto', paddingRight: '4px' }}>
                     {ALL_MODULES.map(m => (
-                      <label key={m.key} className="flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-all text-[12px]"
-                        style={{
-                          backgroundColor: form.permissions.includes(m.key) ? 'color-mix(in srgb, var(--color-brand) 10%, transparent)' : 'var(--surface-2)',
-                          border: `1px solid ${form.permissions.includes(m.key) ? 'color-mix(in srgb, var(--color-brand) 30%, transparent)' : 'var(--border-soft)'}`,
-                          color: form.permissions.includes(m.key) ? 'var(--color-brand)' : 'var(--text-muted)',
-                        }}>
-                        <input type="checkbox" checked={form.permissions.includes(m.key)} onChange={() => togglePerm(m.key)} className="hidden" />
-                        <span className="w-3.5 h-3.5 rounded flex items-center justify-center border shrink-0"
+                      <div key={m.key} className="flex flex-col gap-1 p-2.5 rounded-xl transition-colors" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+                        <label className="flex items-center gap-2 cursor-pointer transition-all text-[12px] font-bold"
                           style={{
-                            borderColor: form.permissions.includes(m.key) ? 'var(--color-brand)' : 'var(--border)',
-                            backgroundColor: form.permissions.includes(m.key) ? 'var(--color-brand)' : 'transparent',
+                            color: form.permissions.includes(m.key) ? 'var(--text)' : 'var(--text-muted)',
                           }}>
-                          {form.permissions.includes(m.key) && (
-                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                            </svg>
-                          )}
-                        </span>
-                        {m.label}
-                      </label>
+                          <input type="checkbox" checked={form.permissions.includes(m.key)} onChange={() => togglePerm(m.key)} className="hidden" />
+                          <span className="w-3.5 h-3.5 rounded flex items-center justify-center border shrink-0 transition-colors"
+                            style={{
+                              borderColor: form.permissions.includes(m.key) ? 'var(--color-brand)' : 'var(--border-soft)',
+                              backgroundColor: form.permissions.includes(m.key) ? 'var(--color-brand)' : 'var(--surface-2)',
+                            }}>
+                            {form.permissions.includes(m.key) && (
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                              </svg>
+                            )}
+                          </span>
+                          {m.label}
+                        </label>
+
+                        {m.subModules && (
+                          <div className="grid grid-cols-1 gap-1 mt-1 pt-1.5" style={{ borderTop: '1px dashed var(--border-soft)' }}>
+                            {m.subModules.map(sm => (
+                              <label key={sm.key} className="flex items-center gap-1.5 px-1 py-1 rounded cursor-pointer transition-all text-[11px] font-medium"
+                                style={{
+                                  backgroundColor: form.permissions.includes(sm.key) ? 'color-mix(in srgb, var(--color-brand) 8%, transparent)' : 'transparent',
+                                  color: form.permissions.includes(sm.key) ? 'var(--color-brand)' : 'var(--text-subtle)',
+                                }}>
+                                <input type="checkbox" checked={form.permissions.includes(sm.key)} onChange={() => togglePerm(sm.key)} className="hidden" />
+                                <span className="w-3 h-3 rounded flex items-center justify-center border shrink-0 transition-colors"
+                                  style={{
+                                    borderColor: form.permissions.includes(sm.key) ? 'var(--color-brand)' : 'var(--border-soft)',
+                                    backgroundColor: form.permissions.includes(sm.key) ? 'var(--color-brand)' : 'transparent',
+                                  }}>
+                                  {form.permissions.includes(sm.key) && (
+                                    <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                  )}
+                                </span>
+                                {sm.label}
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>

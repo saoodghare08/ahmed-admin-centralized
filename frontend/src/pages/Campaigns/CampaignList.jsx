@@ -10,18 +10,18 @@ import { useDebounce } from 'use-debounce'
 const FLAGS = { AE:'🇦🇪', SA:'🇸🇦', QA:'🇶🇦', BH:'🇧🇭', KW:'🇰🇼', OM:'🇴🇲' }
 
 const TYPE_BADGE = {
-  discount: { label: 'Discount', bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
-  bxgy:     { label: 'Buy X Get Y', bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
-  foc:      { label: 'FOC', bg: '#fef3c7', color: '#d97706', border: '#fde68a' },
+  discount: { label: 'Discount', color: '#16a34a' },
+  bxgy:     { label: 'Buy X Get Y', color: '#2563eb' },
+  foc:      { label: 'FOC', color: '#d97706' },
 }
 
 const STATUS_BADGE = {
-  draft:     { bg: '#f3f4f6', color: '#6b7280', border: '#e5e7eb' },
-  scheduled: { bg: '#eff6ff', color: '#3b82f6', border: '#bfdbfe' },
-  active:    { bg: '#f0fdf4', color: '#22c55e', border: '#bbf7d0' },
-  paused:    { bg: '#fefce8', color: '#eab308', border: '#fef08a' },
-  expired:   { bg: '#fef2f2', color: '#ef4444', border: '#fecaca' },
-  archived:  { bg: '#f9fafb', color: '#9ca3af', border: '#e5e7eb' },
+  draft:     { color: '#9ca3af' },
+  scheduled: { color: '#3b82f6' },
+  active:    { color: '#22c55e' },
+  paused:    { color: '#eab308' },
+  expired:   { color: '#ef4444' },
+  archived:  { color: '#9ca3af' },
 }
 
 const STATUS_TABS = ['all', 'active', 'scheduled', 'draft', 'paused', 'expired', 'archived']
@@ -30,7 +30,7 @@ function TypeBadge({ type }) {
   const t = TYPE_BADGE[type] || TYPE_BADGE.discount
   return (
     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tight"
-      style={{ background: t.bg, color: t.color, border: `1px solid ${t.border}` }}>
+      style={{ background: `color-mix(in srgb, ${t.color} 12%, transparent)`, color: t.color, border: `1px solid color-mix(in srgb, ${t.color} 22%, transparent)` }}>
       {t.label}
     </span>
   )
@@ -40,7 +40,7 @@ function StatusBadge({ status }) {
   const s = STATUS_BADGE[status] || STATUS_BADGE.draft
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tight"
-      style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+      style={{ background: `color-mix(in srgb, ${s.color} 12%, transparent)`, color: s.color, border: `1px solid color-mix(in srgb, ${s.color} 22%, transparent)` }}>
       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />
       {status}
     </span>
@@ -307,33 +307,33 @@ export default function CampaignList() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
+            <h1 className="text-3xl font-black tracking-tight flex items-center gap-2">
               Campaigns
               {showBin ? (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 uppercase tracking-widest leading-none flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                <span className="text-[12px] font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 uppercase tracking-widest leading-none flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                   Recycle Bin
                 </span>
               ) : (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/5 text-black/50 uppercase tracking-widest leading-none"
+                <span className="text-[12px] font-bold px-2 py-0.5 rounded-full bg-black/5 text-black/50 uppercase tracking-widest leading-none"
                   style={{ background: 'color-mix(in srgb, var(--color-brand) 10%, transparent)', color: 'var(--color-brand)' }}>
                   Promotions
                 </span>
               )}
             </h1>
-            <p className="text-[12px] font-medium opacity-40">Manage discount campaigns, Buy X Get Y offers, and free gifts</p>
+            <p className="text-[14px] font-medium opacity-40">Manage discount campaigns, Buy X Get Y offers, and free gifts</p>
           </div>
           <div className="flex items-center gap-2">
             <button
                onClick={() => { clearSelection(); setShowBin(!showBin); setPage(1); }}
-               className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[12px] font-bold transition-all shadow-sm border ${showBin ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' : 'bg-white text-black/60 border-black/10 hover:bg-black/5 active:scale-95'}`}
+               className={`t-btn-bin ${showBin ? 'active' : ''}`}
              >
                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                {showBin ? 'Exit Bin' : 'View Bin'}
             </button>
             <Link
               to="/campaigns/new"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold transition-all active:scale-95 shadow-lg"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all active:scale-95 shadow-lg"
               style={{ backgroundColor: 'var(--color-brand)', color: '#fff', boxShadow: '0 4px 14px color-mix(in srgb, var(--color-brand) 35%, transparent)' }}
             >
               <span className="text-lg leading-none">+</span> Create Campaign
@@ -354,7 +354,7 @@ export default function CampaignList() {
                 placeholder="Search campaigns..."
                 value={search}
                 onChange={(e) => { clearSelection(); setSearch(e.target.value); setPage(1) }}
-                className="w-full pl-9 pr-4 py-2 rounded-xl text-[12px] font-medium outline-none transition-all"
+                className="w-full pl-9 pr-4 py-2 rounded-xl text-[13px] font-medium outline-none transition-all"
                 style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-soft)', color: 'var(--text)' }}
               />
             </div>
@@ -365,7 +365,7 @@ export default function CampaignList() {
             <select
               value={typeFilter}
               onChange={(e) => { clearSelection(); setTypeFilter(e.target.value); setPage(1) }}
-              className="px-3 py-2 rounded-xl text-[12px] font-bold transition-all cursor-pointer outline-none"
+              className="px-3 py-2 rounded-xl text-[13px] font-bold transition-all cursor-pointer outline-none"
               style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-soft)', color: 'var(--text)' }}
             >
               <option value="">All Types</option>
@@ -381,7 +381,7 @@ export default function CampaignList() {
               <button
                 key={s}
                 onClick={() => { clearSelection(); setStatusFilter(s); setPage(1) }}
-                className="text-[11px] px-3 py-1.5 rounded-lg font-bold transition-all capitalize"
+                className="text-[12px] px-3 py-1.5 rounded-lg font-bold transition-all capitalize"
                 style={{
                   backgroundColor: statusFilter === s ? 'var(--surface)' : 'transparent',
                   color: statusFilter === s ? 'var(--text)' : 'var(--text-subtle)',
@@ -399,15 +399,15 @@ export default function CampaignList() {
       <div className="flex flex-col rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)', backgroundColor: 'var(--surface)' }}>
         {/* Table header bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 p-3 border-b" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)' }}>
-          <div className="text-[11px] font-bold opacity-40 uppercase tracking-widest px-1">
+          <div className="text-[12px] font-bold opacity-40 uppercase tracking-widest px-1">
             Displaying <span style={{ color: 'var(--text)' }}>{campaigns.length}</span> of {pagination.total} Campaigns
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold opacity-30 uppercase tracking-widest">Show</span>
+            <span className="text-[12px] font-bold opacity-30 uppercase tracking-widest">Show</span>
             <select
               value={limit}
               onChange={(e) => { clearSelection(); setLimit(Number(e.target.value)); setPage(1) }}
-              className="px-2 py-1 rounded-lg text-[11px] font-bold outline-none cursor-pointer transition-colors border-none"
+              className="px-2 py-1 rounded-lg text-[12px] font-bold outline-none cursor-pointer transition-colors border-none"
               style={{ backgroundColor: 'var(--surface)', color: 'var(--text)' }}
             >
               {[10, 20, 50, 100].map(v => <option key={v} value={v}>{v}</option>)}
@@ -417,7 +417,7 @@ export default function CampaignList() {
 
         {selectedCampaignIds.size > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 p-3 border-b" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)' }}>
-            <div className="text-[12px] font-medium opacity-70">
+            <div className="text-[13px] font-medium opacity-70">
               Selected <span style={{ color: 'var(--text)', fontWeight: 800 }}>{selectedCampaignIds.size}</span> campaign(s)
             </div>
             <div className="flex items-center gap-2">
@@ -425,7 +425,7 @@ export default function CampaignList() {
                 <button
                   disabled={bulkLoading}
                   onClick={bulkMoveToBin}
-                  className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50"
+                  className="t-bulk-delete"
                 >
                   {bulkLoading ? 'Moving...' : 'Move to Bin'}
                 </button>
@@ -434,14 +434,14 @@ export default function CampaignList() {
                   <button
                     disabled={bulkLoading}
                     onClick={bulkRestore}
-                    className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 transition-all disabled:opacity-50"
+                    className="t-bulk-restore"
                   >
                     {bulkLoading ? 'Restoring...' : 'Restore'}
                   </button>
                   <button
                     disabled={bulkLoading}
                     onClick={bulkHardDelete}
-                    className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50"
+                    className="t-bulk-delete"
                   >
                     {bulkLoading ? 'Deleting...' : 'Delete Forever'}
                   </button>
@@ -469,15 +469,15 @@ export default function CampaignList() {
         ) : !campaigns.length ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <div className="text-4xl opacity-20">📋</div>
-            <p className="text-[13px] font-medium opacity-40">No campaigns found</p>
-            <Link to="/campaigns/new" className="text-[12px] font-bold" style={{ color: 'var(--color-brand)' }}>
+            <p className="text-[14px] font-medium opacity-40">No campaigns found</p>
+            <Link to="/campaigns/new" className="text-[13px] font-bold" style={{ color: 'var(--color-brand)' }}>
               Create your first campaign →
             </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
             {/* Column header */}
-            <div className="grid grid-cols-12 gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest border-b"
+            <div className="grid grid-cols-12 gap-3 px-4 py-3 text-[11px] font-bold uppercase tracking-widest border-b"
               style={{ color: 'var(--text-subtle)', borderColor: 'var(--border)' }}>
               <div className="col-span-1 flex items-center justify-start">
                 <input
@@ -529,8 +529,8 @@ export default function CampaignList() {
 
                   {/* Name */}
                   <div className="col-span-2">
-                    <p className="font-bold text-[12px] truncate" style={{ color: 'var(--text)' }}>{c.name_en}</p>
-                    {c.name_ar && <p className="text-[10px] truncate font-medium" dir="rtl" style={{ color: 'var(--text-subtle)' }}>{c.name_ar}</p>}
+                    <p className="font-bold text-[14px] truncate" style={{ color: 'var(--text)' }}>{c.name_en}</p>
+                    {c.name_ar && <p className="text-[12px] truncate font-medium" dir="rtl" style={{ color: 'var(--text-subtle)' }}>{c.name_ar}</p>}
                   </div>
 
                   {/* Type */}
@@ -543,7 +543,7 @@ export default function CampaignList() {
                   <div className="col-span-1">
                     <div className="flex flex-wrap gap-0.5">
                       {(c.countries || []).map(code => (
-                        <span key={code} className="text-[10px]" title={code}>{FLAGS[code] || code}</span>
+                        <span key={code} className="text-[12px]" title={code}>{FLAGS[code] || code}</span>
                       ))}
                     </div>
                   </div>
@@ -551,19 +551,19 @@ export default function CampaignList() {
                   {/* Dates */}
                   <div className="col-span-2">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[11px] font-medium" style={{ color: 'var(--text)' }}>{formatDate(c.start_at)}</span>
-                      <span className="text-[10px]" style={{ color: 'var(--text-subtle)' }}>→ {formatDate(c.end_at)}</span>
+                      <span className="text-[13px] font-medium" style={{ color: 'var(--text)' }}>{formatDate(c.start_at)}</span>
+                      <span className="text-[12px]" style={{ color: 'var(--text-subtle)' }}>→ {formatDate(c.end_at)}</span>
                     </div>
                   </div>
 
                   {/* Priority */}
                   <div className="col-span-1">
-                    <span className="font-mono text-[12px] font-bold" style={{ color: 'var(--text-muted)' }}>{c.priority}</span>
+                    <span className="font-mono text-[13px] font-bold" style={{ color: 'var(--text-muted)' }}>{c.priority}</span>
                   </div>
 
                   {/* Scope */}
                   <div className="col-span-1">
-                    <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>{c.scope_summary}</span>
+                    <span className="text-[12px] font-medium" style={{ color: 'var(--text-muted)' }}>{c.scope_summary}</span>
                   </div>
 
                   {/* Actions */}
@@ -573,14 +573,14 @@ export default function CampaignList() {
                         <button 
                           onClick={() => handleRestore(c.id)}
                           title="Restore Campaign"
-                          className="px-2 py-1.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 transition-all hover:scale-105"
+                          className="t-bulk-restore text-[11px] hover:scale-105"
                         >
                           RESTORE
                         </button>
                         <button 
                           onClick={() => handleHardDelete(c.id)}
                           title="Delete Permanently"
-                          className="px-2 py-1.5 rounded-lg text-[10px] font-bold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-all hover:scale-105"
+                          className="t-bulk-delete text-[11px] hover:scale-105"
                         >
                           DELETE
                         </button>
@@ -589,7 +589,7 @@ export default function CampaignList() {
                       <>
                         {c.status === 'draft' && (
                           <button onClick={() => handleStatusChange(c.id, 'active')} title="Activate"
-                            className="p-1.5 rounded-lg text-green-600 hover:bg-green-50 transition-all hover:scale-110">
+                            className="p-1.5 rounded-lg t-action-green transition-all hover:scale-110">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
                             </svg>
@@ -597,7 +597,7 @@ export default function CampaignList() {
                         )}
                         {c.status === 'active' && (
                           <button onClick={() => handleStatusChange(c.id, 'paused')} title="Pause"
-                            className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 transition-all hover:scale-110">
+                            className="p-1.5 rounded-lg t-action-amber transition-all hover:scale-110">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
                             </svg>
@@ -605,7 +605,7 @@ export default function CampaignList() {
                         )}
                         {c.status === 'paused' && (
                           <button onClick={() => handleStatusChange(c.id, 'active')} title="Resume"
-                            className="p-1.5 rounded-lg text-green-600 hover:bg-green-50 transition-all hover:scale-110">
+                            className="p-1.5 rounded-lg t-action-green transition-all hover:scale-110">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
                             </svg>
@@ -621,7 +621,7 @@ export default function CampaignList() {
                         </Link>
 
                         <button onClick={() => handleDelete(c.id, c.status)} title="Delete/Archive"
-                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-all hover:scale-110">
+                          className="p-1.5 rounded-lg t-action-red transition-all hover:scale-110">
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                           </svg>

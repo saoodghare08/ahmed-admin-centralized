@@ -2,7 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import db from '../config/db.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, logAudit } from '../middleware/auth.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_to_a_long_random_secret';
@@ -63,6 +63,11 @@ router.post('/login', async (req, res, next) => {
         permissions,
       },
     });
+
+    // Record the login event asynchronously
+    req.user = payload; 
+    logAudit(req, 'login', 'auth', user.id, { username: user.username, email: user.email });
+    
   } catch (err) { next(err); }
 });
 

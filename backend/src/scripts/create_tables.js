@@ -27,7 +27,7 @@ async function createTables() {
       CREATE TABLE IF NOT EXISTS audit_logs (
         id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
         user_id     INT UNSIGNED NULL,
-        action      ENUM('create','update','delete') NOT NULL,
+        action      ENUM('create','update','delete','login') NOT NULL,
         module      VARCHAR(60) NOT NULL,
         target_id   VARCHAR(100) NULL,
         details     JSON NULL,

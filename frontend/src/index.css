@@ -1,16 +1,16 @@
 /* ── Fonts ────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 
 /* ── Tailwind theme tokens ────────────────────────────────── */
 @theme {
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
 
-  /* Brand: gold/amber for light, same for dark */
-  --color-brand:        #a6792d;
-  --color-brand-light:  #c99a4c;
-  --color-brand-dark:   #7d581f;
+  /* Brand: uses CSS var so it adapts per theme */
+  --color-brand:        var(--brand);
+  --color-brand-light:  var(--brand-light);
+  --color-brand-dark:   var(--brand-dark);
 
   /* Semantic surface tokens — mapped by JS via data-theme on <html> */
   --color-bg:           var(--bg);
@@ -34,20 +34,34 @@
   --text:        #1a1209;
   --text-muted:  #6b5c40;
   --text-subtle: #b8a48a;
+  --brand:       #a6792d;
+  --brand-light: #c99a4c;
+  --brand-dark:  #7d581f;
   color-scheme: light;
 }
 
-/* ── DARK theme (warmer, not pitch black) ─────────────────── */
+/* ── DARK theme (modern neutral slate) ────────────────────── */
 [data-theme="dark"] {
-  --bg:          #1c1710;
-  --surface:     #252016;
-  --surface-2:   #2e2818;
-  --border:      #3d3521;
-  --border-soft: #332c1a;
-  --text:        #f0e8d6;
-  --text-muted:  #b8a480;
-  --text-subtle: #6b5c40;
+  --bg:          #0f1117;
+  --surface:     #171b22;
+  --surface-2:   #1e2330;
+  --border:      #2a3040;
+  --border-soft: #222838;
+  --text:        #e4e8ef;
+  --text-muted:  #8b93a5;
+  --text-subtle: #555e72;
+  --brand:       #5b9cf6;
+  --brand-light: #7db4ff;
+  --brand-dark:  #3d7cd4;
+  --glow:        rgba(91, 156, 246, 0.06);
   color-scheme: dark;
+}
+
+/* Better font rendering in dark mode */
+[data-theme="dark"] {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* ── Base reset ─────────────────────────────────────────────── */
@@ -168,7 +182,7 @@
     gap: 0.75rem;
     padding: 0.5rem 0.75rem;
     border-radius: 0.5rem;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 500;
     color: var(--text-muted);
     transition: all 0.15s;
@@ -432,4 +446,289 @@
     }
     .login-branding-title { font-size: 22px; }
   }
+
+  /* ── Dark-aware component classes ────────────────────────────
+     Replace hardcoded bg-white / bg-black/* / Tailwind color
+     classes so both themes get consistent styling.
+     ─────────────────────────────────────────────────────────── */
+
+  /* Elevated toolbar wrapper (filter bars, etc.) */
+  .t-toolbar {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  /* Muted pill / chip bg — replaces bg-black/5, bg-white */
+  .t-chip {
+    background-color: var(--surface-2);
+    color: var(--text-muted);
+  }
+
+  /* "Elevated" surface for buttons that were previously bg-white */
+  .t-btn-surface {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--surface);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .t-btn-surface:hover {
+    background-color: var(--surface-2);
+    color: var(--text);
+  }
+  .t-btn-surface:active { transform: scale(0.97); }
+
+  /* Dark-brand add button (replaces bg-black text-white) */
+  .t-btn-dark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--text);
+    color: var(--bg);
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 0.75rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  }
+  .t-btn-dark:hover { opacity: 0.9; }
+  .t-btn-dark:active { transform: scale(0.97); }
+
+  /* Skeleton loading placeholder */
+  .t-skeleton {
+    background-color: var(--surface-2);
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    border-radius: 0.25rem;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Search input — replaces bg-black/3 */
+  .t-search-input {
+    width: 100%;
+    background-color: var(--surface-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s, background-color 0.15s;
+  }
+  .t-search-input::placeholder { color: var(--text-subtle); }
+  .t-search-input:focus { border-color: var(--color-brand); background-color: var(--surface); }
+
+  /* Select dropdown */
+  .t-select {
+    background-color: var(--surface-2);
+    border: 1px solid var(--border-soft);
+    color: var(--text);
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s;
+  }
+  .t-select:hover { background-color: var(--surface); }
+
+  /* Country selector pill group */
+  .t-pill-group {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    background-color: var(--surface-2);
+    border-radius: 0.75rem;
+  }
+  .t-pill-group button {
+    font-size: 0.6875rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    transition: all 0.15s;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-subtle);
+  }
+  .t-pill-group button.active {
+    background-color: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+  .t-pill-group button:not(.active):hover { color: var(--text-muted); }
+
+  /* Divider — replaces bg-black/10, w-px */
+  .t-divider {
+    width: 1px;
+    height: 1.5rem;
+    background-color: var(--border);
+  }
+
+  /* Subtle row hover — replaces hover:bg-black/2 */
+  .t-row-hover { transition: background-color 0.15s; }
+  .t-row-hover:hover { background-color: var(--surface-2); }
+
+  /* ── Status badge variants (dark-aware) ── */
+  .t-badge-green {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 0.125rem 0.5rem; border-radius: 9999px;
+    font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    background: color-mix(in srgb, #22c55e 12%, transparent);
+    color: #22c55e;
+    border: 1px solid color-mix(in srgb, #22c55e 20%, transparent);
+  }
+  .t-badge-red {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 0.125rem 0.5rem; border-radius: 9999px;
+    font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    background: color-mix(in srgb, #ef4444 12%, transparent);
+    color: #ef4444;
+    border: 1px solid color-mix(in srgb, #ef4444 20%, transparent);
+  }
+  .t-badge-amber {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 0.125rem 0.5rem; border-radius: 9999px;
+    font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    background: color-mix(in srgb, #f59e0b 12%, transparent);
+    color: #f59e0b;
+    border: 1px solid color-mix(in srgb, #f59e0b 20%, transparent);
+  }
+  .t-badge-blue {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 0.125rem 0.5rem; border-radius: 9999px;
+    font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    background: color-mix(in srgb, #3b82f6 12%, transparent);
+    color: #3b82f6;
+    border: 1px solid color-mix(in srgb, #3b82f6 20%, transparent);
+  }
+  .t-badge-gray {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 0.125rem 0.5rem; border-radius: 9999px;
+    font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    background: var(--surface-2);
+    color: var(--text-subtle);
+    border: 1px solid var(--border);
+  }
+
+  /* Action button hovers (replaces hover:bg-red-50, etc.) */
+  .t-action-red    { color: #ef4444; transition: all 0.15s; }
+  .t-action-red:hover    { background: color-mix(in srgb, #ef4444 12%, transparent); }
+  .t-action-green  { color: #22c55e; transition: all 0.15s; }
+  .t-action-green:hover  { background: color-mix(in srgb, #22c55e 12%, transparent); }
+  .t-action-blue   { color: #3b82f6; transition: all 0.15s; }
+  .t-action-blue:hover   { background: color-mix(in srgb, #3b82f6 12%, transparent); }
+  .t-action-amber  { color: #f59e0b; transition: all 0.15s; }
+  .t-action-amber:hover  { background: color-mix(in srgb, #f59e0b 12%, transparent); }
+
+  /* Bin toggle button */
+  .t-btn-bin {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+    font-size: 0.75rem; font-weight: 700;
+    transition: all 0.15s;
+    border: 1px solid var(--border);
+    background-color: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+  .t-btn-bin:hover { background-color: var(--surface-2); color: var(--text); }
+  .t-btn-bin:active { transform: scale(0.97); }
+  .t-btn-bin.active {
+    background: color-mix(in srgb, #ef4444 10%, transparent);
+    color: #ef4444;
+    border-color: color-mix(in srgb, #ef4444 30%, transparent);
+  }
+  .t-btn-bin.active:hover {
+    background: color-mix(in srgb, #ef4444 18%, transparent);
+  }
+
+  /* Bulk action buttons (restore, delete, move to bin) */
+  .t-bulk-restore {
+    padding: 0.375rem 0.75rem; border-radius: 0.5rem;
+    font-size: 0.6875rem; font-weight: 700;
+    background: color-mix(in srgb, #22c55e 12%, transparent);
+    color: #22c55e;
+    border: 1px solid color-mix(in srgb, #22c55e 22%, transparent);
+    transition: all 0.15s; cursor: pointer;
+  }
+  .t-bulk-restore:hover { background: color-mix(in srgb, #22c55e 18%, transparent); }
+  .t-bulk-restore:disabled { opacity: 0.5; cursor: not-allowed; }
+  .t-bulk-delete {
+    padding: 0.375rem 0.75rem; border-radius: 0.5rem;
+    font-size: 0.6875rem; font-weight: 700;
+    background: color-mix(in srgb, #ef4444 12%, transparent);
+    color: #ef4444;
+    border: 1px solid color-mix(in srgb, #ef4444 22%, transparent);
+    transition: all 0.15s; cursor: pointer;
+  }
+  .t-bulk-delete:hover { background: color-mix(in srgb, #ef4444 18%, transparent); }
+  .t-bulk-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Pagination button */
+  .t-page-btn {
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    transition: all 0.15s;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .t-page-btn:hover { background-color: var(--surface-2); }
+  .t-page-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+  .t-page-num {
+    width: 1.75rem; height: 1.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.6875rem; font-weight: 700;
+    transition: all 0.15s;
+    border: none; cursor: pointer;
+    background: transparent;
+    color: var(--text-subtle);
+  }
+  .t-page-num.active {
+    background-color: var(--color-brand);
+    color: #fff;
+  }
+  .t-page-num:not(.active):hover { background-color: var(--surface-2); }
+
+  /* Page jump input */
+  .t-page-jump {
+    width: 3rem;
+    padding: 0.25rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: center;
+    outline: none;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  /* Inventory/SEO subtle bg */
+  .t-muted-bg {
+    background-color: var(--surface-2);
+    border: 1px solid var(--border-soft);
+  }
 }
+

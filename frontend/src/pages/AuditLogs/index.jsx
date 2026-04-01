@@ -19,13 +19,14 @@ export default function AuditLogs() {
 
   const [expandedId, setExpandedId] = useState(null)
 
-  const modules = ['products', 'categories', 'pricing', 'bundles', 'sales', 'gallery', 'analytics', 'users', 'audit_logs']
-  const actions = ['create', 'update', 'delete']
+  const modules = ['products', 'categories', 'pricing', 'bundles', 'sales', 'gallery', 'analytics', 'users', 'auth', 'audit_logs']
+  const actions = ['create', 'update', 'delete', 'login']
 
   const actionColors = {
     create: { bg: 'color-mix(in srgb, #22c55e 12%, transparent)', color: '#22c55e', border: 'color-mix(in srgb, #22c55e 20%, transparent)' },
     update: { bg: 'color-mix(in srgb, #3b82f6 12%, transparent)', color: '#3b82f6', border: 'color-mix(in srgb, #3b82f6 20%, transparent)' },
     delete: { bg: 'color-mix(in srgb, #ef4444 12%, transparent)', color: '#ef4444', border: 'color-mix(in srgb, #ef4444 20%, transparent)' },
+    login:  { bg: 'color-mix(in srgb, #a855f7 12%, transparent)', color: '#a855f7', border: 'color-mix(in srgb, #a855f7 20%, transparent)' },
   }
 
   const getModuleName = (mod) => {
@@ -34,6 +35,10 @@ export default function AuditLogs() {
   }
 
   const getLogSummary = (log) => {
+    if (log.action === 'login' && log.module === 'auth') {
+      return `User logged into the dashboard`
+    }
+
     const d = log.details || {};
     // Extract a recognizable name
     let name = d.name_en || d.username || d.slug || d.title || '';
@@ -75,7 +80,7 @@ export default function AuditLogs() {
           </select>
           <select className="t-input" value={filters.action} onChange={e => { setFilters({ ...filters, action: e.target.value }); setPage(1); }}>
             <option value="">All Actions</option>
-            {actions.map(a => <option key={a} value={a} className="capitalize">{a}</option>)}
+            {actions.map(a => <option key={a} value={a} className="capitalize">{a === 'login' ? 'Logged In' : a}</option>)}
           </select>
           <input className="t-input" type="date" value={filters.from} onChange={e => { setFilters({ ...filters, from: e.target.value }); setPage(1); }} placeholder="From" />
           <input className="t-input" type="date" value={filters.to} onChange={e => { setFilters({ ...filters, to: e.target.value }); setPage(1); }} placeholder="To" />
@@ -124,7 +129,7 @@ export default function AuditLogs() {
                         color: actionColors[log.action].color,
                         border: `1px solid ${actionColors[log.action].border}`,
                       } : {}}>
-                      {log.action}
+                      {log.action === 'login' ? 'Logged In' : log.action}
                     </span>
                   </td>
                   <td className="t-td">
