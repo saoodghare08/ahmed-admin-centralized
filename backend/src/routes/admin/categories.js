@@ -161,10 +161,10 @@ router.get('/:id', async (req, res, next) => {
 // POST /api/categories
 router.post('/', async (req, res, next) => {
   try {
-    const { slug, name_en, name_ar, image_url, sort_order, is_active } = req.body;
+    const { slug, name_en, name_ar, description_en, description_ar, image_url, sort_order, is_active } = req.body;
     const [result] = await db.query(
-      `INSERT INTO categories (slug, name_en, name_ar, image_url, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?)`,
-      [slug, name_en, name_ar, image_url || null, sort_order ?? 0, is_active ?? 1,]
+      `INSERT INTO categories (slug, name_en, name_ar, description_en, description_ar, image_url, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [slug, name_en, name_ar, description_en || null, description_ar || null, image_url || null, sort_order ?? 0, is_active ?? 1]
     );
     
     await logAudit(req, 'create', 'categories', result.insertId, { slug, name_en, name_ar, image_url, sort_order, is_active });
@@ -197,10 +197,10 @@ router.put('/reorder', async (req, res, next) => {
 // PUT /api/categories/:id
 router.put('/:id', async (req, res, next) => {
   try {
-    const { slug, name_en, name_ar, image_url, sort_order, is_active } = req.body;
+    const { slug, name_en, name_ar, description_en, description_ar, image_url, sort_order, is_active } = req.body;
     await db.query(
-      `UPDATE categories SET slug=?, name_en=?, name_ar=?, image_url=?, sort_order=?, is_active=? WHERE id=?`,
-      [slug, name_en, name_ar, image_url || null, sort_order ?? 0, is_active ?? 1, req.params.id]
+      `UPDATE categories SET slug=?, name_en=?, name_ar=?, description_en=?, description_ar=?, image_url=?, sort_order=?, is_active=? WHERE id=?`,
+      [slug, name_en, name_ar, description_en || null, description_ar || null, image_url || null, sort_order ?? 0, is_active ?? 1, req.params.id]
     );
     
     await logAudit(req, 'update', 'categories', req.params.id, { slug, name_en, name_ar, image_url, sort_order, is_active });
@@ -267,10 +267,10 @@ router.patch('/:id/restore', async (req, res, next) => {
 // POST /api/categories/:id/subcategories
 router.post('/:id/subcategories', async (req, res, next) => {
   try {
-    const { slug, name_en, name_ar, image_url, sort_order } = req.body;
+    const { slug, name_en, name_ar, description_en, description_ar, image_url, sort_order } = req.body;
     const [result] = await db.query(
-      `INSERT INTO subcategories (category_id, slug, name_en, name_ar, image_url, sort_order) VALUES (?, ?, ?, ?, ?, ?)`,
-      [req.params.id, slug, name_en, name_ar, image_url || null, sort_order || 0]
+      `INSERT INTO subcategories (category_id, slug, name_en, name_ar, description_en, description_ar, image_url, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [req.params.id, slug, name_en, name_ar, description_en || null, description_ar || null, image_url || null, sort_order || 0]
     );
     
     await logAudit(req, 'create', 'subcategories', result.insertId, { category_id: req.params.id, slug, name_en, name_ar, image_url, sort_order });
@@ -306,10 +306,10 @@ router.put('/subcategories/reorder', async (req, res, next) => {
 // PUT /api/categories/subcategories/:subId
 router.put('/subcategories/:subId', async (req, res, next) => {
   try {
-    const { slug, name_en, name_ar, image_url, sort_order, is_active } = req.body;
+    const { slug, name_en, name_ar, description_en, description_ar, image_url, sort_order, is_active } = req.body;
     await db.query(
-      `UPDATE subcategories SET slug=?, name_en=?, name_ar=?, image_url=?, sort_order=?, is_active=? WHERE id=?`,
-      [slug, name_en, name_ar, image_url || null, sort_order ?? 0, is_active ?? 1, req.params.subId]
+      `UPDATE subcategories SET slug=?, name_en=?, name_ar=?, description_en=?, description_ar=?, image_url=?, sort_order=?, is_active=? WHERE id=?`,
+      [slug, name_en, name_ar, description_en || null, description_ar || null, image_url || null, sort_order ?? 0, is_active ?? 1, req.params.subId]
     );
     
     await logAudit(req, 'update', 'subcategories', req.params.subId, { slug, name_en, name_ar, image_url, sort_order, is_active });

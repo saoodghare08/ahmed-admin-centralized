@@ -17,7 +17,14 @@ const ALL_MODULES = [
       { key: 'products.inventory', label: 'Inventory Tab' },
     ]
   },
-  { key: 'categories', label: 'Categories' },
+  { 
+    key: 'categories', 
+    label: 'Categories',
+    subModules: [
+      { key: 'categories.core', label: 'Core Tab' },
+      { key: 'categories.seo', label: 'SEO Tab' }
+    ]
+  },
   { key: 'pricing', label: 'Pricing' },
   { key: 'bundles', label: 'Bundles' },
   { key: 'sales', label: 'Sales' },

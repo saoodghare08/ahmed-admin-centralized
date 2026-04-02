@@ -12,6 +12,8 @@ import Swal from 'sweetalert2'
 const toSlug = (str) =>
   str.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').trim()
 
+import { useAuth } from '../../context/AuthContext'
+
 // ── API helpers that need direct client access ───────────────
 import api from '../../api/client'
 const getAdminCategories = (status) => api.get(`/categories?admin=1${status === 'bin' ? '&status=bin' : ''}`)
@@ -65,12 +67,14 @@ function Drawer({ open, onClose, title, subtitle, children, onSave, saving }) {
 }
 
 // ── Category Form ────────────────────────────────────────────
-const EMPTY_CAT = { name_en: '', name_ar: '', slug: '', image_url: '', sort_order: 0, is_active: true }
+const EMPTY_CAT = { name_en: '', name_ar: '', slug: '', description_en: '', description_ar: '', image_url: '', sort_order: 0, is_active: true }
 
 function CategoryDrawer({ open, onClose, initial, onDone }) {
+  const { hasPermission } = useAuth()
   const isEdit = !!initial?.id
   const [form, setForm] = useState(() => initial ? { ...EMPTY_CAT, ...initial } : { ...EMPTY_CAT })
   const [saving, setSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState('core')
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -82,6 +86,7 @@ function CategoryDrawer({ open, onClose, initial, onDone }) {
   const handleClose = () => {
     setForm({ ...EMPTY_CAT })
     setSaving(false)
+    setActiveTab('core')
     onClose()
   }
 
@@ -105,6 +110,11 @@ function CategoryDrawer({ open, onClose, initial, onDone }) {
     }
   }
 
+  const tabs = [
+    { id: 'core', label: 'Core', show: hasPermission('categories.core') || hasPermission('categories') },
+    { id: 'seo', label: 'SEO', show: hasPermission('categories.seo') }
+  ].filter(t => t.show)
+
   return (
     <Drawer
       open={open}
@@ -114,48 +124,82 @@ function CategoryDrawer({ open, onClose, initial, onDone }) {
       onSave={handleSave}
       saving={saving}
     >
-      <Field label="Name (English)" required>
-        <input className={inputCls} value={form.name_en} onChange={e => handleNameEn(e.target.value)} placeholder="e.g. Perfumes" />
-      </Field>
+      {tabs.length > 1 && (
+        <div className="flex border-b mb-6" style={{ borderColor: 'var(--border)' }}>
+          {tabs.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`px-4 py-2.5 text-[13px] font-bold border-b-2 transition-colors ${activeTab === t.id ? 't-action-blue' : ''}`}
+              style={{
+                borderColor: activeTab === t.id ? 'var(--color-brand)' : 'transparent',
+                color: activeTab === t.id ? 'var(--text)' : 'var(--text-muted)'
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <Field label="Name (Arabic)" required>
-        <input className={`${inputCls} text-right`} dir="rtl" value={form.name_ar} onChange={e => set('name_ar', e.target.value)} placeholder="العطور" />
-      </Field>
+      {activeTab === 'core' && (
+        <div className="flex flex-col gap-5">
+          <Field label="Name (English)" required>
+            <input className={inputCls} value={form.name_en} onChange={e => handleNameEn(e.target.value)} placeholder="e.g. Perfumes" />
+          </Field>
 
-      <Field label="Slug" required hint="URL-safe identifier, auto-generated from EN name">
-        <input className={`${inputCls} font-mono text-[12px]`} value={form.slug} onChange={e => set('slug', toSlug(e.target.value))} placeholder="e.g. perfumes" />
-      </Field>
+          <Field label="Name (Arabic)" required>
+            <input className={`${inputCls} text-right`} dir="rtl" value={form.name_ar} onChange={e => set('name_ar', e.target.value)} placeholder="العطور" />
+          </Field>
 
-      <Field label="Image" hint="optional">
-        <ImageUploader
-          value={form.image_url}
-          onChange={(url) => set('image_url', url)}
-          uploadType="category"
-        />
-      </Field>
+          <Field label="Image" hint="optional">
+            <ImageUploader
+              value={form.image_url}
+              onChange={(url) => set('image_url', url)}
+              uploadType="category"
+            />
+          </Field>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Sort Order">
-          <input className={inputCls} type="number" value={form.sort_order} onChange={e => set('sort_order', Number(e.target.value))} />
-        </Field>
-        <Field label="Status">
-          <select className={inputCls} value={form.is_active ? '1' : '0'} onChange={e => set('is_active', e.target.value === '1')}>
-            <option value="1">Active</option>
-            <option value="0">Inactive</option>
-          </select>
-        </Field>
-      </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Sort Order">
+              <input className={inputCls} type="number" value={form.sort_order} onChange={e => set('sort_order', Number(e.target.value))} />
+            </Field>
+            <Field label="Status">
+              <select className={inputCls} value={form.is_active ? '1' : '0'} onChange={e => set('is_active', e.target.value === '1')}>
+                <option value="1">Active</option>
+                <option value="0">Inactive</option>
+              </select>
+            </Field>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'seo' && (
+        <div className="flex flex-col gap-5">
+          <Field label="Slug" required hint="URL-safe identifier, auto-generated from EN name">
+            <input className={`${inputCls} font-mono text-[12px]`} value={form.slug} onChange={e => set('slug', toSlug(e.target.value))} placeholder="e.g. perfumes" />
+          </Field>
+          <Field label="SEO Description (EN)">
+            <textarea className={`${inputCls} min-h-[100px] leading-relaxed`} value={form.description_en || ''} onChange={e => set('description_en', e.target.value)} placeholder="Enter English SEO description..." />
+          </Field>
+          <Field label="SEO Description (AR)">
+            <textarea className={`${inputCls} text-right min-h-[100px] leading-relaxed`} dir="rtl" value={form.description_ar || ''} onChange={e => set('description_ar', e.target.value)} placeholder="أدخل وصف تحسين محركات البحث العربي..." />
+          </Field>
+        </div>
+      )}
     </Drawer>
   )
 }
 
 // ── Subcategory Form ─────────────────────────────────────────
-const EMPTY_SUB = { name_en: '', name_ar: '', slug: '', image_url: '', sort_order: 0, is_active: true }
+const EMPTY_SUB = { name_en: '', name_ar: '', slug: '', description_en: '', description_ar: '', image_url: '', sort_order: 0, is_active: true }
 
 function SubcategoryDrawer({ open, onClose, initial, categoryId, categoryName, onDone }) {
+  const { hasPermission } = useAuth()
   const isEdit = !!initial?.id
   const [form, setForm] = useState(() => initial ? { ...EMPTY_SUB, ...initial } : { ...EMPTY_SUB })
   const [saving, setSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState('core')
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -167,6 +211,7 @@ function SubcategoryDrawer({ open, onClose, initial, categoryId, categoryName, o
   const handleClose = () => {
     setForm({ ...EMPTY_SUB })
     setSaving(false)
+    setActiveTab('core')
     onClose()
   }
 
@@ -190,6 +235,11 @@ function SubcategoryDrawer({ open, onClose, initial, categoryId, categoryName, o
     }
   }
 
+  const tabs = [
+    { id: 'core', label: 'Core', show: hasPermission('categories.core') || hasPermission('categories') },
+    { id: 'seo', label: 'SEO', show: hasPermission('categories.seo') }
+  ].filter(t => t.show)
+
   return (
     <Drawer
       open={open}
@@ -199,37 +249,69 @@ function SubcategoryDrawer({ open, onClose, initial, categoryId, categoryName, o
       onSave={handleSave}
       saving={saving}
     >
-      <Field label="Name (English)" required>
-        <input className={inputCls} value={form.name_en} onChange={e => handleNameEn(e.target.value)} placeholder="e.g. Oud Perfumes" />
-      </Field>
+      {tabs.length > 1 && (
+        <div className="flex border-b mb-6" style={{ borderColor: 'var(--border)' }}>
+          {tabs.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`px-4 py-2.5 text-[13px] font-bold border-b-2 transition-colors ${activeTab === t.id ? 't-action-blue' : ''}`}
+              style={{
+                borderColor: activeTab === t.id ? 'var(--color-brand)' : 'transparent',
+                color: activeTab === t.id ? 'var(--text)' : 'var(--text-muted)'
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <Field label="Name (Arabic)" required>
-        <input className={`${inputCls} text-right`} dir="rtl" value={form.name_ar} onChange={e => set('name_ar', e.target.value)} placeholder="مثال: عطور العود" />
-      </Field>
+      {activeTab === 'core' && (
+        <div className="flex flex-col gap-5">
+          <Field label="Name (English)" required>
+            <input className={inputCls} value={form.name_en} onChange={e => handleNameEn(e.target.value)} placeholder="e.g. Oud Perfumes" />
+          </Field>
 
-      <Field label="Slug" required hint="auto-generated from EN name">
-        <input className={`${inputCls} font-mono text-[12px]`} value={form.slug} onChange={e => set('slug', toSlug(e.target.value))} placeholder="e.g. oud-perfumes" />
-      </Field>
+          <Field label="Name (Arabic)" required>
+            <input className={`${inputCls} text-right`} dir="rtl" value={form.name_ar} onChange={e => set('name_ar', e.target.value)} placeholder="مثال: عطور العود" />
+          </Field>
 
-      <Field label="Image" hint="optional">
-        <ImageUploader
-          value={form.image_url}
-          onChange={(url) => set('image_url', url)}
-          uploadType="category"
-        />
-      </Field>
+          <Field label="Image" hint="optional">
+            <ImageUploader
+              value={form.image_url}
+              onChange={(url) => set('image_url', url)}
+              uploadType="category"
+            />
+          </Field>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Sort Order">
-          <input className={inputCls} type="number" value={form.sort_order} onChange={e => set('sort_order', Number(e.target.value))} />
-        </Field>
-        <Field label="Status">
-          <select className={inputCls} value={form.is_active ? '1' : '0'} onChange={e => set('is_active', e.target.value === '1')}>
-            <option value="1">Active</option>
-            <option value="0">Inactive</option>
-          </select>
-        </Field>
-      </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Sort Order">
+              <input className={inputCls} type="number" value={form.sort_order} onChange={e => set('sort_order', Number(e.target.value))} />
+            </Field>
+            <Field label="Status">
+              <select className={inputCls} value={form.is_active ? '1' : '0'} onChange={e => set('is_active', e.target.value === '1')}>
+                <option value="1">Active</option>
+                <option value="0">Inactive</option>
+              </select>
+            </Field>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'seo' && (
+        <div className="flex flex-col gap-5">
+          <Field label="Slug" required hint="auto-generated from EN name">
+            <input className={`${inputCls} font-mono text-[12px]`} value={form.slug} onChange={e => set('slug', toSlug(e.target.value))} placeholder="e.g. oud-perfumes" />
+          </Field>
+          <Field label="SEO Description (EN)">
+            <textarea className={`${inputCls} min-h-[100px] leading-relaxed`} value={form.description_en || ''} onChange={e => set('description_en', e.target.value)} placeholder="Enter English SEO description..." />
+          </Field>
+          <Field label="SEO Description (AR)">
+            <textarea className={`${inputCls} text-right min-h-[100px] leading-relaxed`} dir="rtl" value={form.description_ar || ''} onChange={e => set('description_ar', e.target.value)} placeholder="أدخل وصف تحسين محركات البحث العربي..." />
+          </Field>
+        </div>
+      )}
     </Drawer>
   )
 }
