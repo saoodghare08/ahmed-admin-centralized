@@ -36,7 +36,7 @@ export function authorize(...modules) {
 
     // Check if user has at least one of the required modules
     const userPerms = req.user.permissions || [];
-    const hasAccess = modules.length === 0 || modules.some(m => userPerms.includes(m));
+    const hasAccess = modules.length === 0 || modules.some(m => userPerms.some(p => p === m || p.startsWith(m + '.')));
 
     if (!hasAccess) {
       return res.status(403).json({ error: 'You do not have permission to access this resource' });

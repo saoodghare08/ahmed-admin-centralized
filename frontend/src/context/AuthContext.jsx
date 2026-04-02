@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
     if (!user) return false;
     if (module === 'dashboard') return true;
     if (user.role === 'admin') return true;
-    return (user.permissions || []).includes(module);
+    return (user.permissions || []).some(p => p === module || p.startsWith(module + '.'));
   }, [user]);
 
   return (
