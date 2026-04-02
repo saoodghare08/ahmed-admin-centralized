@@ -10,6 +10,7 @@ import {
     getCategorySales, getSubcategorySales, getCategoryMonthly,
     getAnalyticsCategories, searchProducts, getProductMonthlySales
 } from '../../api'
+import PageHeader from '../../components/PageHeader'
 
 /* ── Constants ──────────────────────────────────────────────── */
 const STATUS_COLORS = {
@@ -135,12 +136,10 @@ export default function Analytics() {
     return (
         <div className="flex flex-col gap-5 w-full">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Order Analytics</h1>
-                    <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Insights from your order data</p>
-                </div>
-            </div>
+            <PageHeader
+                title="Order Analytics"
+                subtitle="Insights from your order data"
+            />
 
             {/* Tabs + Filters */}
             <Card className="p-4">

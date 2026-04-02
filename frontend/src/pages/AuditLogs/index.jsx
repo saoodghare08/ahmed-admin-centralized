@@ -1,6 +1,7 @@
 import { useState, Fragment } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getAuditLogs, getUsers } from '../../api'
+import PageHeader from '../../components/PageHeader'
 
 export default function AuditLogs() {
   const [page, setPage] = useState(1)
@@ -55,12 +56,10 @@ export default function AuditLogs() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-lg font-bold" style={{ color: 'var(--text)' }}>Audit Logs</h1>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--text-subtle)' }}>
-          Track all changes made by users across the system
-        </p>
-      </div>
+      <PageHeader
+        title="Audit Logs"
+        subtitle="Track all changes made by users across the system"
+      />
 
       {/* Filters */}
       <div className="t-card p-4 mb-4">

@@ -6,32 +6,40 @@ const router = express.Router();
 // GET /api/bundles — all bundles with their items
 router.get('/', async (req, res, next) => {
   try {
-    const { q = '', page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
-    const params = [];
-    let where = 'WHERE 1=1';
+    const { search, sort = 'bundle_id', order = 'DESC', page = 1, limit = 20 } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
 
-    if (q) {
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (search) {
       where += ` AND (p.name_en LIKE ? OR p.name_ar LIKE ? OR p.fgd LIKE ?)`;
-      params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+      const s = `%${search}%`;
+      params.push(s, s, s);
     }
 
-    // Get total count for pagination
+    const sortMap = {
+      bundle_id: 'b.id',
+      product_id: 'p.id',
+      name_en: 'p.name_en',
+      fgd: 'p.fgd'
+    };
+    const orderBy = sortMap[sort] || 'b.id';
+    const dir = order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
     const [[{ total }]] = await db.query(
-      `SELECT COUNT(b.id) AS total
-       FROM bundles b
-       JOIN products p ON p.id = b.product_id
-       ${where}`, params
+      `SELECT COUNT(*) as total FROM bundles b JOIN products p ON p.id = b.product_id ${where}`,
+      params
     );
 
-    // Get paginated results
     const [bundles] = await db.query(
       `SELECT b.id AS bundle_id, p.id AS product_id, p.name_en, p.name_ar, p.fgd, p.slug
        FROM bundles b
        JOIN products p ON p.id = b.product_id
        ${where}
-       ORDER BY b.id DESC
-       LIMIT ? OFFSET ?`, [...params, parseInt(limit), offset]
+       ORDER BY ${orderBy} ${dir}
+       LIMIT ? OFFSET ?`,
+      [...params, Number(limit), offset]
     );
 
     for (const bundle of bundles) {
@@ -46,15 +54,9 @@ router.get('/', async (req, res, next) => {
       );
       bundle.items = items;
     }
-
-    res.json({ 
+    res.json({
       data: bundles,
-      pagination: {
-        total,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(total / limit)
-      }
+      meta: { total, page: Number(page), limit: Number(limit), pages: Math.ceil(total / Number(limit)) }
     });
   } catch (err) { next(err); }
 });
@@ -100,8 +102,8 @@ router.post('/', async (req, res, next) => {
           (bundle_id, product_id, component_name_en, component_name_ar, component_image_url, qty, sort_order)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [bundleId, item.product_id || null,
-         item.component_name_en || null, item.component_name_ar || null,
-         item.component_image_url || null, item.qty || 1, item.sort_order || 0]
+          item.component_name_en || null, item.component_name_ar || null,
+          item.component_image_url || null, item.qty || 1, item.sort_order || 0]
       );
     }
 
@@ -129,8 +131,8 @@ router.put('/:bundleId/items', async (req, res, next) => {
           (bundle_id, product_id, component_name_en, component_name_ar, component_image_url, qty, sort_order)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [req.params.bundleId, item.product_id || null,
-         item.component_name_en || null, item.component_name_ar || null,
-         item.component_image_url || null, item.qty || 1, item.sort_order || 0]
+        item.component_name_en || null, item.component_name_ar || null,
+        item.component_image_url || null, item.qty || 1, item.sort_order || 0]
       );
     }
     await conn.commit();

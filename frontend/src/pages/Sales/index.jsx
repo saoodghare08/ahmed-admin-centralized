@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getSalesReport } from '../../api'
 import { useState } from 'react'
+import PageHeader from '../../components/PageHeader'
 
 const COUNTRIES = ['AE','SA','QA','BH','KW','OM']
 const FLAGS     = { AE:'🇦🇪', SA:'🇸🇦', QA:'🇶🇦', BH:'🇧🇭', KW:'🇰🇼', OM:'🇴🇲' }
@@ -35,13 +36,12 @@ export default function Sales() {
   return (
     <div className="flex flex-col gap-6 w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-7">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Sales Report</h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Pushed from external order system</p>
-        </div>
+      <PageHeader
+        title="Sales Report"
+        subtitle="Pushed from external order system"
+      >
         <button onClick={refetch} className="t-btn-ghost">↻ Refresh</button>
-      </div>
+      </PageHeader>
 
       {/* Filters */}
       <div className="rounded-xl p-5 mb-6" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>

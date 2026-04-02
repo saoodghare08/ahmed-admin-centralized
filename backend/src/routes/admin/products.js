@@ -436,9 +436,8 @@ router.put('/:id/seo', async (req, res, next) => {
     }
     await conn.commit();
     
-    await logAudit(req, 'update', 'products', req.params.id, { action: 'update_country_configs', count: configs.length });
+    await logAudit(req, 'update', 'products', req.params.id, { action: 'update_seo', count: seo.length });
 
-    res.json({ message: 'Country configs saved' });
     res.json({ message: 'SEO data saved' });
   } catch (err) { await conn.rollback(); next(err); }
   finally { conn.release(); }

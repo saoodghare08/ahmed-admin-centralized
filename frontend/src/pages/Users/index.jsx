@@ -4,6 +4,7 @@ import { getUsers, createUser, updateUser, resetUserPassword, deleteUser, hardDe
 import toast from 'react-hot-toast'
 import Swal from 'sweetalert2'
 import { useAuth } from '../../context/AuthContext'
+import PageHeader from '../../components/PageHeader'
 
 const ALL_MODULES = [
   { key: 'products', label: 'Products' },
@@ -112,20 +113,17 @@ export default function Users() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-lg font-bold" style={{ color: 'var(--text)' }}>User Management</h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-subtle)' }}>
-            Create and manage admin users with module-level permissions
-          </p>
-        </div>
+      <PageHeader
+        title="User Management"
+        subtitle="Create and manage admin users with module-level permissions"
+      >
         <button className="t-btn-primary" onClick={openCreate}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
           Add User
         </button>
-      </div>
+      </PageHeader>
 
       {/* Table */}
       <div className="t-card overflow-hidden">

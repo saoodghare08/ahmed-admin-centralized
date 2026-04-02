@@ -1,12 +1,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createCategory, updateCategory, deleteCategory,
-         createSubcategory, updateSubcategory,
-         reorderCategories, reorderSubcategories, importCategories } from '../../api'
+import {
+  createCategory, updateCategory, deleteCategory, restoreCategory, hardDeleteCategory,
+  createSubcategory, updateSubcategory, restoreSubcategory, hardDeleteSubcategory,
+  reorderCategories, reorderSubcategories, importCategories, downloadCategoryTemplate
+} from '../../api'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import toast from 'react-hot-toast'
 import { useState, useRef } from 'react'
 import ImageUploader from '../../components/ImageUploader'
 import Swal from 'sweetalert2'
+import PageHeader from '../../components/PageHeader'
+import ImportModal from './ImportModal'
 
 // ── Helper: auto-generate slug from English name ────────────
 const toSlug = (str) =>
@@ -15,7 +19,7 @@ const toSlug = (str) =>
 // ── API helpers that need direct client access ───────────────
 import api from '../../api/client'
 const getAdminCategories = () => api.get('/categories?admin=1')
-const deleteSubcategory  = (subId) => api.delete(`/categories/subcategories/${subId}`)
+const deleteSubcategory = (subId) => api.delete(`/categories/subcategories/${subId}`)
 
 
 // ── Input Component ──────────────────────────────────────────
@@ -240,38 +244,17 @@ export default function Categories() {
   const [expanded, setExpanded] = useState([])
 
   // Drawer state
-  const [catDrawer, setCatDrawer]   = useState({ open: false, data: null })
-  const [subDrawer, setSubDrawer]   = useState({ open: false, data: null, catId: null, catName: '' })
-
-  const fileInputRef = useRef(null)
-  const [importing, setImporting] = useState(false)
+  const [catDrawer, setCatDrawer] = useState({ open: false, data: null })
+  const [subDrawer, setSubDrawer] = useState({ open: false, data: null, catId: null, catName: '' })
+  const [showBin, setShowBin] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['categories-admin'],
-    queryFn:  getAdminCategories,
+    queryFn: getAdminCategories,
   })
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['categories-admin'] })
-
-  const handleImport = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setImporting(true)
-    const formData = new FormData()
-    formData.append('file', file)
-
-    try {
-      const res = await importCategories(formData)
-      toast.success(`Imported ${res.imported} rows successfully!`)
-      refresh()
-    } catch (err) {
-      toast.error(err.response?.data?.error || err.message || 'Import failed')
-    } finally {
-      setImporting(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
-  }
 
   const handleDeleteCat = async (id) => {
     const res = await Swal.fire({
@@ -331,7 +314,7 @@ export default function Categories() {
       const [moved] = newCategories.splice(source.index, 1)
       newCategories.splice(destination.index, 0, moved)
       const newOrder = newCategories.map((c, i) => ({ id: c.id, sort_order: i }))
-      
+
       qc.setQueryData(['categories-admin'], { ...oldData, data: newCategories })
       try { await reorderCategories(newOrder); refresh() }
       catch { toast.error('Failed to sort categories'); refresh() }
@@ -340,17 +323,17 @@ export default function Categories() {
       const destCatIdx = newCategories.findIndex(c => String(c.id) === destination.droppableId)
       const sourceCat = newCategories[sourceCatIdx]
       const destCat = newCategories[destCatIdx]
-      
+
       const sourceSubs = Array.from(sourceCat.subcategories || [])
       const destSubs = source.droppableId === destination.droppableId ? sourceSubs : Array.from(destCat.subcategories || [])
-      
+
       const [movedSub] = sourceSubs.splice(source.index, 1)
       movedSub.category_id = destCat.id
       destSubs.splice(destination.index, 0, movedSub)
-      
+
       newCategories[sourceCatIdx] = { ...sourceCat, subcategories: sourceSubs }
       newCategories[destCatIdx] = { ...destCat, subcategories: destSubs }
-      
+
       const newOrder = destSubs.map((s, i) => ({ id: s.id, sort_order: i, category_id: destCat.id }))
       qc.setQueryData(['categories-admin'], { ...oldData, data: newCategories })
       try { await reorderSubcategories(newOrder); refresh() }
@@ -361,37 +344,34 @@ export default function Categories() {
   return (
     <div className="flex flex-col gap-6 w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-7">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Categories</h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            {categories.length} categories · Click row to expand subcategories
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <input 
-            type="file" 
-            accept=".xlsx, .xls" 
-            className="hidden" 
-            ref={fileInputRef} 
-            onChange={handleImport} 
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importing}
-            className="text-[13px] px-4 py-2 rounded-lg font-medium transition-all hover:bg-(--border)"
-            style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text)', opacity: importing ? 0.6 : 1 }}
-          >
-            {importing ? 'Importing...' : '↓ Excel Import'}
-          </button>
-          <button
-            onClick={() => setCatDrawer({ open: true, data: null })}
-            className="t-btn-primary"
-          >
-            <span className="text-lg leading-none">+</span> New Category
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Categories"
+        subtitle={`${categories.length} categories · Click row to expand subcategories`}
+        badge={showBin ? 'Recycle Bin' : null}
+        badgeType="danger"
+        badgeIcon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>}
+      >
+        <button
+          onClick={() => setShowBin(!showBin)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-bold transition-all shadow-sm border ${showBin ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' : 'bg-white text-black/60 border-black/10 hover:bg-black/5 active:scale-95'}`}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+          {showBin ? 'Exit Bin' : 'View Bin'}
+        </button>
+        <button
+          onClick={() => setShowImportModal(true)}
+          className="text-[13px] px-4 py-2 rounded-lg font-medium transition-all hover:bg-(--border)"
+          style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text)' }}
+        >
+          ↑ Excel Import
+        </button>
+        <button
+          onClick={() => setCatDrawer({ open: true, data: null })}
+          className="t-btn-primary"
+        >
+          <span className="text-lg leading-none">+</span> New Category
+        </button>
+      </PageHeader>
 
       {/* Premium Tree View */}
       <DragDropContext onDragEnd={onDragEnd}>
@@ -417,15 +397,15 @@ export default function Categories() {
                             boxShadow: snapCat.isDragging ? '0 10px 30px rgba(0,0,0,0.1)' : (expanded.includes(cat.id) ? '0 4px 20px rgba(0,0,0,0.05)' : 'none'),
                             zIndex: snapCat.isDragging ? 50 : 'auto'
                           }}>
-                          
+
                           {/* Category Header Bar */}
-                          <div 
+                          <div
                             onClick={() => setExpanded(prev => prev.includes(cat.id) ? prev.filter(x => x !== cat.id) : [...prev, cat.id])}
                             className={`flex items-center justify-between p-4 cursor-pointer group transition-colors ${snapCat.isDragging ? 'bg-(--surface-2)' : 'hover:bg-(--surface-2)'}`}
                           >
                             <div className="flex items-center gap-4">
                               <div {...provCat.dragHandleProps} className="cursor-grab text-gray-400 hover:text-gray-600 px-1 py-1 -ml-2 rounded hover:bg-black/5 transition-colors" onClick={e => e.stopPropagation()}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="16" x2="20" y2="16"/></svg>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="8" x2="20" y2="8" /><line x1="4" y1="16" x2="20" y2="16" /></svg>
                               </div>
                               <div className={`w-6 h-6 rounded flex items-center justify-center transition-colors ${expanded.includes(cat.id) ? 'bg-brand text-white' : 'bg-(--surface-2) text-(--text-muted)'}`}>
                                 {expanded.includes(cat.id) ? '▾' : '▸'}
@@ -456,7 +436,7 @@ export default function Categories() {
                                 </div>
                               </div>
                             </div>
-            
+
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
                                 onClick={e => { e.stopPropagation(); openAddSub(cat, e) }}
@@ -475,7 +455,7 @@ export default function Categories() {
                               >Delete</button>
                             </div>
                           </div>
-            
+
                           {/* Subcategories Container */}
                           {expanded.includes(cat.id) && (
                             <Droppable droppableId={String(cat.id)} type="subcategory">
@@ -489,7 +469,7 @@ export default function Categories() {
                                             style={{ ...provSub.draggableProps.style, backgroundColor: 'var(--surface-2)', zIndex: snapSub.isDragging ? 50 : 'auto' }}>
                                             <div className="flex items-center gap-3">
                                               <div {...provSub.dragHandleProps} className="cursor-grab text-gray-400 hover:text-gray-600 px-1 py-1 -ml-2 rounded hover:bg-black/5 transition-colors">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="16" x2="20" y2="16"/></svg>
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="8" x2="20" y2="8" /><line x1="4" y1="16" x2="20" y2="16" /></svg>
                                               </div>
                                               <div className="w-8 h-8 rounded-lg bg-(--surface) border border-(--border) flex items-center justify-center text-[10px] font-mono text-(--text-subtle)">
                                                 {sub.id}
@@ -514,7 +494,7 @@ export default function Categories() {
                                                 </div>
                                               </div>
                                             </div>
-                    
+
                                             <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                               <button
                                                 onClick={e => openEditSub(sub, cat, e)}
@@ -553,6 +533,9 @@ export default function Categories() {
       </DragDropContext>
 
       {/* ── Drawers — key forces full remount when target record changes ── */}
+      {showImportModal && (
+        <ImportModal onClose={() => setShowImportModal(false)} />
+      )}
       <CategoryDrawer
         key={`cat-${catDrawer.data?.id ?? 'new'}-${catDrawer.open}`}
         open={catDrawer.open}

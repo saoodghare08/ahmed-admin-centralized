@@ -238,7 +238,6 @@ CREATE TABLE product_prices (
     country_id TINYINT UNSIGNED NOT NULL,
     currency_id TINYINT UNSIGNED NOT NULL,
     regular_price DECIMAL(12, 3) NOT NULL,
-    cost_price DECIMAL(12, 3) NULL,
     PRIMARY KEY (id),
     UNIQUE KEY uq_price_product_country (product_id, country_id),
     CONSTRAINT fk_price_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,

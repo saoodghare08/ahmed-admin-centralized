@@ -21,7 +21,7 @@ router.get('/:productId', async (req, res, next) => {
 });
 
 // PUT /api/pricing/:productId — upsert prices for all countries at once
-// Body: { prices: [{ country_id, currency_id, regular_price, cost_price }] }
+// Body: { prices: [{ country_id, currency_id, regular_price }] }
 router.put('/:productId', async (req, res, next) => {
   try {
     const { prices = [] } = req.body;

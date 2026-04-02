@@ -32,7 +32,11 @@ export const updateCategory = (id, data) => api.put(`/categories/${id}`, data);
 export const deleteCategory = (id) => api.delete(`/categories/${id}`);
 export const createSubcategory = (catId, data) => api.post(`/categories/${catId}/subcategories`, data);
 export const updateSubcategory = (subId, data) => api.put(`/categories/subcategories/${subId}`, data);
-export const importCategories = (formData) => api.post('/categories/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const deleteSubcategory = (subId) => api.delete(`/categories/subcategories/${subId}`);
+export const restoreSubcategory = (subId) => api.patch(`/categories/subcategories/${subId}/restore`);
+export const hardDeleteSubcategory = (subId) => api.delete(`/categories/subcategories/${subId}/permanent`);
+export const importCategories = (formData, dryRun = false) => api.post(`/categories/import?dry_run=${dryRun}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const downloadCategoryTemplate = () => api.get('/categories/template', { responseType: 'blob' });
 export const reorderCategories = (items) => api.put('/categories/reorder', { items });
 export const reorderSubcategories = (items) => api.put('/categories/subcategories/reorder', { items });
 

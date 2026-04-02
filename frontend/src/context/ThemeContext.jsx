@@ -3,7 +3,7 @@ import { ThemeContext } from './ThemeContextDef'
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'dark'
+    return localStorage.getItem('theme') || 'light'
   })
 
   useEffect(() => {

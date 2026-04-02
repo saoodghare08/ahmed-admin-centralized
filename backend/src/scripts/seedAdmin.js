@@ -12,7 +12,7 @@ export async function seedAdmin() {
     );
     if (existing) return; // Admin already exists
 
-    const hash = await bcrypt.hash('admin123', 10);
+    const hash = await bcrypt.hash('123456', 10);
     await db.query(
       `INSERT INTO users (username, email, password_hash, full_name, role, permissions)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -25,7 +25,7 @@ export async function seedAdmin() {
         JSON.stringify(['products', 'categories', 'pricing', 'bundles', 'sales', 'gallery', 'analytics', 'users', 'audit_logs']),
       ]
     );
-    console.log('✅  Default admin user seeded (admin / admin123)');
+    console.log('✅  Default admin user seeded (admin / 123456)');
   } catch (err) {
     // Table might not exist yet — that's fine
     if (err.code === 'ER_NO_SUCH_TABLE') {

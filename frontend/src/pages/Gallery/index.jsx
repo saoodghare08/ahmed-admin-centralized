@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import Swal from 'sweetalert2'
+import api from '../../api/client'
+import PageHeader from '../../components/PageHeader'
 
 const API = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/api\/?$/, '')
 
@@ -9,8 +11,8 @@ const galleryUrl = (p) => `${API}/gallery/${p}`
 
 // Human-readable file size
 const fmtSize = (bytes) => {
-  if (bytes < 1024)       return `${bytes} B`
-  if (bytes < 1048576)    return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1048576).toFixed(1)} MB`
 }
 
@@ -24,7 +26,7 @@ const FolderIcon = ({ color = 'var(--color-brand)' }) => (
 )
 const VideoIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8" style={{ color: 'var(--text-subtle)' }}>
-    <path strokeLinecap="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9A2.25 2.25 0 0013.5 5.25h-9A2.25 2.25 0 002.25 9.75v9A2.25 2.25 0 004.5 18.75z"/>
+    <path strokeLinecap="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9A2.25 2.25 0 0013.5 5.25h-9A2.25 2.25 0 002.25 9.75v9A2.25 2.25 0 004.5 18.75z" />
   </svg>
 )
 
@@ -50,7 +52,7 @@ function NewFolderModal({ onClose, onConfirm }) {
 
 function RenameModal({ item, onClose, onConfirm }) {
   // For files, split name into base + ext so user only edits the base
-  const dotIdx  = item.type !== 'folder' ? item.name.lastIndexOf('.') : -1
+  const dotIdx = item.type !== 'folder' ? item.name.lastIndexOf('.') : -1
   const extPart = dotIdx > 0 ? item.name.slice(dotIdx) : ''        // e.g. ".jpg"
   const basePart = dotIdx > 0 ? item.name.slice(0, dotIdx) : item.name
 
@@ -89,7 +91,7 @@ function RenameModal({ item, onClose, onConfirm }) {
 
 function MoveModal({ item, onClose, onConfirm }) {
   const [dest, setDest] = useState('')
-  const [data, setData]  = useState(null)
+  const [data, setData] = useState(null)
 
   const load = useCallback(async (p = '') => {
     const res = await fetch(`${API}/api/gallery?path=${encodeURIComponent(p)}`)
@@ -193,18 +195,18 @@ function ContextMenu({ x, y, item, onRename, onMove, onDelete, onCopyUrl, onClos
 // ── Main Gallery Page ─────────────────────────────────────────
 export default function Gallery() {
   const [currentPath, setCurrentPath] = useState('')
-  const [data, setData]               = useState(null)
-  const [loading, setLoading]         = useState(false)
-  const [uploading, setUploading]     = useState(false)
-  const [dragOver, setDragOver]       = useState(false)
-  const [dragItem, setDragItem]       = useState(null)   // item being dragged
-  const [dropTarget, setDropTarget]   = useState(null)   // folder path hovered during drag
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const [dragItem, setDragItem] = useState(null)   // item being dragged
+  const [dropTarget, setDropTarget] = useState(null)   // folder path hovered during drag
 
   // Modals
   const [newFolderOpen, setNewFolderOpen] = useState(false)
-  const [renaming, setRenaming]           = useState(null) // item
-  const [moving, setMoving]               = useState(null) // item
-  const [ctxMenu, setCtxMenu]             = useState(null) // { x, y, item }
+  const [renaming, setRenaming] = useState(null) // item
+  const [moving, setMoving] = useState(null) // item
+  const [ctxMenu, setCtxMenu] = useState(null) // { x, y, item }
 
   const fileInputRef = useRef()
 
@@ -212,7 +214,7 @@ export default function Gallery() {
   const load = useCallback(async (p = currentPath) => {
     setLoading(true)
     try {
-      const res  = await fetch(`${API}/api/gallery?path=${encodeURIComponent(p)}`)
+      const res = await fetch(`${API}/api/gallery?path=${encodeURIComponent(p)}`)
       const json = await res.json()
       setData(json)
       setCurrentPath(p)
@@ -229,7 +231,7 @@ export default function Gallery() {
     const form = new FormData()
     Array.from(files).forEach(f => form.append('files', f))
     try {
-      const res  = await fetch(`${API}/api/gallery/upload?path=${encodeURIComponent(currentPath)}`, { method: 'POST', body: form })
+      const res = await fetch(`${API}/api/gallery/upload?path=${encodeURIComponent(currentPath)}`, { method: 'POST', body: form })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Upload failed')
       toast.success(`${json.data.length} file(s) uploaded`)
@@ -243,7 +245,7 @@ export default function Gallery() {
     if (!name.trim()) { toast.error('Enter a folder name'); return }
     setNewFolderOpen(false)
     try {
-      const res  = await fetch(`${API}/api/gallery/folder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: currentPath, name: name.trim() }) })
+      const res = await fetch(`${API}/api/gallery/folder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: currentPath, name: name.trim() }) })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
       toast.success('Folder created')
@@ -265,7 +267,7 @@ export default function Gallery() {
     if (!swalRes.isConfirmed) return
     try {
       const endpoint = item.type === 'folder' ? '/api/gallery/folder' : '/api/gallery/file'
-      const res  = await fetch(`${API}${endpoint}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: item.path }) })
+      const res = await fetch(`${API}${endpoint}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: item.path }) })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
       toast.success('Deleted')
@@ -278,7 +280,7 @@ export default function Gallery() {
     const item = renaming; setRenaming(null)
     if (!newName.trim() || newName === item.name) return
     try {
-      const res  = await fetch(`${API}/api/gallery/rename`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: item.path, name: newName.trim() }) })
+      const res = await fetch(`${API}/api/gallery/rename`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: item.path, name: newName.trim() }) })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
       toast.success('Renamed')
@@ -289,9 +291,9 @@ export default function Gallery() {
   // ── Move (from modal or drag-drop) ────────────────────────
   const doMove = async (item, dest) => {
     if (item.type === 'folder' && dest.startsWith(item.path)) { toast.error("Can't move a folder into itself"); return }
-    if (dest === currentPath || dest === item.path.replace('/'+item.name,'') || (currentPath === '' && dest === '')) { setMoving(null); return }
+    if (dest === currentPath || dest === item.path.replace('/' + item.name, '') || (currentPath === '' && dest === '')) { setMoving(null); return }
     try {
-      const res  = await fetch(`${API}/api/gallery/move`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: item.path, dest }) })
+      const res = await fetch(`${API}/api/gallery/move`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: item.path, dest }) })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
       toast.success('Moved')
@@ -328,18 +330,20 @@ export default function Gallery() {
     <div className="flex flex-col h-screen overflow-hidden">
 
       {/* ── Toolbar ── */}
-      <div className="flex items-center gap-3 py-3 shrink-0 sticky top-0 z-10"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--surface) 92%, transparent)', backdropFilter: 'blur(8px)', borderBottom: '1px solid var(--border)' }}>
-        <h1 className="text-[15px] font-bold mr-2" style={{ color: 'var(--text)' }}>Gallery</h1>
-
-        <button onClick={() => setNewFolderOpen(true)} className="t-btn-ghost text-[12px]">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>
-          New Folder
-        </button>
-        <button onClick={() => fileInputRef.current?.click()} className="t-btn-primary text-[12px]" disabled={uploading}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
-          {uploading ? 'Uploading…' : 'Upload'}
-        </button>
+      <div >
+        <PageHeader
+          title="Gallery"
+          subtitle="Manage campaign images, product media, and brand assets"
+        >
+          <button onClick={() => setNewFolderOpen(true)} className="t-btn-ghost text-[12px]">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>
+            New Folder
+          </button>
+          <button onClick={() => fileInputRef.current?.click()} className="t-btn-primary text-[12px]" disabled={uploading}>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+            {uploading ? 'Uploading…' : 'Upload'}
+          </button>
+        </PageHeader>
         <input ref={fileInputRef} type="file" multiple accept="image/*,video/mp4,video/webm" className="hidden"
           onChange={e => { doUpload(e.target.files); e.target.value = '' }} />
       </div>
@@ -495,8 +499,8 @@ export default function Gallery() {
 
       {/* ── Modals ── */}
       {newFolderOpen && <NewFolderModal onClose={() => setNewFolderOpen(false)} onConfirm={createFolder} />}
-      {renaming      && <RenameModal item={renaming} onClose={() => setRenaming(null)} onConfirm={doRename} />}
-      {moving        && <MoveModal item={moving} currentPath={currentPath} onClose={() => setMoving(null)} onConfirm={dest => doMove(moving, dest)} />}
+      {renaming && <RenameModal item={renaming} onClose={() => setRenaming(null)} onConfirm={doRename} />}
+      {moving && <MoveModal item={moving} currentPath={currentPath} onClose={() => setMoving(null)} onConfirm={dest => doMove(moving, dest)} />}
 
       {ctxMenu && (
         <ContextMenu
