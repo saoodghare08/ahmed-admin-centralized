@@ -22,6 +22,7 @@ import importRoute from './routes/admin/import.js';
 import analytics from './routes/admin/analytics.js';
 import campaigns from './routes/admin/campaigns.js';
 import authRoutes from './routes/auth.js';
+import storefrontRoutes from './routes/storefront/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +47,7 @@ app.get('/health', (req, res) => {
 
 // ── Public Routes (no auth required) ────────────────────────
 app.use('/api/auth', authRoutes);
+app.use('/api/storefront', storefrontRoutes);
 
 // ── Protected Routes (auth required) ────────────────────────
 app.use('/api/countries', authenticate, countries);

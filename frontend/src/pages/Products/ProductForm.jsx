@@ -9,6 +9,7 @@ import {
   getCountryConfigs, updateVisibility, updateSEO,
   deleteMedia, setPrimaryMedia,
   getProductStock, updateProductStock,
+  getBundle, createBundle, updateBundle, deleteBundle
 } from '../../api'
 import { useAuth } from '../../context/AuthContext'
 import GalleryPicker from '../../components/GalleryPicker'
@@ -25,7 +26,7 @@ const COUNTRIES = [
   { id: 6, code: 'OM', name: 'Oman',    currency_id: 6, currency: 'OMR', flag: '🇴🇲', decimals: 3 },
 ]
 
-const TABS = ['Core', 'Fragrance', 'Media', 'SEO', 'Inventory']
+const TABS = ['Core', 'Fragrance', 'Media', 'SEO', 'Inventory', 'Bundle']
 
 const EMPTY = {
   fgd: '', barcode: '', slug: '', name_en: '', name_ar: '',
@@ -572,6 +573,172 @@ function InventoryTab({ stocks, setStocks }) {
   )
 }
 
+// ── Tab: Bundle ───────────────────────────────────────────────
+function BundleTab({ isBundle, setIsBundle, items, setItems }) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [activeItemIdx, setActiveItemIdx] = useState(null)
+  const [search, setSearch] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [searching, setSearching] = useState(false)
+
+  const addItem = () => {
+    setItems(prev => [...prev, { product_id: null, component_name_en: '', component_name_ar: '', component_image_url: '', qty: 1, sort_order: prev.length }])
+  }
+
+  const updateItem = (idx, field, val) => {
+    setItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: val } : item))
+  }
+
+  const removeItem = (idx) => {
+    setItems(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  const handleProductSearch = async (val) => {
+    setSearch(val)
+    if (!val || val.length < 2) { setSearchResults([]); return }
+    setSearching(true)
+    try {
+      const res = await api.get('/products', { params: { search: val, limit: 5, admin: 1 } })
+      setSearchResults(res.data?.data || [])
+    } catch { /* ignore */ }
+    finally { setSearching(false) }
+  }
+
+  const selectProduct = (idx, prod) => {
+    updateItem(idx, 'product_id', prod.id)
+    updateItem(idx, 'component_name_en', prod.name_en)
+    updateItem(idx, 'component_name_ar', prod.name_ar)
+    // Try to find primary image
+    const primary = prod.media?.find(m => m.is_primary) || prod.media?.[0]
+    if (primary) updateItem(idx, 'component_image_url', primary.url)
+    setSearch('')
+    setSearchResults([])
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <SectionCard title="Bundle Configuration">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>Enable Bundle</h4>
+            <p className="text-[11px]" style={{ color: 'var(--text-subtle)' }}>Turn this product into a bundle of multiple items</p>
+          </div>
+          <Toggle checked={isBundle} onChange={setIsBundle} label={isBundle ? 'Enabled' : 'Disabled'} />
+        </div>
+      </SectionCard>
+
+      {isBundle && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-subtle)' }}>Bundle Items</h3>
+            <button type="button" onClick={addItem} className="t-btn-primary h-8 text-[11px]">
+              + Add Item
+            </button>
+          </div>
+
+          {!items.length && (
+            <div className="py-12 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed"
+              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)' }}>
+              <p className="text-[13px]" style={{ color: 'var(--text-subtle)' }}>No items added yet. Click "+ Add Item" to begin.</p>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
+            {items.map((item, idx) => (
+              <div key={idx} className="rounded-xl p-4 flex flex-col gap-4"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase opacity-30">Item #{idx + 1}</span>
+                  <button type="button" onClick={() => removeItem(idx)} className="text-red-500 text-[11px] font-bold uppercase hover:underline">Remove</button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                  {/* Image Source */}
+                  <div className="md:col-span-2">
+                    <Field label="Image">
+                      <div className="relative aspect-square rounded-lg overflow-hidden border cursor-pointer group"
+                        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)' }}
+                        onClick={() => { setActiveItemIdx(idx); setPickerOpen(true) }}>
+                        {item.component_image_url ? (
+                          <img src={resolveUrl(item.component_image_url)} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center opacity-30">
+                            <svg className="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 4v16m8-8H4"/></svg>
+                            <span className="text-[8px] font-bold uppercase">Select</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                          <span className="text-[9px] text-white font-bold uppercase">Change</span>
+                        </div>
+                      </div>
+                    </Field>
+                  </div>
+
+                  {/* Identification & Links */}
+                  <div className="md:col-span-4 flex flex-col gap-3">
+                    <Field label="Linked Product" hint="Search existing products">
+                      <div className="relative">
+                        <input className="t-input text-[12px]" 
+                          placeholder="Search products..." 
+                          value={item.product_id ? `Linked (ID: ${item.product_id})` : search}
+                          onChange={e => handleProductSearch(e.target.value)}
+                          onFocus={() => { if(item.product_id) { updateItem(idx, 'product_id', null); setSearch('') } }}
+                        />
+                        {searching && <div className="absolute right-3 top-1/2 -translate-y-1/2 scale-75"><div className="animate-spin h-4 w-4 border-2 border-brand border-t-transparent rounded-full" /></div>}
+                        
+                        {searchResults.length > 0 && !item.product_id && (
+                          <div className="absolute z-10 left-0 right-0 mt-1 rounded-xl shadow-2xl border max-h-48 overflow-y-auto"
+                            style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                            {searchResults.map(p => (
+                              <div key={p.id} onClick={() => selectProduct(idx, p)}
+                                className="px-3 py-2 text-[12px] cursor-pointer hover:bg-brand/10 transition-colors flex items-center justify-between border-b last:border-0"
+                                style={{ borderColor: 'var(--border-soft)' }}>
+                                <span className="font-medium">{p.name_en}</span>
+                                <span className="text-[10px] opacity-40">{p.fgd}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </Field>
+                    <Field label="Name (EN)">
+                      <input className="t-input text-[12px]" value={item.component_name_en} onChange={e => updateItem(idx, 'component_name_en', e.target.value)} />
+                    </Field>
+                  </div>
+
+                  {/* Arabic Name & Qty */}
+                  <div className="md:col-span-4 flex flex-col gap-3">
+                    <Field label="Name (AR)">
+                      <input className="t-input text-[12px] text-right" dir="rtl" value={item.component_name_ar} onChange={e => updateItem(idx, 'component_name_ar', e.target.value)} />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Qty">
+                        <input type="number" className="t-input text-[12px] font-bold" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', Number(e.target.value))} />
+                      </Field>
+                      <Field label="Sort">
+                        <input type="number" className="t-input text-[12px]" value={item.sort_order} onChange={e => updateItem(idx, 'sort_order', Number(e.target.value))} />
+                      </Field>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <GalleryPicker open={pickerOpen} onClose={() => setPickerOpen(false)} multiple={false}
+        onSelect={(path) => {
+          if (activeItemIdx !== null) {
+            updateItem(activeItemIdx, 'component_image_url', path.startsWith('/') ? path : `/gallery/${path}`)
+          }
+          setActiveItemIdx(null)
+        }} 
+      />
+    </div>
+  )
+}
+
 // ── Main ProductForm ────────────────────────────────────────────
 export default function ProductForm() {
   const { hasPermission, user } = useAuth()
@@ -602,11 +769,15 @@ export default function ProductForm() {
   const [prices, setPrices]   = useState(COUNTRIES.map(c => ({ country_id: c.id, currency_id: c.currency_id, regular_price: '' })))
   const [stocks, setStocks]   = useState(COUNTRIES.map(c => ({ country_id: c.id, quantity: 0 })))
 
+  const [isBundle, setIsBundle] = useState(false)
+  const [bundleItems, setBundleItems] = useState([])
+  const [originalBundleId, setOriginalBundleId] = useState(null)
+
   // Dirty tracking via ref (no extra state = no re-render loops)
   const savedRef  = useRef(null)
-  const snap      = (f, n, c, p, s) => JSON.stringify({ f, n, c, p, s })
-  const isDirty   = savedRef.current !== null && savedRef.current !== snap(form, notes, configs, prices, stocks)
-  const markClean = () => { savedRef.current = snap(form, notes, configs, prices, stocks) }
+  const snap      = (f, n, c, p, s, ib, bi) => JSON.stringify({ f, n, c, p, s, ib, bi })
+  const isDirty   = savedRef.current !== null && savedRef.current !== snap(form, notes, configs, prices, stocks, isBundle, bundleItems)
+  const markClean = () => { savedRef.current = snap(form, notes, configs, prices, stocks, isBundle, bundleItems) }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -710,9 +881,28 @@ export default function ProductForm() {
     }))
   }, [stockData, resetKey])
 
+  // Fetch bundle
+  const { data: bundleData } = useQuery({
+    queryKey: ['bundle', id],
+    queryFn:  () => getBundle(id),
+    enabled:  !!isEdit,
+    select:   r => r?.data || r || null,
+  })
+  useEffect(() => {
+    if (!bundleData) {
+      setIsBundle(false)
+      setBundleItems([])
+      setOriginalBundleId(null)
+      return
+    }
+    setIsBundle(true)
+    setOriginalBundleId(bundleData.bundle_id)
+    setBundleItems(bundleData.items || [])
+  }, [bundleData, resetKey])
+
   // Tracker for the latest state to avoid closure bugs in the timeout snapshot
   const latestState = useRef()
-  latestState.current = { form, notes, configs, prices, stocks }
+  latestState.current = { form, notes, configs, prices, stocks, isBundle, bundleItems }
 
   // Mark clean snapshot once all data is in state
   // For new products: immediately after mount
@@ -723,7 +913,9 @@ export default function ProductForm() {
       { top: { ...EMPTY_NOTE }, heart: { ...EMPTY_NOTE }, base: { ...EMPTY_NOTE } },
       COUNTRIES.map(c => ({ country_id: c.id, is_visible: 1, slug_override: '', meta_title_en: '', meta_title_ar: '', meta_desc_en: '', meta_desc_ar: '', sort_order: 0 })),
       COUNTRIES.map(c => ({ country_id: c.id, currency_id: c.currency_id, regular_price: '' })),
-      COUNTRIES.map(c => ({ country_id: c.id, quantity: 0 }))
+      COUNTRIES.map(c => ({ country_id: c.id, quantity: 0 })),
+      false,
+      []
     )
   }, [isEdit])
 
@@ -732,12 +924,12 @@ export default function ProductForm() {
     if (!isEdit || !productData || !ccData || !pricingData) return
     const t = setTimeout(() => {
       if (savedRef.current === null) {
-        const { form, notes, configs, prices, stocks } = latestState.current
-        savedRef.current = snap(form, notes, configs, prices, stocks)
+        const { form, notes, configs, prices, stocks, isBundle, bundleItems } = latestState.current
+        savedRef.current = snap(form, notes, configs, prices, stocks, isBundle, bundleItems)
       }
-    }, 150) // Increased slightly to guarantee all tab mapping effects have flushed to DOM
+    }, 250) // Increased to guarantee all data including bundle is in
     return () => clearTimeout(t)
-  }, [isEdit, productData, ccData, pricingData, stockData, resetKey])
+  }, [isEdit, productData, ccData, pricingData, stockData, bundleData, resetKey])
 
   // Beforeunload guard
   useEffect(() => {
@@ -819,6 +1011,20 @@ export default function ProductForm() {
       }
 
       await Promise.allSettled([
+        api.put(`/products/${finalProductId}/stock`, { stocks }),
+
+        // Handle Bundle saving
+        (async () => {
+          if (isBundle) {
+            if (originalBundleId) {
+              await updateBundle(originalBundleId, bundleItems)
+            } else {
+              await createBundle({ product_id: finalProductId, items: bundleItems })
+            }
+          } else if (originalBundleId) {
+            await deleteBundle(finalProductId)
+          }
+        })(),
         api.put(`/products/${finalProductId}/notes`, {
           notes: ['top', 'heart', 'base'].map(type => ({
             note_type: type,
@@ -980,6 +1186,7 @@ export default function ProductForm() {
         {tab === 'Media'     && <MediaTab mediaList={mediaList} setMediaList={setMediaList} productId={isEdit ? id : createdId} setPrimaryMedia={setPrimaryMedia} deleteMedia={deleteMedia} />}
         {tab === 'SEO'       && <SEOTab configs={configs} setConfigs={setConfigs} />}
         {tab === 'Inventory' && <InventoryTab stocks={stocks} setStocks={setStocks} />}
+        {tab === 'Bundle'    && <BundleTab isBundle={isBundle} setIsBundle={setIsBundle} items={bundleItems} setItems={setBundleItems} />}
       </div>
     </div>
   )

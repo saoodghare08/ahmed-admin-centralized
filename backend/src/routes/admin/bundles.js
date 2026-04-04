@@ -1,5 +1,6 @@
 import express from 'express';
 import db from '../../config/db.js';
+import { logAudit } from '../../middleware/auth.js';
 
 const router = express.Router();
 
@@ -75,6 +76,9 @@ router.post('/', async (req, res, next) => {
     }
 
     await conn.commit();
+    
+    await logAudit(req, 'create', 'bundles', bundleId, { product_id, item_count: items.length });
+
     res.status(201).json({ data: { bundle_id: bundleId } });
   } catch (err) {
     await conn.rollback();
@@ -103,6 +107,9 @@ router.put('/:bundleId/items', async (req, res, next) => {
       );
     }
     await conn.commit();
+
+    await logAudit(req, 'update', 'bundles', req.params.bundleId, { item_count: items.length });
+
     res.json({ message: 'Bundle items updated' });
   } catch (err) {
     await conn.rollback();
@@ -118,6 +125,9 @@ router.delete('/:productId', async (req, res, next) => {
     await db.query(
       `DELETE FROM bundles WHERE product_id = ?`, [req.params.productId]
     );
+
+    await logAudit(req, 'delete', 'bundles', req.params.productId, { action: 'remove_bundle' });
+
     res.json({ message: 'Bundle removed' });
   } catch (err) { next(err); }
 });
