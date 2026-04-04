@@ -28,10 +28,21 @@ async function buildProduct(productId, countryCode) {
   }
 
   // Fragrance notes
-  const [notes] = await db.query(
+  const [notesRows] = await db.query(
     `SELECT * FROM fragrance_notes WHERE product_id = ? ORDER BY FIELD(note_type,'top','heart','base')`,
     [productId]
   );
+
+  const notes = notesRows.map(n => {
+    if (typeof n.ingredients_en === 'string') {
+      try { n.ingredients_en = JSON.parse(n.ingredients_en); } catch (e) { n.ingredients_en = []; }
+    }
+    if (typeof n.ingredients_ar === 'string') {
+      try { n.ingredients_ar = JSON.parse(n.ingredients_ar); } catch (e) { n.ingredients_ar = []; }
+    }
+    return n;
+  });
+
 
   // Price and Overrides for country
   let price = null;
@@ -205,12 +216,15 @@ router.post('/', async (req, res, next) => {
     // Fragrance notes
     for (const n of fragrance_notes) {
       await conn.query(
-        `INSERT INTO fragrance_notes (product_id, note_type, ingredients, description_en, description_ar, image_url)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [productId, n.note_type, JSON.stringify(n.ingredients || []),
+        `INSERT INTO fragrance_notes (product_id, note_type, ingredients_en, ingredients_ar, description_en, description_ar, image_url)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [productId, n.note_type,
+         Array.isArray(n.ingredients_en) ? JSON.stringify(n.ingredients_en) : '[]',
+         Array.isArray(n.ingredients_ar) ? JSON.stringify(n.ingredients_ar) : '[]',
          n.description_en || null, n.description_ar || null, n.image_url || null]
       );
     }
+
 
     // Per-country configs
     for (const cc of country_configs) {
@@ -355,7 +369,18 @@ router.get('/:id/notes', async (req, res, next) => {
       `SELECT * FROM fragrance_notes WHERE product_id = ? ORDER BY FIELD(note_type,'top','heart','base')`,
       [req.params.id]
     );
-    res.json({ data: rows });
+
+    const data = rows.map(n => {
+      if (typeof n.ingredients_en === 'string') {
+        try { n.ingredients_en = JSON.parse(n.ingredients_en); } catch (e) { n.ingredients_en = []; }
+      }
+      if (typeof n.ingredients_ar === 'string') {
+        try { n.ingredients_ar = JSON.parse(n.ingredients_ar); } catch (e) { n.ingredients_ar = []; }
+      }
+      return n;
+    });
+
+    res.json({ data });
   } catch (err) { next(err); }
 });
 
@@ -376,9 +401,10 @@ router.put('/:id/notes', async (req, res, next) => {
            description_ar = VALUES(description_ar),
            image_url = VALUES(image_url)`,
         [req.params.id, n.note_type,
-         JSON.stringify(n.ingredients_en || []),
-         JSON.stringify(n.ingredients_ar || []),
+         Array.isArray(n.ingredients_en) ? JSON.stringify(n.ingredients_en) : (typeof n.ingredients_en === 'string' ? n.ingredients_en : '[]'),
+         Array.isArray(n.ingredients_ar) ? JSON.stringify(n.ingredients_ar) : (typeof n.ingredients_ar === 'string' ? n.ingredients_ar : '[]'),
          n.description_en || null, n.description_ar || null, n.image_url || null]
+
       );
     }
     await conn.commit();
@@ -450,9 +476,8 @@ router.put('/:id/seo', async (req, res, next) => {
     }
     await conn.commit();
     
-    await logAudit(req, 'update', 'products', req.params.id, { action: 'update_country_configs', count: configs.length });
+    await logAudit(req, 'update', 'products', req.params.id, { action: 'update_seo', count: seo.length });
 
-    res.json({ message: 'Country configs saved' });
     res.json({ message: 'SEO data saved' });
   } catch (err) { await conn.rollback(); next(err); }
   finally { conn.release(); }

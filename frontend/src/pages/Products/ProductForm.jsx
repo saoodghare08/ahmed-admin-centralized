@@ -88,9 +88,13 @@ const resolveUrl = (src) => {
 }
 
 // ── Tab: Core Info ────────────────────────────────────────────
-function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, setConfigs }) {
+function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, setConfigs, stocks, setStocks }) {
   const updateVisibility = (countryId, val) =>
     setConfigs(prev => prev.map(c => c.country_id === countryId ? { ...c, is_visible: val } : c))
+
+  const updateStocks = (countryId, val) =>
+    setStocks(prev => prev.map(s => s.country_id === countryId ? { ...s, quantity: Number(val) } : s))
+
   const selectedCat = categories?.find(c => c.id === Number(form.category_id))
   return (
     <div className="grid grid-cols-1 gap-5">
@@ -149,7 +153,6 @@ function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, se
           </div>
         </SectionCard>
       </div>
-
       <SectionCard title="Names">
         <div className="grid grid-cols-2 gap-4">
           <Field label="Name (English)" required>
@@ -160,6 +163,23 @@ function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, se
           <Field label="Name (Arabic)">
             <input className="t-input text-right" dir="rtl" value={form.name_ar}
               onChange={e => set('name_ar', e.target.value)} placeholder="اسم المنتج بالعربي" />
+          </Field>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Descriptions">
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Description (English)">
+            <textarea className="t-input h-32 leading-relaxed" 
+              value={form.description_en || ''} 
+              onChange={e => set('description_en', e.target.value)} 
+              placeholder="Full product story and features in English..." />
+          </Field>
+          <Field label="Description (Arabic)">
+            <textarea className="t-input h-32 leading-relaxed text-right" dir="rtl"
+              value={form.description_ar || ''} 
+              onChange={e => set('description_ar', e.target.value)} 
+              placeholder="وصف المنتج وتفاصيله بالعربي..." />
           </Field>
         </div>
       </SectionCard>
@@ -231,6 +251,25 @@ function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, se
                     value={p.regular_price || ''} min="0"
                     onChange={e => setPrices(prev => prev.map(x => x.country_id === p.country_id ? { ...x, regular_price: e.target.value } : x))}
                     placeholder="0.00" />
+                </div>
+              </Field>
+            )
+          })}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Stock Management">
+        <div className="grid grid-cols-3 gap-5">
+          {stocks.map(s => {
+            const country = COUNTRIES.find(c => c.id === s.country_id)
+            return (
+              <Field key={s.country_id} label={`${country?.name} Stock`}>
+                <div className="flex items-center gap-3">
+                  <span className="text-xl leading-none">{country?.flag}</span>
+                  <input className="t-input w-full shadow-none font-bold" type="number"
+                    value={s.quantity ?? ''} min="0"
+                    onChange={e => updateStocks(s.country_id, e.target.value)}
+                    placeholder="0" />
                 </div>
               </Field>
             )
@@ -314,17 +353,13 @@ function MediaTab({ mediaList, setMediaList, productId, setPrimaryMedia, deleteM
               const isPrimary = mediaList.length === 0 && i === 0 ? 1 : 0
               if (productId) {
                 try {
-                  const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api')
-                  const r = await fetch(`${API_BASE}/media/link`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ product_id: productId, url, is_primary: isPrimary, sort_order: mediaList.length + i }),
-                  }).then(res => res.json())
+                  const r = await api.post('/media/link', { product_id: productId, url, is_primary: isPrimary, sort_order: mediaList.length + i })
                   newItems.push({ id: r.data?.id, url, is_primary: isPrimary, media_type: 'image' })
                 } catch {
                   newItems.push({ url, is_primary: isPrimary, media_type: 'image' })
                 }
               } else {
+
                 newItems.push({ url, is_primary: isPrimary, media_type: 'image' })
               }
             }
@@ -940,7 +975,7 @@ export default function ProductForm() {
 
       {/* ── Tab content ── */}
       <div className="flex-1 overflow-y-auto px-8 py-6">
-        {tab === 'Core'      && <CoreTab form={form} set={set} categories={catData} isEdit={isEdit} prices={prices} setPrices={setPrices} configs={configs} setConfigs={setConfigs} />}
+        {tab === 'Core'      && <CoreTab form={form} set={set} categories={catData} isEdit={isEdit} prices={prices} setPrices={setPrices} configs={configs} setConfigs={setConfigs} stocks={stocks} setStocks={setStocks} />}
         {tab === 'Fragrance' && <FragranceTab notes={notes} setNotes={setNotes} />}
         {tab === 'Media'     && <MediaTab mediaList={mediaList} setMediaList={setMediaList} productId={isEdit ? id : createdId} setPrimaryMedia={setPrimaryMedia} deleteMedia={deleteMedia} />}
         {tab === 'SEO'       && <SEOTab configs={configs} setConfigs={setConfigs} />}

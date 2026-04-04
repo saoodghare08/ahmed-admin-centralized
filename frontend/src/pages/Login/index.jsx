@@ -33,7 +33,7 @@ export default function Login() {
             </div>
             <h1 className="login-branding-title">Central Admin</h1>
             <p className="login-branding-subtitle">
-              Manage your GCC storefronts, products, and analytics — all in one place.
+              Manage your GCC storefronts and products — all in one place.
             </p>
             <div className="login-branding-decoration">
               <div className="login-decoration-line"></div>

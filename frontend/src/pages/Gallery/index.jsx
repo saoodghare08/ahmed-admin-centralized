@@ -10,8 +10,8 @@ const galleryUrl = (p) => `${API}/gallery/${p}`
 
 // Human-readable file size
 const fmtSize = (bytes) => {
-  if (bytes < 1024)       return `${bytes} B`
-  if (bytes < 1048576)    return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1048576).toFixed(1)} MB`
 }
 
@@ -25,7 +25,7 @@ const FolderIcon = ({ color = 'var(--color-brand)' }) => (
 )
 const VideoIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8" style={{ color: 'var(--text-subtle)' }}>
-    <path strokeLinecap="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9A2.25 2.25 0 0013.5 5.25h-9A2.25 2.25 0 002.25 9.75v9A2.25 2.25 0 004.5 18.75z"/>
+    <path strokeLinecap="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9A2.25 2.25 0 0013.5 5.25h-9A2.25 2.25 0 002.25 9.75v9A2.25 2.25 0 004.5 18.75z" />
   </svg>
 )
 
@@ -51,7 +51,7 @@ function NewFolderModal({ onClose, onConfirm }) {
 
 function RenameModal({ item, onClose, onConfirm }) {
   // For files, split name into base + ext so user only edits the base
-  const dotIdx  = item.type !== 'folder' ? item.name.lastIndexOf('.') : -1
+  const dotIdx = item.type !== 'folder' ? item.name.lastIndexOf('.') : -1
   const extPart = dotIdx > 0 ? item.name.slice(dotIdx) : ''        // e.g. ".jpg"
   const basePart = dotIdx > 0 ? item.name.slice(0, dotIdx) : item.name
 
@@ -90,7 +90,7 @@ function RenameModal({ item, onClose, onConfirm }) {
 
 function MoveModal({ item, onClose, onConfirm }) {
   const [dest, setDest] = useState('')
-  const [data, setData]  = useState(null)
+  const [data, setData] = useState(null)
 
   const load = useCallback(async (p = '') => {
     try {
@@ -195,18 +195,18 @@ function ContextMenu({ x, y, item, onRename, onMove, onDelete, onCopyUrl, onClos
 // ── Main Gallery Page ─────────────────────────────────────────
 export default function Gallery() {
   const [currentPath, setCurrentPath] = useState('')
-  const [data, setData]               = useState(null)
-  const [loading, setLoading]         = useState(false)
-  const [uploading, setUploading]     = useState(false)
-  const [dragOver, setDragOver]       = useState(false)
-  const [dragItem, setDragItem]       = useState(null)   // item being dragged
-  const [dropTarget, setDropTarget]   = useState(null)   // folder path hovered during drag
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const [dragItem, setDragItem] = useState(null)   // item being dragged
+  const [dropTarget, setDropTarget] = useState(null)   // folder path hovered during drag
 
   // Modals
   const [newFolderOpen, setNewFolderOpen] = useState(false)
-  const [renaming, setRenaming]           = useState(null) // item
-  const [moving, setMoving]               = useState(null) // item
-  const [ctxMenu, setCtxMenu]             = useState(null) // { x, y, item }
+  const [renaming, setRenaming] = useState(null) // item
+  const [moving, setMoving] = useState(null) // item
+  const [ctxMenu, setCtxMenu] = useState(null) // { x, y, item }
 
   const fileInputRef = useRef()
 
@@ -284,7 +284,7 @@ export default function Gallery() {
   // ── Move (from modal or drag-drop) ────────────────────────
   const doMove = async (item, dest) => {
     if (item.type === 'folder' && dest.startsWith(item.path)) { toast.error("Can't move a folder into itself"); return }
-    if (dest === currentPath || dest === item.path.replace('/'+item.name,'') || (currentPath === '' && dest === '')) { setMoving(null); return }
+    if (dest === currentPath || dest === item.path.replace('/' + item.name, '') || (currentPath === '' && dest === '')) { setMoving(null); return }
     try {
       await api.patch(`/gallery/move`, { path: item.path, dest })
       toast.success('Moved')
@@ -318,93 +318,133 @@ export default function Gallery() {
   )
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex flex-col gap-6 p-6 min-h-screen">
 
-      {/* ── Toolbar ── */}
-      <div className="flex items-center gap-3 py-3 shrink-0 sticky top-0 z-10"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--surface) 92%, transparent)', backdropFilter: 'blur(8px)', borderBottom: '1px solid var(--border)' }}>
-        <h1 className="text-[15px] font-bold mr-2" style={{ color: 'var(--text)' }}>Gallery</h1>
+      {/* ── Header & Toolbar ────────────────────────────────────── */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-3xl font-black tracking-tight flex items-center gap-2">
+              Gallery
+              <span className="t-badge-gray" style={{ fontSize: '11px', letterSpacing: '0.07em' }}>
+                Media Assets
+              </span>
+            </h1>
+            <p className="text-[14px] font-medium" style={{ color: 'var(--text-subtle)' }}>
+              Manage images, videos, and product media across all storefronts
+            </p>
+          </div>
 
-        <button onClick={() => setNewFolderOpen(true)} className="t-btn-ghost text-[12px]">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>
-          New Folder
-        </button>
-        <button onClick={() => fileInputRef.current?.click()} className="t-btn-primary text-[12px]" disabled={uploading}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
-          {uploading ? 'Uploading…' : 'Upload'}
-        </button>
-        <input ref={fileInputRef} type="file" multiple accept="image/*,video/mp4,video/webm" className="hidden"
-          onChange={e => { doUpload(e.target.files); e.target.value = '' }} />
-      </div>
-
-      {/* ── Navigation sub-bar: back + breadcrumbs ── */}
-      {data && (
-        <div className="flex items-center gap-2 px-6 py-2 shrink-0"
-          style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--surface)' }}>
-          {currentPath ? (
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => load(data.breadcrumbs[data.breadcrumbs.length - 2]?.path ?? '')}
-              className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors shrink-0"
-              style={{ color: 'var(--text-muted)', backgroundColor: 'var(--surface-2)', border: '1px solid var(--border)' }}
-              onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'var(--color-brand)' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
-              title="Go up"
+              onClick={() => setNewFolderOpen(true)}
+              className="t-btn-surface"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
               </svg>
+              New Folder
             </button>
-          ) : (
-            <div className="w-7 h-7 shrink-0" />
-          )}
-          <div className="flex items-center gap-1 overflow-x-auto">
-            {data.breadcrumbs.map((crumb, i) => (
-              <span key={crumb.path} className="flex items-center gap-1">
-                {i > 0 && <span style={{ color: 'var(--text-subtle)' }}>/</span>}
-                <button className="text-[12px] transition-colors px-1 rounded whitespace-nowrap"
-                  style={{ color: i === data.breadcrumbs.length - 1 ? 'var(--text)' : 'var(--text-muted)' }}
-                  onMouseEnter={e => { if (i < data.breadcrumbs.length - 1) e.currentTarget.style.color = 'var(--color-brand)' }}
-                  onMouseLeave={e => { if (i < data.breadcrumbs.length - 1) e.currentTarget.style.color = 'var(--text-muted)' }}
-                  onClick={() => load(crumb.path)}>
-                  {crumb.name}
-                </button>
-              </span>
-            ))}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="t-btn-dark pr-5"
+              disabled={uploading}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              {uploading ? 'Uploading…' : 'Upload Files'}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,video/mp4,video/webm"
+              className="hidden"
+              onChange={e => { doUpload(e.target.files); e.target.value = '' }}
+            />
           </div>
         </div>
-      )}
 
-      {/* ── Drop zone (entire content area) ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-5 relative"
+        {/* Navigation / Breadcrumbs (Toolbar Style) */}
+        <div className="flex items-center gap-3 p-3 rounded-2xl t-toolbar">
+          {currentPath && (
+            <>
+              <button
+                onClick={() => load(data?.breadcrumbs[data.breadcrumbs.length - 2]?.path ?? '')}
+                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                style={{ color: 'var(--text-subtle)' }}
+                title="Go Back"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+              </button>
+              <div className="t-divider" />
+            </>
+          )}
+
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+            {data?.breadcrumbs.map((crumb, i) => (
+              <div key={crumb.path} className="flex items-center gap-1">
+                {i > 0 && (
+                  <svg className="w-3 h-3 opacity-20 mx-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path d="M9 5l7 7-7 7" />
+                  </svg>
+                )}
+                <button
+                  onClick={() => load(crumb.path)}
+                  className={`px-2 py-1 rounded-lg text-[13px] font-bold transition-all whitespace-nowrap ${i === data.breadcrumbs.length - 1 ? 'text-brand' : 'opacity-40 hover:opacity-100 hover:bg-white/5'}`}
+                  style={i === data.breadcrumbs.length - 1 ? { color: 'var(--color-brand)' } : { color: 'var(--text)' }}
+                >
+                  {crumb.name === 'Gallery' ? '🏠 Home' : crumb.name}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="ml-auto text-[11px] font-bold uppercase tracking-widest opacity-30 px-2 select-none">
+             {data?.folders?.length || 0} Folders · {data?.files?.length || 0} Files
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main Grid ───────────────────────────────────────────── */}
+      <div
+        className="flex-1 relative min-h-[400px]"
         onDragOver={e => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
         onDrop={e => {
           e.preventDefault(); setDragOver(false)
           if (e.dataTransfer.files.length) { doUpload(e.dataTransfer.files); return }
-          // File card dropped on empty space → nothing
-        }}>
-
+        }}
+      >
         {/* Drag overlay */}
         {dragOver && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl pointer-events-none"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--color-brand) 12%, transparent)', border: '2px dashed var(--color-brand)' }}>
-            <p className="text-lg font-semibold" style={{ color: 'var(--color-brand)' }}>Drop files to upload</p>
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-3xl backdrop-blur-md pointer-events-none transition-all duration-300"
+            style={{ backgroundColor: 'color-mix(in srgb, var(--color-brand) 8%, transparent)', border: '2px dashed var(--color-brand)' }}>
+            <div className="w-20 h-20 rounded-full bg-brand flex items-center justify-center shadow-2xl shadow-brand/40 mb-4 animate-bounce">
+               <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M12 4.5v15m7.5-7.5h-15" /></svg>
+            </div>
+            <p className="text-xl font-black tracking-tight" style={{ color: 'var(--text)' }}>Drop to Upload</p>
+            <p className="text-[13px] mt-1 opacity-60">Adding to {currentPath || 'Root'}</p>
           </div>
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <p className="text-sm animate-pulse" style={{ color: 'var(--text-subtle)' }}>Loading…</p>
+          <div className="flex items-center justify-center h-64">
+            <div className="login-spinner" style={{ width: 40, height: 40, borderWidth: 4 }}></div>
           </div>
         ) : (
-          <>
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
             {/* ── Folders ── */}
             {data?.folders.length > 0 && (
-              <div className="mb-6">
-                <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-subtle)' }}>Folders</p>
+              <div className="mb-10">
+                <p className="text-[11px] font-black uppercase tracking-widest mb-4 opacity-40 select-none">Categories &amp; Folders</p>
                 <div className={gridCls}>
                   {data.folders.map(folder => (
-                    <div key={folder.path}
+                    <div
+                      key={folder.path}
                       draggable
                       onDragStart={e => onItemDragStart(e, folder)}
                       onDragOver={e => onFolderDragOver(e, folder.path)}
@@ -412,18 +452,17 @@ export default function Gallery() {
                       onDrop={e => onFolderDrop(e, folder.path)}
                       onContextMenu={e => openCtx(e, folder)}
                       onDoubleClick={() => load(folder.path)}
-                      className="group rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer transition-all duration-150 select-none"
+                      className={`group rounded-2xl p-4 flex flex-col items-center gap-3 cursor-pointer transition-all duration-300 select-none t-card ${dropTarget === folder.path ? 'ring-2 ring-brand ring-offset-4 ring-offset-bg bg-brand/[0.05]' : 'hover:scale-[1.03] hover:shadow-xl'}`}
                       style={{
-                        backgroundColor: dropTarget === folder.path
-                          ? 'color-mix(in srgb, var(--color-brand) 15%, transparent)'
-                          : 'var(--surface)',
-                        border: `1px solid ${dropTarget === folder.path ? 'var(--color-brand)' : 'var(--border)'}`,
+                        backgroundColor: 'var(--surface)',
+                        border: '1px solid var(--border)',
                       }}
-                      onMouseEnter={e => { if (dropTarget !== folder.path) e.currentTarget.style.borderColor = 'var(--color-brand)' }}
-                      onMouseLeave={e => { if (dropTarget !== folder.path) e.currentTarget.style.borderColor = 'var(--border)' }}
                     >
-                      <div className="w-12 h-12"><FolderIcon /></div>
-                      <p className="text-[12px] font-medium text-center truncate w-full" style={{ color: 'var(--text)' }}>{folder.name}</p>
+                      <div className="w-14 h-14 relative">
+                         <FolderIcon />
+                         <div className="absolute inset-0 bg-white/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity rounded-full" />
+                      </div>
+                      <p className="text-[13px] font-bold text-center truncate w-full" style={{ color: 'var(--text)' }}>{folder.name}</p>
                     </div>
                   ))}
                 </div>
@@ -433,41 +472,63 @@ export default function Gallery() {
             {/* ── Files ── */}
             {data?.files.length > 0 && (
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-subtle)' }}>
-                  Files <span style={{ color: 'var(--text-subtle)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>({data.files.length})</span>
+                <p className="text-[11px] font-black uppercase tracking-widest mb-4 opacity-40 select-none">
+                  Recent Files
                 </p>
                 <div className={gridCls}>
                   {data.files.map(file => (
-                    <div key={file.path}
+                    <div
+                      key={file.path}
                       draggable
                       onDragStart={e => onItemDragStart(e, file)}
                       onContextMenu={e => openCtx(e, file)}
-                      className="group rounded-xl overflow-hidden cursor-pointer transition-all duration-150 select-none"
+                      onDoubleClick={() => window.open(galleryUrl(file.path), '_blank')}
+                      className="group rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 select-none t-card hover:scale-[1.03] hover:shadow-xl"
                       style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-                      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-brand)'}
-                      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
                     >
-                      {/* Thumbnail */}
+                      {/* Thumbnail Container */}
                       <div className="relative aspect-square overflow-hidden" style={{ backgroundColor: 'var(--surface-2)' }}>
                         {isVideo(file) ? (
-                          <div className="w-full h-full flex items-center justify-center"><VideoIcon /></div>
+                          <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                             <VideoIcon />
+                             <span className="text-[9px] font-black uppercase tracking-tighter opacity-40">Video File</span>
+                          </div>
                         ) : (
-                          <img src={galleryUrl(file.path)} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
+                          <img src={galleryUrl(file.path)} alt={file.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
                         )}
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1"
-                          style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}>
-                          <button className="text-[11px] font-semibold text-white px-2 py-1 rounded-md transition-colors"
+                        
+                        {/* Hover Overlay */}
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-2 p-4"
+                          style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+                          <button
+                            className="w-full h-9 text-[11px] font-black uppercase tracking-wider text-white rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
                             style={{ backgroundColor: 'var(--color-brand)' }}
-                            onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(galleryUrl(file.path)); toast.success('URL copied!') }}>
+                            onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(galleryUrl(file.path)); toast.success('URL copied!') }}
+                          >
                             Copy URL
                           </button>
+                          <button
+                            className="w-full h-9 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}
+                            onClick={e => { e.stopPropagation(); setMoving(file) }}
+                          >
+                            Move
+                          </button>
+                        </div>
+
+                        {/* Top-right file info */}
+                        <div className="absolute top-2 right-2 flex flex-col items-end gap-1 pointer-events-none">
+                            <span className="px-1.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-tighter backdrop-blur-md"
+                              style={{ backgroundColor: 'rgba(0,0,0,0.4)', color: 'white' }}>
+                              {file.name.split('.').pop()}
+                            </span>
                         </div>
                       </div>
-                      {/* Name + size */}
-                      <div className="px-2 py-1.5">
-                        <p className="text-[11px] font-medium truncate" style={{ color: 'var(--text)' }}>{file.name}</p>
-                        <p className="text-[10px]" style={{ color: 'var(--text-subtle)' }}>{fmtSize(file.size)}</p>
+
+                      {/* Info Footer */}
+                      <div className="px-4 py-3 flex flex-col gap-0.5">
+                        <p className="text-[12px] font-bold truncate" style={{ color: 'var(--text)' }}>{file.name}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-tighter opacity-30">{fmtSize(file.size)}</p>
                       </div>
                     </div>
                   ))}
@@ -476,20 +537,23 @@ export default function Gallery() {
             )}
 
             {!data?.folders.length && !data?.files.length && (
-              <div className="flex flex-col items-center justify-center h-52" style={{ color: 'var(--text-subtle)' }}>
-                <p className="text-4xl mb-3">🖼</p>
-                <p className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>This folder is empty</p>
-                <p className="text-[12px] mt-1">Drag files here or click Upload to add images</p>
+              <div className="flex flex-col items-center justify-center py-32 rounded-3xl border-2 border-dashed" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}>
+                <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6" style={{ backgroundColor: 'var(--surface-2)' }}>
+                   <span className="text-4xl text-brand">📁</span>
+                </div>
+                <h3 className="text-xl font-black tracking-tight" style={{ color: 'var(--text)' }}>Empty Folder</h3>
+                <p className="text-[14px] mt-1" style={{ color: 'var(--text-subtle)' }}>Drag files here or click "Upload Files"</p>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
 
+
       {/* ── Modals ── */}
       {newFolderOpen && <NewFolderModal onClose={() => setNewFolderOpen(false)} onConfirm={createFolder} />}
-      {renaming      && <RenameModal item={renaming} onClose={() => setRenaming(null)} onConfirm={doRename} />}
-      {moving        && <MoveModal item={moving} currentPath={currentPath} onClose={() => setMoving(null)} onConfirm={dest => doMove(moving, dest)} />}
+      {renaming && <RenameModal item={renaming} onClose={() => setRenaming(null)} onConfirm={doRename} />}
+      {moving && <MoveModal item={moving} currentPath={currentPath} onClose={() => setMoving(null)} onConfirm={dest => doMove(moving, dest)} />}
 
       {ctxMenu && (
         <ContextMenu

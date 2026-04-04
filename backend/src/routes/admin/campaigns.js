@@ -1,621 +1,366 @@
 import express from 'express';
 import db from '../../config/db.js';
+import { logAudit } from '../../middleware/auth.js';
 
 const router = express.Router();
 
 /* ================================================================
-   HELPERS
-   ================================================================ */
-
-// Insert type-specific rules inside a transaction connection
-async function insertDiscountRules(conn, campaignId, rules, overrides = []) {
-  if (!rules) return;
-  await conn.query(
-    `INSERT INTO campaign_discount_rules (campaign_id, discount_type, discount_value, min_price)
-     VALUES (?, ?, ?, ?)`,
-    [campaignId, rules.discount_type, rules.discount_value, rules.min_price || 0]
-  );
-  if (overrides.length) {
-    const vals = overrides.map(o => [campaignId, o.product_id, o.discount_type, o.discount_value]);
-    await conn.query(
-      `INSERT INTO campaign_product_overrides (campaign_id, product_id, discount_type, discount_value) VALUES ?`,
-      [vals]
-    );
-  }
-}
-
-async function insertBxgyRules(conn, campaignId, rules, products) {
-  if (!rules) return;
-  await conn.query(
-    `INSERT INTO campaign_bxgy_rules
-       (campaign_id, buy_qty, get_qty, get_discount_type, get_discount_value, is_repeatable, max_repeats, allow_overlap)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [campaignId, rules.buy_qty, rules.get_qty, rules.get_discount_type || 'free',
-     rules.get_discount_value || 0, rules.is_repeatable ? 1 : 0,
-     rules.max_repeats || null, rules.allow_overlap ? 1 : 0]
-  );
-  if (products) {
-    const buyVals = (products.buy || []).map(pid => [campaignId, pid, 'buy']);
-    const getVals = (products.get || []).map(pid => [campaignId, pid, 'get']);
-    const all = [...buyVals, ...getVals];
-    if (all.length) {
-      await conn.query(
-        `INSERT INTO campaign_bxgy_products (campaign_id, product_id, list_type) VALUES ?`, [all]
-      );
-    }
-  }
-}
-
-async function insertFocRules(conn, campaignId, rules, products = []) {
-  if (!rules) return;
-  await conn.query(
-    `INSERT INTO campaign_foc_rules (campaign_id, cart_min, cart_max, selection_mode, max_free_items)
-     VALUES (?, ?, ?, ?, ?)`,
-    [campaignId, rules.cart_min, rules.cart_max || null,
-     rules.selection_mode || 'auto', rules.max_free_items || 1]
-  );
-  if (products.length) {
-    const vals = products.map(pid => [campaignId, pid]);
-    await conn.query(
-      `INSERT INTO campaign_foc_products (campaign_id, product_id) VALUES ?`, [vals]
-    );
-  }
-}
-
-async function deleteTypeRules(conn, campaignId) {
-  await conn.query(`DELETE FROM campaign_discount_rules WHERE campaign_id = ?`, [campaignId]);
-  await conn.query(`DELETE FROM campaign_product_overrides WHERE campaign_id = ?`, [campaignId]);
-  await conn.query(`DELETE FROM campaign_bxgy_rules WHERE campaign_id = ?`, [campaignId]);
-  await conn.query(`DELETE FROM campaign_bxgy_products WHERE campaign_id = ?`, [campaignId]);
-  await conn.query(`DELETE FROM campaign_foc_rules WHERE campaign_id = ?`, [campaignId]);
-  await conn.query(`DELETE FROM campaign_foc_products WHERE campaign_id = ?`, [campaignId]);
-}
-
-// Build a scope summary string
-function scopeSummary(scopes) {
-  if (!scopes || !scopes.length) return 'None';
-  if (scopes.some(s => s.scope_type === 'all')) return 'All products';
-  const cats = scopes.filter(s => s.scope_type === 'category').length;
-  const subs = scopes.filter(s => s.scope_type === 'subcategory').length;
-  const prods = scopes.filter(s => s.scope_type === 'product').length;
-  const parts = [];
-  if (cats) parts.push(`${cats} categor${cats > 1 ? 'ies' : 'y'}`);
-  if (subs) parts.push(`${subs} subcategor${subs > 1 ? 'ies' : 'y'}`);
-  if (prods) parts.push(`${prods} product${prods > 1 ? 's' : ''}`);
-  return parts.join(', ');
-}
-
-/* ================================================================
-   GET /api/campaigns  — list with filters & pagination
+   GET /api/campaigns - List all campaigns
    ================================================================ */
 router.get('/', async (req, res, next) => {
-  try {
-    const { page = 1, limit = 20, status, type, country, search, sort = 'created_at', order = 'desc' } = req.query;
-    const offset = (Math.max(1, +page) - 1) * +limit;
-    const params = [];
+    try {
+        const { status, effective_status, type, search, country_id, sortBy = 'created_at', sortOrder = 'DESC' } = req.query;
+        let where = 'WHERE 1=1';
+        const params = [];
 
-    const deletedStatus = req.query.deleted_status === 'bin' ? 'bin' : 'active';
-    let where = 'WHERE c.deleted_status = ?';
-    params.push(deletedStatus);
-    if (status) { where += ` AND c.status = ?`; params.push(status); }
-    if (type) { where += ` AND c.type = ?`; params.push(type); }
-    if (search) { where += ` AND (c.name_en LIKE ? OR c.name_ar LIKE ?)`; params.push(`%${search}%`, `%${search}%`); }
-    if (country) {
-      where += ` AND c.id IN (SELECT campaign_id FROM campaign_countries cc2
-                  JOIN countries co ON co.id = cc2.country_id WHERE co.code = ?)`;
-      params.push(country.toUpperCase());
-    }
+        if (status) { where += ' AND c.status = ?'; params.push(status); }
+        if (type) { where += ' AND c.type = ?'; params.push(type); }
+        if (search) { where += ' AND (c.name_en LIKE ? OR c.name_ar LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
+        if (country_id) {
+            where += ' AND EXISTS (SELECT 1 FROM campaign_countries cc WHERE cc.campaign_id = c.id AND cc.country_id = ?)';
+            params.push(country_id);
+        }
 
-    const allowedSorts = ['priority', 'start_at', 'end_at', 'created_at', 'name_en'];
-    const sortCol = allowedSorts.includes(sort) ? sort : 'created_at';
-    const sortDir = order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+        const validSortCols = ['name_en', 'start_at', 'end_at', 'priority', 'created_at'];
+        const orderCol = validSortCols.includes(sortBy) ? sortBy : 'created_at';
+        const orderDir = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-    // Count
-    const [[{ total }]] = await db.query(`SELECT COUNT(*) AS total FROM campaigns c ${where}`, params);
+        const query = `
+            SELECT * FROM (
+                SELECT c.*, 
+                    CASE 
+                        WHEN c.status = 'archived' THEN 'archived'
+                        WHEN c.status = 'draft' THEN 'draft'
+                        WHEN NOW() < c.start_at THEN 'scheduled'
+                        WHEN NOW() > c.end_at THEN 'expired'
+                        ELSE 'active'
+                    END AS effective_status,
+                    (SELECT GROUP_CONCAT(co.code) FROM campaign_countries cc JOIN countries co ON co.id = cc.country_id WHERE cc.campaign_id = c.id) as country_codes
+                FROM campaigns c
+                ${where}
+            ) as sub
+            ${effective_status ? 'WHERE effective_status = ?' : ''}
+            ORDER BY ${orderCol} ${orderDir}
+        `;
 
-    // Rows
-    const [rows] = await db.query(
-      `SELECT c.*, GROUP_CONCAT(DISTINCT co.code) AS country_codes
-       FROM campaigns c
-       LEFT JOIN campaign_countries cc ON cc.campaign_id = c.id
-       LEFT JOIN countries co ON co.id = cc.country_id
-       ${where}
-       GROUP BY c.id
-       ORDER BY c.${sortCol} ${sortDir}
-       LIMIT ? OFFSET ?`,
-      [...params, +limit, offset]
-    );
+        if (effective_status) params.push(effective_status);
 
-    // Scope summaries
-    if (rows.length) {
-      const ids = rows.map(r => r.id);
-      const [scopes] = await db.query(
-        `SELECT * FROM campaign_scope WHERE campaign_id IN (?)`, [ids]
-      );
-      const scopeMap = {};
-      scopes.forEach(s => {
-        if (!scopeMap[s.campaign_id]) scopeMap[s.campaign_id] = [];
-        scopeMap[s.campaign_id].push(s);
-      });
-      rows.forEach(r => {
-        r.countries = r.country_codes ? r.country_codes.split(',') : [];
-        delete r.country_codes;
-        r.scope_summary = scopeSummary(scopeMap[r.id]);
-      });
-    }
-
-    res.json({ data: rows, pagination: { page: +page, limit: +limit, total } });
-  } catch (err) { next(err); }
+        const [rows] = await db.query(query, params);
+        res.json({ data: rows });
+    } catch (err) { next(err); }
 });
 
 /* ================================================================
-   GET /api/campaigns/:id  — full detail
+   GET /api/campaigns/:id - Full details
    ================================================================ */
 router.get('/:id', async (req, res, next) => {
-  try {
-    const id = req.params.id;
-    const [[campaign]] = await db.query(`SELECT * FROM campaigns WHERE id = ?`, [id]);
-    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+    try {
+        const id = req.params.id;
+        const [[campaign]] = await db.query(
+            `SELECT *, 
+                CASE 
+                    WHEN status = 'archived' THEN 'archived'
+                    WHEN status = 'draft' THEN 'draft'
+                    WHEN NOW() < start_at THEN 'scheduled'
+                    WHEN NOW() > end_at THEN 'expired'
+                    ELSE 'active'
+                END AS effective_status
+             FROM campaigns WHERE id = ?`, [id]
+        );
+        if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
 
-    // Countries
-    const [countries] = await db.query(
-      `SELECT co.id, co.code, co.name_en FROM campaign_countries cc
-       JOIN countries co ON co.id = cc.country_id WHERE cc.campaign_id = ?`, [id]
-    );
-    campaign.countries = countries;
+        // Countries
+        const [countries] = await db.query(
+            'SELECT country_id FROM campaign_countries WHERE campaign_id = ?', [id]
+        );
+        campaign.countries = countries.map(c => c.country_id);
 
-    // Scope
-    const [scope] = await db.query(`SELECT * FROM campaign_scope WHERE campaign_id = ?`, [id]);
-    campaign.scope = scope;
+        // Base Discount
+        const [[discount]] = await db.query('SELECT * FROM campaign_discounts WHERE campaign_id = ?', [id]);
+        campaign.base_discount = discount || null;
 
-    // Type-specific rules
-    if (campaign.type === 'discount') {
-      const [[rules]] = await db.query(`SELECT * FROM campaign_discount_rules WHERE campaign_id = ?`, [id]);
-      campaign.discount_rules = rules || null;
-      const [overrides] = await db.query(
-        `SELECT po.*, p.name_en AS product_name, p.fgd AS product_fgd
-         FROM campaign_product_overrides po
-         JOIN products p ON p.id = po.product_id
-         WHERE po.campaign_id = ?`, [id]
-      );
-      campaign.product_overrides = overrides;
-    } else if (campaign.type === 'bxgy') {
-      const [[rules]] = await db.query(`SELECT * FROM campaign_bxgy_rules WHERE campaign_id = ?`, [id]);
-      campaign.bxgy_rules = rules || null;
-      const [products] = await db.query(`SELECT * FROM campaign_bxgy_products WHERE campaign_id = ?`, [id]);
-      campaign.bxgy_products = { buy: products.filter(p => p.list_type === 'buy'), get: products.filter(p => p.list_type === 'get') };
-    } else if (campaign.type === 'foc') {
-      const [[rules]] = await db.query(`SELECT * FROM campaign_foc_rules WHERE campaign_id = ?`, [id]);
-      campaign.foc_rules = rules || null;
-      const [products] = await db.query(`SELECT * FROM campaign_foc_products WHERE campaign_id = ?`, [id]);
-      campaign.foc_products = products;
-    }
+        // Items (Overrides/Selection)
+        const [items] = await db.query(
+            `SELECT ci.*, p.name_en as product_name, p.fgd as product_fgd 
+             FROM campaign_items ci 
+             JOIN products p ON p.id = ci.product_id 
+             WHERE ci.campaign_id = ?`, [id]
+        );
+        campaign.items = items;
 
-    // History
-    const [history] = await db.query(
-      `SELECT * FROM campaign_history WHERE campaign_id = ? ORDER BY created_at DESC LIMIT 20`, [id]
-    );
-    campaign.history = history;
-
-    res.json({ data: campaign });
-  } catch (err) { next(err); }
+        res.json({ data: campaign });
+    } catch (err) { next(err); }
 });
 
 /* ================================================================
-   POST /api/campaigns  — create
+   POST /api/campaigns - Create a new campaign
    ================================================================ */
 router.post('/', async (req, res, next) => {
-  const conn = await db.getConnection();
-  try {
-    await conn.beginTransaction();
-    const {
-      name_en, name_ar, type, priority = 100, start_at, end_at,
-      is_stackable = false, max_uses, notes, countries = [], scope = [],
-      discount_rules, product_overrides = [],
-      bxgy_rules, bxgy_products,
-      foc_rules, foc_products = []
-    } = req.body;
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+        const {
+            name_en, name_ar, type = 'discount', start_at, end_at, 
+            is_all_products = 0, is_stackable = 0, priority = 100, notes,
+            countries = [], base_discount, items = []
+        } = req.body;
 
-    // Determine initial status
-    const now = new Date();
-    const startDate = new Date(start_at);
-    let status = 'draft';
-    if (req.body.activate) {
-      status = startDate <= now ? 'active' : 'scheduled';
+        // Status logic
+        const now = new Date();
+        const start = new Date(start_at);
+        let status = 'draft';
+        if (req.body.activate) {
+            status = start <= now ? 'active' : 'scheduled';
+        }
+
+        const [result] = await conn.query(
+            `INSERT INTO campaigns (name_en, name_ar, type, status, priority, start_at, end_at, is_all_products, is_stackable, notes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [name_en, name_ar, type, status, priority, start_at, end_at, is_all_products ? 1 : 0, is_stackable ? 1 : 0, notes]
+        );
+        const campaignId = result.insertId;
+
+        // Countries
+        if (countries.length) {
+            const cVals = countries.map(cid => [campaignId, cid]);
+            await conn.query('INSERT INTO campaign_countries (campaign_id, country_id) VALUES ?', [cVals]);
+        }
+
+        // Base Discount
+        if (base_discount) {
+            await conn.query(
+                'INSERT INTO campaign_discounts (campaign_id, discount_type, discount_value, min_price_floor) VALUES (?, ?, ?, ?)',
+                [campaignId, base_discount.discount_type, base_discount.discount_value, base_discount.min_price_floor || 0]
+            );
+        }
+
+        // Items
+        if (items.length) {
+            const iVals = items.map(it => [
+                campaignId, it.product_id, it.discount_type || null, it.discount_value ?? null, it.is_excluded ? 1 : 0
+            ]);
+            await conn.query(
+                'INSERT INTO campaign_items (campaign_id, product_id, discount_type, discount_value, is_excluded) VALUES ?',
+                [iVals]
+            );
+        }
+
+        await conn.commit();
+        
+        await logAudit(req, 'create', 'campaigns', campaignId, {
+            name_en, name_ar, type, start_at, end_at, is_all_products
+        });
+
+        res.status(201).json({ id: campaignId, message: 'Campaign created' });
+    } catch (err) {
+        await conn.rollback();
+        next(err);
+    } finally {
+        conn.release();
     }
-
-    const [result] = await conn.query(
-      `INSERT INTO campaigns (name_en, name_ar, type, status, priority, start_at, end_at, is_stackable, max_uses, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name_en, name_ar || null, type, status, priority, start_at, end_at,
-       is_stackable ? 1 : 0, max_uses || null, notes || null]
-    );
-    const campaignId = result.insertId;
-
-    // Countries
-    if (countries.length) {
-      const cVals = countries.map(cid => [campaignId, cid]);
-      await conn.query(`INSERT INTO campaign_countries (campaign_id, country_id) VALUES ?`, [cVals]);
-    }
-
-    // Scope
-    if (scope.length) {
-      const sVals = scope.map(s => [campaignId, s.scope_type, s.scope_ref_id || null]);
-      await conn.query(`INSERT INTO campaign_scope (campaign_id, scope_type, scope_ref_id) VALUES ?`, [sVals]);
-    }
-
-    // Type rules
-    if (type === 'discount') await insertDiscountRules(conn, campaignId, discount_rules, product_overrides);
-    if (type === 'bxgy') await insertBxgyRules(conn, campaignId, bxgy_rules, bxgy_products);
-    if (type === 'foc') await insertFocRules(conn, campaignId, foc_rules, foc_products);
-
-    // History
-    await conn.query(
-      `INSERT INTO campaign_history (campaign_id, action, details) VALUES (?, 'created', ?)`,
-      [campaignId, JSON.stringify({ type, status })]
-    );
-
-    await conn.commit();
-    res.status(201).json({ id: campaignId, message: 'Campaign created successfully' });
-  } catch (err) {
-    await conn.rollback();
-    next(err);
-  } finally {
-    conn.release();
-  }
 });
 
 /* ================================================================
-   PUT /api/campaigns/:id  — update
+   PUT /api/campaigns/:id - Update existing campaign
    ================================================================ */
 router.put('/:id', async (req, res, next) => {
-  const conn = await db.getConnection();
-  try {
-    await conn.beginTransaction();
-    const id = req.params.id;
-    const {
-      name_en, name_ar, type, priority, start_at, end_at,
-      is_stackable, max_uses, notes, countries = [], scope = [],
-      discount_rules, product_overrides = [],
-      bxgy_rules, bxgy_products,
-      foc_rules, foc_products = []
-    } = req.body;
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+        const id = req.params.id;
+        const {
+            name_en, name_ar, type, start_at, end_at, 
+            is_all_products, is_stackable, priority, notes,
+            countries = [], base_discount, items = []
+        } = req.body;
 
-    await conn.query(
-      `UPDATE campaigns SET name_en=?, name_ar=?, type=?, priority=?, start_at=?, end_at=?,
-       is_stackable=?, max_uses=?, notes=?, updated_at=NOW() WHERE id=?`,
-      [name_en, name_ar || null, type, priority, start_at, end_at,
-       is_stackable ? 1 : 0, max_uses || null, notes || null, id]
-    );
+        await conn.query(
+            `UPDATE campaigns SET name_en=?, name_ar=?, type=?, priority=?, start_at=?, end_at=?, 
+             is_all_products=?, is_stackable=?, notes=?, updated_at=NOW() WHERE id=?`,
+            [name_en, name_ar, type, priority, start_at, end_at, is_all_products ? 1 : 0, is_stackable ? 1 : 0, notes, id]
+        );
 
-    // Rebuild countries
-    await conn.query(`DELETE FROM campaign_countries WHERE campaign_id = ?`, [id]);
-    if (countries.length) {
-      const cVals = countries.map(cid => [id, cid]);
-      await conn.query(`INSERT INTO campaign_countries (campaign_id, country_id) VALUES ?`, [cVals]);
+        // Countries
+        await conn.query('DELETE FROM campaign_countries WHERE campaign_id = ?', [id]);
+        if (countries.length) {
+            const cVals = countries.map(cid => [id, cid]);
+            await conn.query('INSERT INTO campaign_countries (campaign_id, country_id) VALUES ?', [cVals]);
+        }
+
+        // Base Discount
+        await conn.query('DELETE FROM campaign_discounts WHERE campaign_id = ?', [id]);
+        if (base_discount) {
+            await conn.query(
+                'INSERT INTO campaign_discounts (campaign_id, discount_type, discount_value, min_price_floor) VALUES (?, ?, ?, ?)',
+                [id, base_discount.discount_type, base_discount.discount_value, base_discount.min_price_floor || 0]
+            );
+        }
+
+        // Items
+        await conn.query('DELETE FROM campaign_items WHERE campaign_id = ?', [id]);
+        if (items.length) {
+            const iVals = items.map(it => [
+                id, it.product_id, it.discount_type || null, it.discount_value ?? null, it.is_excluded ? 1 : 0
+            ]);
+            await conn.query(
+                'INSERT INTO campaign_items (campaign_id, product_id, discount_type, discount_value, is_excluded) VALUES ?',
+                [iVals]
+            );
+        }
+
+        await conn.commit();
+
+        await logAudit(req, 'update', 'campaigns', id, {
+            name_en, name_ar, type, start_at, end_at, is_all_products
+        });
+
+        res.json({ message: 'Campaign updated' });
+    } catch (err) {
+        await conn.rollback();
+        next(err);
+    } finally {
+        conn.release();
     }
-
-    // Rebuild scope
-    await conn.query(`DELETE FROM campaign_scope WHERE campaign_id = ?`, [id]);
-    if (scope.length) {
-      const sVals = scope.map(s => [id, s.scope_type, s.scope_ref_id || null]);
-      await conn.query(`INSERT INTO campaign_scope (campaign_id, scope_type, scope_ref_id) VALUES ?`, [sVals]);
-    }
-
-    // Rebuild type rules
-    await deleteTypeRules(conn, id);
-    if (type === 'discount') await insertDiscountRules(conn, id, discount_rules, product_overrides);
-    if (type === 'bxgy') await insertBxgyRules(conn, id, bxgy_rules, bxgy_products);
-    if (type === 'foc') await insertFocRules(conn, id, foc_rules, foc_products);
-
-    // History
-    await conn.query(
-      `INSERT INTO campaign_history (campaign_id, action, details) VALUES (?, 'updated', ?)`,
-      [id, JSON.stringify({ type })]
-    );
-
-    await conn.commit();
-    res.json({ message: 'Campaign updated' });
-  } catch (err) {
-    await conn.rollback();
-    next(err);
-  } finally {
-    conn.release();
-  }
-});
-
-/* ================================================================
-   PATCH /api/campaigns/:id/status  — change status
-   ================================================================ */
-router.patch('/:id/status', async (req, res, next) => {
-  try {
-    const { status } = req.body;
-    const allowed = ['draft', 'scheduled', 'active', 'paused', 'expired', 'archived'];
-    if (!allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
-
-    await db.query(`UPDATE campaigns SET status = ?, updated_at = NOW() WHERE id = ?`, [status, req.params.id]);
-
-    const actionMap = { active: 'activated', paused: 'paused', expired: 'expired', archived: 'archived' };
-    if (actionMap[status]) {
-      await db.query(
-        `INSERT INTO campaign_history (campaign_id, action) VALUES (?, ?)`,
-        [req.params.id, actionMap[status]]
-      );
-    }
-
-    res.json({ message: `Campaign ${status}` });
-  } catch (err) { next(err); }
 });
 
 /* ================================================================
    DELETE /api/campaigns/:id
    ================================================================ */
 router.delete('/:id', async (req, res, next) => {
-  try {
-    const [[campaign]] = await db.query(`SELECT id FROM campaigns WHERE id = ?`, [req.params.id]);
-    if (!campaign) return res.status(404).json({ error: 'Not found' });
+    try {
+        const id = req.params.id;
+        await db.query('UPDATE campaigns SET status = "archived" WHERE id = ?', [id]);
+        
+        await logAudit(req, 'delete', 'campaigns', id, { action: 'archived' });
 
-    await db.query(`UPDATE campaigns SET deleted_status = 'bin', updated_at = NOW() WHERE id = ?`, [req.params.id]);
-    await db.query(
-      `INSERT INTO campaign_history (campaign_id, action) VALUES (?, 'moved_to_bin')`, [req.params.id]
-    );
-    res.json({ message: 'Campaign moved to recycle bin' });
-  } catch (err) { next(err); }
-});
-
-router.delete('/:id/permanent', async (req, res, next) => {
-  try {
-    const [result] = await db.query(`UPDATE campaigns SET deleted_status = 'permanent', updated_at = NOW() WHERE id = ? AND deleted_status = 'bin'`, [req.params.id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found in bin' });
-    await db.query(
-      `INSERT INTO campaign_history (campaign_id, action) VALUES (?, 'permanently_deleted')`, [req.params.id]
-    );
-    res.json({ message: 'Campaign permanently deleted' });
-  } catch (err) { next(err); }
-});
-
-router.patch('/:id/restore', async (req, res, next) => {
-  try {
-    const [result] = await db.query(`UPDATE campaigns SET deleted_status = 'active', updated_at = NOW() WHERE id = ? AND deleted_status = 'bin'`, [req.params.id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found in bin' });
-    await db.query(
-      `INSERT INTO campaign_history (campaign_id, action) VALUES (?, 'restored_from_bin')`, [req.params.id]
-    );
-    res.json({ message: 'Campaign restored' });
-  } catch (err) { next(err); }
+        res.json({ message: 'Campaign archived' });
+    } catch (err) { next(err); }
 });
 
 /* ================================================================
-   POST /api/campaigns/validate  — check conflicts
-   ================================================================ */
-router.post('/validate', async (req, res, next) => {
-  try {
-    const { type, start_at, end_at, countries = [], scope = [], id: excludeId } = req.body;
-    const errors = [];
-    const warnings = [];
-
-    // 1. Date validation
-    if (new Date(start_at) >= new Date(end_at)) {
-      errors.push({ code: 'INVALID_DATES', message: 'Start date must be before end date' });
-    }
-    if (new Date(end_at) < new Date()) {
-      errors.push({ code: 'PAST_END_DATE', message: 'End date is in the past' });
-    }
-
-    // 2. Check for overlapping campaigns of the same type in the same countries
-    if (countries.length && !errors.length) {
-      let overlapQuery = `
-        SELECT DISTINCT c.id, c.name_en, c.type, c.start_at, c.end_at
-        FROM campaigns c
-        JOIN campaign_countries cc ON cc.campaign_id = c.id
-        WHERE c.type = ? AND c.status IN ('draft','scheduled','active')
-          AND c.start_at < ? AND c.end_at > ?
-          AND cc.country_id IN (?)`;
-      const params = [type, end_at, start_at, countries];
-      if (excludeId) {
-        overlapQuery += ` AND c.id != ?`;
-        params.push(excludeId);
-      }
-
-      const [overlaps] = await db.query(overlapQuery, params);
-
-      // Check scope overlap
-      for (const overlap of overlaps) {
-        const [oScopes] = await db.query(
-          `SELECT * FROM campaign_scope WHERE campaign_id = ?`, [overlap.id]
-        );
-        // If either campaign targets 'all', they definitely overlap
-        const thisHasAll = scope.some(s => s.scope_type === 'all');
-        const otherHasAll = oScopes.some(s => s.scope_type === 'all');
-
-        if (thisHasAll || otherHasAll) {
-          warnings.push({
-            code: 'DATE_OVERLAP',
-            message: `Overlaps with "${overlap.name_en}" (ID ${overlap.id}) — both cover all products`
-          });
-        } else {
-          // Check if any specific scope refs match
-          const thisRefs = new Set(scope.map(s => `${s.scope_type}:${s.scope_ref_id}`));
-          const otherRefs = new Set(oScopes.map(s => `${s.scope_type}:${s.scope_ref_id}`));
-          const intersection = [...thisRefs].filter(r => otherRefs.has(r));
-          if (intersection.length) {
-            warnings.push({
-              code: 'DATE_OVERLAP',
-              message: `Overlaps with "${overlap.name_en}" (ID ${overlap.id}) on ${intersection.length} scope(s)`
-            });
-          }
-        }
-      }
-    }
-
-    // 3. Validate product references
-    const productIds = [];
-    scope.filter(s => s.scope_type === 'product').forEach(s => productIds.push(s.scope_ref_id));
-    if (req.body.product_overrides) req.body.product_overrides.forEach(o => productIds.push(o.product_id));
-    if (req.body.bxgy_products) {
-      (req.body.bxgy_products.buy || []).forEach(p => productIds.push(p));
-      (req.body.bxgy_products.get || []).forEach(p => productIds.push(p));
-    }
-    if (req.body.foc_products) req.body.foc_products.forEach(p => productIds.push(p));
-
-    if (productIds.length) {
-      const unique = [...new Set(productIds)];
-      const [existing] = await db.query(
-        `SELECT id FROM products WHERE id IN (?) AND is_active = 1`, [unique]
-      );
-      const existingIds = new Set(existing.map(r => r.id));
-      const missing = unique.filter(pid => !existingIds.has(pid));
-      missing.forEach(pid => {
-        errors.push({ code: 'INVALID_PRODUCT', message: `Product ${pid} does not exist or is inactive` });
-      });
-    }
-
-    res.json({ valid: errors.length === 0, errors, warnings });
-  } catch (err) { next(err); }
-});
-
-/* ================================================================
-   POST /api/campaigns/:id/preview  — price impact preview
-   ================================================================ */
-router.post('/:id/preview', async (req, res, next) => {
-  try {
-    const campaignId = req.params.id;
-    const { 
-      country_id, type, scope = [], 
-      discount_rules, product_overrides = [] 
-    } = req.body;
-
-    if (!country_id) return res.status(400).json({ error: 'country_id required' });
-
-    // Get currency info for the country
-    const [[countryInfo]] = await db.query(
-      `SELECT co.*, cu.code AS currency_code, cu.symbol_en, cu.decimal_places
-       FROM countries co JOIN currencies cu ON cu.id = co.currency_id WHERE co.id = ?`, [country_id]
-    );
-    if (!countryInfo) return res.status(404).json({ error: 'Country not found' });
-
-    // Resolve products from provided scope
-    let productFilter = '';
-    const pParams = [country_id];
-
-    if (scope.some(s => s.scope_type === 'all')) {
-      productFilter = '';
-    } else {
-      const conditions = [];
-      const catIds = scope.filter(s => s.scope_type === 'category').map(s => s.scope_ref_id);
-      const subIds = scope.filter(s => s.scope_type === 'subcategory').map(s => s.scope_ref_id);
-      const prodIds = scope.filter(s => s.scope_type === 'product').map(s => s.scope_ref_id);
-      const overrideIds = product_overrides.map(o => o.product_id);
-
-      if (catIds.length) { conditions.push(`p.category_id IN (?)`); pParams.push(catIds); }
-      if (subIds.length) { conditions.push(`p.subcategory_id IN (?)`); pParams.push(subIds); }
-      if (prodIds.length || overrideIds.length) { 
-        const allProdIds = [...new Set([...prodIds, ...overrideIds])];
-        conditions.push(`p.id IN (?)`); 
-        pParams.push(allProdIds); 
-      }
-
-      if (conditions.length) productFilter = `AND (${conditions.join(' OR ')})`;
-      else productFilter = `AND 1=0`;
-    }
-
-    // Fetch affected products with prices (respecting per-country visibility)
-    const [products] = await db.query(
-      `SELECT p.id AS product_id, p.name_en, p.name_ar, p.fgd,
-              pp.regular_price
-       FROM products p
-       JOIN product_prices pp ON pp.product_id = p.id AND pp.country_id = ?
-       LEFT JOIN product_country pc ON pc.product_id = p.id AND pc.country_id = ?
-       WHERE p.is_active = 1 
-         AND (pc.is_visible IS NULL OR pc.is_visible = 1)
-         ${productFilter}
-       ORDER BY p.name_en`, [country_id, country_id, ...pParams.slice(1)]
-    );
-
-    if (type !== 'discount') {
-      return res.json({
-        campaign_id: campaignId,
-        country: countryInfo.code,
-        currency: { code: countryInfo.currency_code, symbol: countryInfo.symbol_en, decimals: countryInfo.decimal_places },
-        affected_products: products,
-        summary: { total_products: products.length }
-      });
-    }
-
-    // Calculate Discounts using provided rules
-    const overrideMap = {};
-    (product_overrides || []).forEach(o => { overrideMap[o.product_id] = o; });
-
-    const decimals = countryInfo.decimal_places;
-    let totalSavings = 0;
-    let totalDiscountPct = 0;
-
-    const affected = products.map(p => {
-      const override = overrideMap[p.product_id];
-      const dType = override ? override.discount_type : discount_rules?.discount_type || 'percentage';
-      const dValue = override ? +override.discount_value : +(discount_rules?.discount_value || 0);
-      const regular = +p.regular_price;
-      const minPrice = +(discount_rules?.min_price || 0);
-
-      let salePrice;
-      if (dType === 'percentage') {
-        salePrice = regular * (1 - dValue / 100);
-      } else {
-        salePrice = regular - dValue;
-      }
-      // Floor
-      salePrice = Math.max(salePrice, minPrice);
-      salePrice = +salePrice.toFixed(decimals);
-
-      const savings = +(regular - salePrice).toFixed(decimals);
-      totalSavings += savings;
-      totalDiscountPct += regular > 0 ? (savings / regular * 100) : 0;
-
-      // (Optional) Below cost check removed due to missing column in current schema
-
-      return {
-        product_id: p.product_id, name_en: p.name_en, fgd: p.fgd,
-        regular_price: regular, discount_type: dType, discount_value: dValue,
-        sale_price: salePrice, savings, margin_pct: null, warnings: []
-      };
-    });
-
-    res.json({
-      campaign_id: campaignId,
-      country: countryInfo.code,
-      currency: { code: countryInfo.currency_code, symbol: countryInfo.symbol_en, decimals },
-      affected_products: affected,
-      summary: {
-        total_products: affected.length,
-        avg_discount_pct: affected.length ? +(totalDiscountPct / affected.length).toFixed(1) : 0,
-        total_potential_savings: +totalSavings.toFixed(decimals)
-      }
-    });
-  } catch (err) { next(err); }
-});
-
-/* ================================================================
-   GET /api/campaigns/products/search — search products for selectors
+   GET /api/campaigns/products/search - Unified Search with Active Check
    ================================================================ */
 router.get('/products/search', async (req, res, next) => {
-  try {
-    const { q = '', category_id, subcategory_id, limit = 30 } = req.query;
-    const params = [];
-    let where = 'WHERE p.is_active = 1';
-    if (q) { where += ` AND (p.name_en LIKE ? OR p.fgd LIKE ?)`; params.push(`%${q}%`, `%${q}%`); }
-    if (category_id) { where += ` AND p.category_id = ?`; params.push(category_id); }
-    if (subcategory_id) { where += ` AND p.subcategory_id = ?`; params.push(subcategory_id); }
+    try {
+        const { q = '', limit = 30 } = req.query;
+        const params = [];
+        let where = 'WHERE p.is_active = 1';
+        if (q) {
+            where += ' AND (p.name_en LIKE ? OR p.fgd LIKE ?)';
+            params.push(`%${q}%`, `%${q}%`);
+        }
 
-    const [rows] = await db.query(
-      `SELECT p.id, p.fgd, p.name_en, p.name_ar, c.name_en AS category_name,
-              (SELECT url FROM product_media pm WHERE pm.product_id = p.id AND pm.is_primary = 1 LIMIT 1) AS image_url
-       FROM products p
-       LEFT JOIN categories c ON c.id = p.category_id
-       ${where}
-       ORDER BY p.name_en LIMIT ?`, [...params, +limit]
-    );
-    res.json({ data: rows });
-  } catch (err) { next(err); }
+        const query = `
+            SELECT p.id, p.fgd, p.name_en, p.name_ar,
+                   (SELECT c.name_en FROM campaigns c 
+                    JOIN campaign_items ci ON ci.campaign_id = c.id 
+                    WHERE ci.product_id = p.id AND c.status IN ('active', 'scheduled') 
+                    LIMIT 1) as active_campaign_name
+            FROM products p
+            ${where}
+            ORDER BY p.name_en LIMIT ?`;
+
+        const [rows] = await db.query(query, [...params, parseInt(limit)]);
+        res.json({ data: rows });
+    } catch (err) { next(err); }
+});
+
+/* ================================================================
+   POST /api/campaigns/preview - Price impact preview
+   ================================================================ */
+router.post('/preview', async (req, res, next) => {
+    try {
+        const {
+            countries = [], is_all_products = 0, base_discount, items = []
+        } = req.body;
+
+        if (!countries.length) return res.json({ data: [] });
+
+        let productsQuery;
+        let productsParams = [];
+
+        if (is_all_products) {
+            productsQuery = `SELECT id, name_en, name_ar, fgd FROM products WHERE is_active = 1`;
+        } else {
+            if (!items.length) return res.json({ data: [] });
+            productsQuery = `SELECT id, name_en, name_ar, fgd FROM products WHERE id IN (?)`;
+            productsParams.push(items.map(i => i.product_id));
+        }
+
+        const [products] = await db.query(productsQuery, productsParams);
+        const productIds = products.map(p => p.id);
+
+        // Fetch Prices
+        const [prices] = await db.query(
+            `SELECT pp.*, co.code as country_code, cu.symbol_en as currency_symbol
+             FROM product_prices pp 
+             JOIN countries co ON co.id = pp.country_id 
+             JOIN currencies cu ON cu.id = pp.currency_id
+             WHERE pp.product_id IN (?) AND pp.country_id IN (?)`,
+            [productIds, countries]
+        );
+
+        // Build result map
+        const itemMap = new Map(items.map(i => [i.product_id, i]));
+        
+        const preview = prices.map(p => {
+            const product = products.find(prod => prod.id === p.product_id);
+            const override = itemMap.get(p.product_id);
+            
+            let discType = null;
+            let discVal = 0;
+            let isExcluded = false;
+
+            if (is_all_products) {
+                // Default: Base Rule
+                discType = base_discount?.discount_type;
+                discVal = base_discount?.discount_value || 0;
+
+                // Check for item override/exclusion
+                if (override) {
+                    if (override.is_excluded) isExcluded = true;
+                    else if (override.discount_type) {
+                        discType = override.discount_type;
+                        discVal = override.discount_value;
+                    }
+                }
+            } else {
+                // Individual Mode: Item must exist in list
+                if (override) {
+                    if (override.is_excluded) isExcluded = true;
+                    else {
+                        discType = override.discount_type || base_discount?.discount_type;
+                        discVal = override.discount_value ?? base_discount?.discount_value ?? 0;
+                    }
+                } else {
+                    isExcluded = true; // Not selected
+                }
+            }
+
+            let discountedPrice = p.regular_price;
+            if (!isExcluded && discVal > 0) {
+                if (discType === 'percentage') {
+                    discountedPrice = p.regular_price * (1 - discVal / 100);
+                } else {
+                    discountedPrice = Math.max(0, p.regular_price - discVal);
+                }
+            }
+
+            return {
+                product_id: p.product_id,
+                product_name: product?.name_en,
+                fgd: product?.fgd,
+                country_code: p.country_code,
+                currency_symbol: p.currency_symbol,
+                original_price: p.regular_price,
+                discounted_price: discountedPrice,
+                discount_label: isExcluded ? 'None' : (discType === 'percentage' ? `${discVal}%` : `-${discVal}`),
+                is_excluded: isExcluded
+            };
+        });
+
+        res.json({ data: preview });
+    } catch (err) { next(err); }
 });
 
 export default router;

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getUsers, createUser, updateUser, resetUserPassword, deleteUser, hardDeleteUser } from '../../api'
 import toast from 'react-hot-toast'
@@ -29,7 +29,7 @@ const ALL_MODULES = [
   { key: 'bundles', label: 'Bundles' },
   { key: 'sales', label: 'Sales' },
   { key: 'gallery', label: 'Gallery' },
-  { key: 'analytics', label: 'Analytics' },
+  { key: 'campaigns', label: 'Campaigns' },
   { key: 'users', label: 'Users' },
   { key: 'audit_logs', label: 'Audit Logs' },
 ]
@@ -40,6 +40,10 @@ export default function Users() {
   const { data, isLoading } = useQuery({ queryKey: ['users'], queryFn: getUsers })
   const users = data?.data || []
 
+  const [search, setSearch] = useState('')
+  const [sortField, setSortField] = useState('username') // 'username', 'role', 'is_active'
+  const [sortOrder, setSortOrder] = useState('asc')
+
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({ username: '', email: '', full_name: '', password: '', role: 'user', permissions: [] })
@@ -47,6 +51,40 @@ export default function Users() {
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [passwordTarget, setPasswordTarget] = useState(null)
   const [newPassword, setNewPassword] = useState('')
+
+  const filteredUsers = useMemo(() => {
+    let result = [...users]
+
+    // Search filter
+    if (search) {
+      const q = search.toLowerCase()
+      result = result.filter(u => 
+        u.username?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q) ||
+        u.full_name?.toLowerCase().includes(q)
+      )
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      let valA = a[sortField] || ''
+      let valB = b[sortField] || ''
+
+      if (typeof valA === 'string') valA = valA.toLowerCase()
+      if (typeof valB === 'string') valB = valB.toLowerCase()
+
+      if (valA < valB) return sortOrder === 'asc' ? -1 : 1
+      if (valA > valB) return sortOrder === 'asc' ? 1 : -1
+      return 0
+    })
+
+    return result
+  }, [users, search, sortField, sortOrder])
+
+  const toggleSort = (f) => {
+    if (sortField === f) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    else { setSortField(f); setSortOrder('asc'); }
+  }
 
   const createMut = useMutation({ mutationFn: (d) => createUser(d), onSuccess: () => { toast.success('User created'); qc.invalidateQueries({ queryKey: ['users'] }); closeModal(); } })
   const updateMut = useMutation({ mutationFn: ({ id, d }) => updateUser(id, d), onSuccess: () => { toast.success('User updated'); qc.invalidateQueries({ queryKey: ['users'] }); closeModal(); } })
@@ -101,6 +139,10 @@ export default function Users() {
   }
 
   const handleDelete = async (user) => {
+    if (user.id === currentUser?.id) {
+      toast.error('You cannot deactivate your own account')
+      return
+    }
     const result = await Swal.fire({
       title: 'Deactivate user?',
       text: `This will deactivate "${user.username}". They won't be able to log in.`,
@@ -113,6 +155,10 @@ export default function Users() {
   }
 
   const handleHardDelete = async (user) => {
+    if (user.id === currentUser?.id) {
+      toast.error('You cannot delete your own account')
+      return
+    }
     const result = await Swal.fire({
       title: 'Permanently delete user?',
       text: `This will permanently delete "${user.username}" from the database. This action cannot be undone.`,
@@ -131,22 +177,41 @@ export default function Users() {
     })
   }
 
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <span className="opacity-0 group-hover:opacity-30 ml-2">⇅</span>
+    return <span className="ml-2 text-brand">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+  }
+
   return (
-    <div>
+    <div className="flex flex-col gap-6 p-6 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-lg font-bold" style={{ color: 'var(--text)' }}>User Management</h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-subtle)' }}>
-            Create and manage admin users with module-level permissions
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-black tracking-tight flex items-center gap-2" style={{ color: 'var(--text)' }}>
+            Users
+            <span className="t-badge-gray" style={{ fontSize: '11px', letterSpacing: '0.07em' }}>
+              Management
+            </span>
+          </h1>
+          <p className="text-[14px] font-medium" style={{ color: 'var(--text-subtle)' }}>
+            Manage admin access and module-level permissions
           </p>
         </div>
-        <button className="t-btn-primary" onClick={openCreate}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          Add User
-        </button>
+        <div className="flex items-center gap-3">
+           <div className="relative group">
+              <input 
+                type="text" 
+                placeholder="Search users..." 
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="t-input pl-10 w-64 h-11"
+              />
+              <svg className="w-4 h-4 absolute left-3.5 top-3.5 opacity-30 group-focus-within:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+           </div>
+           <button className="t-btn-primary h-11 px-5" onClick={openCreate}>
+             <span className="text-xl leading-none mr-1">+</span> Add User
+           </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -154,91 +219,113 @@ export default function Users() {
         <table className="w-full">
           <thead>
             <tr style={{ backgroundColor: 'var(--surface-2)' }}>
-              <th className="t-th">User</th>
-              <th className="t-th">Role</th>
+              <th className="t-th group cursor-pointer" onClick={() => toggleSort('full_name')}>
+                <div className="flex items-center">User Profile <SortIcon field="full_name" /></div>
+              </th>
+              <th className="t-th group cursor-pointer" onClick={() => toggleSort('role')}>
+                <div className="flex items-center">Role <SortIcon field="role" /></div>
+              </th>
               <th className="t-th">Permissions</th>
-              <th className="t-th">Status</th>
-              <th className="t-th text-right">Actions</th>
+              <th className="t-th group cursor-pointer" onClick={() => toggleSort('is_active')}>
+                <div className="flex items-center">Status <SortIcon field="is_active" /></div>
+              </th>
+              <th className="t-th text-right">Settings</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-black/5 dark:divide-white/5">
             {isLoading ? (
-              <tr><td colSpan={5} className="t-td text-center py-8" style={{ color: 'var(--text-subtle)' }}>Loading…</td></tr>
-            ) : users.length === 0 ? (
-              <tr><td colSpan={5} className="t-td text-center py-8" style={{ color: 'var(--text-subtle)' }}>No users found</td></tr>
-            ) : users.map(u => (
-              <tr key={u.id} className="hover:brightness-105 transition-all">
+              <tr><td colSpan={5} className="t-td text-center py-20" style={{ color: 'var(--text-subtle)' }}>
+                <div className="login-spinner mx-auto mb-3" style={{ width: 30, height: 30 }}></div>
+                <span className="text-[13px] font-bold uppercase tracking-widest opacity-40">Loading users…</span>
+              </td></tr>
+            ) : filteredUsers.length === 0 ? (
+              <tr><td colSpan={5} className="t-td text-center py-20" style={{ color: 'var(--text-subtle)' }}>
+                <span className="text-[13px] font-bold uppercase tracking-widest opacity-40">{search ? 'No users matching search' : 'No users found'}</span>
+              </td></tr>
+            ) : filteredUsers.map(u => (
+              <tr key={u.id} className="hover:bg-black/5 dark:hover:bg-white/5">
                 <td className="t-td">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                      style={{ backgroundColor: u.role === 'admin' ? 'var(--color-brand)' : 'var(--text-subtle)' }}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black text-white shadow-xl shadow-brand/20"
+                      style={{ 
+                        backgroundColor: u.role === 'admin' ? 'var(--color-brand)' : 'var(--text-subtle)',
+                        borderRadius: '14px'
+                      }}>
                       {u.full_name?.charAt(0)?.toUpperCase() || u.username?.charAt(0)?.toUpperCase()}
                     </div>
-                    <div>
-                      <p className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{u.full_name || u.username}</p>
-                      <p className="text-[11px]" style={{ color: 'var(--text-subtle)' }}>{u.email}</p>
+                    <div className="flex flex-col gap-0.5">
+                      <p className="text-[14px] font-black tracking-tight" style={{ color: 'var(--text)' }}>{u.full_name || u.username}</p>
+                      <p className="text-[11px] font-bold opacity-40 uppercase tracking-tighter" style={{ color: 'var(--text-subtle)' }}>{u.email}</p>
                     </div>
                   </div>
                 </td>
                 <td className="t-td">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${u.role === 'admin'
-                    ? 'text-amber-600'
-                    : ''
-                    }`}
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider ${u.role === 'admin' ? 'text-brand' : 'text-gray-500'}`}
                     style={{
                       backgroundColor: u.role === 'admin'
-                        ? 'color-mix(in srgb, var(--color-brand) 12%, transparent)'
+                        ? 'color-mix(in srgb, var(--color-brand) 10%, transparent)'
                         : 'var(--surface-2)',
                       color: u.role === 'admin' ? 'var(--color-brand)' : 'var(--text-muted)',
                     }}>
-                    {u.role === 'admin' ? '👑 Admin' : 'User'}
+                    {u.role === 'admin' ? (
+                      <>
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand" />
+                        Administrator
+                      </>
+                    ) : 'Standard User'}
                   </span>
                 </td>
                 <td className="t-td">
-                  <div className="flex flex-wrap gap-1 max-w-[260px]">
+                  <div className="flex flex-wrap gap-1.5 max-w-[300px]">
                     {u.role === 'admin' ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>All Modules</span>
-                    ) : (u.permissions || []).slice(0, 4).map(p => (
-                      <span key={p} className="text-[10px] px-1.5 py-0.5 rounded capitalize" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>{p.replace('_', ' ')}</span>
-                    ))}
-                    {u.role !== 'admin' && (u.permissions || []).length > 4 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>+{u.permissions.length - 4}</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>Full Access</span>
+                    ) : (u.permissions || []).length === 0 ? (
+                      <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg opacity-30" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>No Permissions</span>
+                    ) : (
+                      <>
+                        {(u.permissions || []).slice(0, 3).map(p => (
+                          <span key={p} className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>{p.replace(/(\w+)\.(\w+)/, '$2').replace('_', ' ')}</span>
+                        ))}
+                        {(u.permissions || []).length > 3 && (
+                          <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}>+{(u.permissions || []).length - 3} More</span>
+                        )}
+                      </>
                     )}
                   </div>
                 </td>
                 <td className="t-td">
                   <span className={u.is_active ? 't-badge-active' : 't-badge-inactive'}>
-                    {u.is_active ? 'Active' : 'Inactive'}
+                    {u.is_active ? 'Active' : 'Disabled'}
                   </span>
                 </td>
                 <td className="t-td text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <button onClick={() => openEdit(u)} className="p-1.5 rounded-md hover:bg-[var(--surface-2)] transition-colors" title="Edit">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-muted)' }}>
+                  <div className="flex items-center justify-end gap-2">
+                    <button onClick={() => openEdit(u)} className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5" title="Edit Profile">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: 'var(--text-muted)' }}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                       </svg>
                     </button>
-                    <button onClick={() => { setPasswordTarget(u); setShowPasswordModal(true); }} className="p-1.5 rounded-md hover:bg-[var(--surface-2)] transition-colors" title="Reset Password">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-muted)' }}>
+                    <button onClick={() => { setPasswordTarget(u); setShowPasswordModal(true); }} className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5" title="Reset Security Clearance">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: 'var(--text-muted)' }}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
                       </svg>
                     </button>
                     {u.is_active ? (
-                      <button onClick={() => handleDelete(u)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Deactivate">
-                        <svg className="w-3.5 h-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <button onClick={() => handleDelete(u)} className="p-2 rounded-xl hover:bg-red-500/10" title="Deactivate Access">
+                        <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                         </svg>
                       </button>
                     ) : (
-                      <button onClick={() => handleReactivate(u)} className="p-1.5 rounded-md hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors" title="Reactivate">
-                        <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <button onClick={() => handleReactivate(u)} className="p-2 rounded-xl hover:bg-green-500/10" title="Restore Access">
+                        <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </button>
                     )}
                     {currentUser?.role === 'admin' && u.id !== currentUser?.id && (
-                      <button onClick={() => handleHardDelete(u)} className="p-1.5 rounded-md hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors ml-1" title="Permanently Delete">
-                        <svg className="w-4 h-4 text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <button onClick={() => handleHardDelete(u)} className="p-2 rounded-xl hover:bg-red-600/20" title="Purge User">
+                        <svg className="w-4 h-4 text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                         </svg>
                       </button>
@@ -250,6 +337,7 @@ export default function Users() {
           </tbody>
         </table>
       </div>
+
 
       {/* Create/Edit Modal */}
       {showModal && (
@@ -301,13 +389,13 @@ export default function Users() {
                   </div>
                   <div className="grid grid-cols-2 gap-2" style={{ maxHeight: '300px', overflowY: 'auto', paddingRight: '4px' }}>
                     {ALL_MODULES.map(m => (
-                      <div key={m.key} className="flex flex-col gap-1 p-2.5 rounded-xl transition-colors" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
-                        <label className="flex items-center gap-2 cursor-pointer transition-all text-[12px] font-bold"
+                      <div key={m.key} className="flex flex-col gap-1 p-2.5 rounded-xl" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+                        <label className="flex items-center gap-2 cursor-pointer text-[12px] font-bold"
                           style={{
                             color: form.permissions.includes(m.key) ? 'var(--text)' : 'var(--text-muted)',
                           }}>
                           <input type="checkbox" checked={form.permissions.includes(m.key)} onChange={() => togglePerm(m.key)} className="hidden" />
-                          <span className="w-3.5 h-3.5 rounded flex items-center justify-center border shrink-0 transition-colors"
+                          <span className="w-3.5 h-3.5 rounded flex items-center justify-center border shrink-0"
                             style={{
                               borderColor: form.permissions.includes(m.key) ? 'var(--color-brand)' : 'var(--border-soft)',
                               backgroundColor: form.permissions.includes(m.key) ? 'var(--color-brand)' : 'var(--surface-2)',
@@ -324,13 +412,13 @@ export default function Users() {
                         {m.subModules && (
                           <div className="grid grid-cols-1 gap-1 mt-1 pt-1.5" style={{ borderTop: '1px dashed var(--border-soft)' }}>
                             {m.subModules.map(sm => (
-                              <label key={sm.key} className="flex items-center gap-1.5 px-1 py-1 rounded cursor-pointer transition-all text-[11px] font-medium"
+                              <label key={sm.key} className="flex items-center gap-1.5 px-1 py-1 rounded cursor-pointer text-[11px] font-medium"
                                 style={{
                                   backgroundColor: form.permissions.includes(sm.key) ? 'color-mix(in srgb, var(--color-brand) 8%, transparent)' : 'transparent',
                                   color: form.permissions.includes(sm.key) ? 'var(--color-brand)' : 'var(--text-subtle)',
                                 }}>
                                 <input type="checkbox" checked={form.permissions.includes(sm.key)} onChange={() => togglePerm(sm.key)} className="hidden" />
-                                <span className="w-3 h-3 rounded flex items-center justify-center border shrink-0 transition-colors"
+                                <span className="w-3 h-3 rounded flex items-center justify-center border shrink-0"
                                   style={{
                                     borderColor: form.permissions.includes(sm.key) ? 'var(--color-brand)' : 'var(--border-soft)',
                                     backgroundColor: form.permissions.includes(sm.key) ? 'var(--color-brand)' : 'transparent',

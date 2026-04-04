@@ -40,7 +40,7 @@ export const updateSubcategory = (subId, data) => api.put(`/categories/subcatego
 export const deleteSubcategory = (subId) => api.delete(`/categories/subcategories/${subId}`);
 export const restoreSubcategory = (subId) => api.patch(`/categories/subcategories/${subId}/restore`);
 export const hardDeleteSubcategory = (subId) => api.delete(`/categories/subcategories/${subId}/permanent`);
-export const importCategories = (formData) => api.post('/categories/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const importCategories = (formData, dryRun = false) => api.post(`/categories/import?dry_run=${dryRun}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const reorderCategories = (items) => api.put('/categories/reorder', { items });
 export const reorderSubcategories = (items) => api.put('/categories/subcategories/reorder', { items });
 
@@ -116,5 +116,5 @@ export const restoreCampaign = (id) => api.patch(`/campaigns/${id}/restore`);
 export const hardDeleteCampaign = (id) => api.delete(`/campaigns/${id}/permanent`);
 export const updateCampaignStatus = (id, status) => api.patch(`/campaigns/${id}/status`, { status });
 export const validateCampaign = (data) => api.post('/campaigns/validate', data);
-export const previewCampaign = (id, data) => api.post(`/campaigns/${id}/preview`, data);
+export const previewCampaign = (data) => api.post(`/campaigns/preview`, data);
 export const searchCampaignProducts = (params) => api.get('/campaigns/products/search', { params });

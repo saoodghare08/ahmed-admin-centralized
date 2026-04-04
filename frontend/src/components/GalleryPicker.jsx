@@ -1,15 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import toast from 'react-hot-toast'
 import Swal from 'sweetalert2'
+import api from '../api/client'
 
 const API = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/api\/?$/, '')
 const galleryUrl = (p) => `${API}/gallery/${p}`
 
+
 const FolderIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8" style={{ color: 'var(--color-brand)' }}>
-    <path d="M19.5 21a3 3 0 003-3v-4.5a3 3 0 00-3-3h-15a3 3 0 00-3 3V18a3 3 0 003 3h15zM1.5 10.146V6a3 3 0 013-3h5.379a2.25 2.25 0 011.59.659l2.122 2.121c.14.141.331.22.53.22H19.5a3 3 0 013 3v1.146A4.483 4.483 0 0019.5 9h-15a4.483 4.483 0 00-3 1.146z"/>
-  </svg>
+  <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 transition-transform group-hover:scale-110">
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+      <path d="M19.5 21a3 3 0 003-3v-4.5a3 3 0 00-3-3h-15a3 3 0 00-3 3V18a3 3 0 003 3h15zM1.5 10.146V6a3 3 0 013-3h5.379a2.25 2.25 0 011.59.659l2.122 2.121c.14.141.331.22.53.22H19.5a3 3 0 013 3v1.146A4.483 4.483 0 0019.5 9h-15a4.483 4.483 0 00-3 1.146z"/>
+    </svg>
+  </div>
 )
+
 
 // ── Context Menu ─────────────────────────────────────────────
 function ContextMenu({ x, y, item, onRename, onDelete, onCopyUrl, onClose }) {
@@ -120,8 +125,7 @@ export default function GalleryPicker({ open, onClose, onSelect, multiple = fals
   const load = useCallback(async (p = '') => {
     setLoading(true)
     try {
-      const res  = await fetch(`${API}/api/gallery?path=${encodeURIComponent(p)}`)
-      const json = await res.json()
+      const json = await api.get(`/gallery?path=${encodeURIComponent(p)}`)
       setData(json)
       setCurrentPath(p)
     } catch { toast.error('Failed to load gallery') }
@@ -130,20 +134,20 @@ export default function GalleryPicker({ open, onClose, onSelect, multiple = fals
 
   useEffect(() => { if (open) { setSelected([]); load('') } }, [open, load])
 
+
   const doUpload = async (files) => {
     if (!files.length) return
     setUploading(true)
     const form = new FormData()
     Array.from(files).forEach(f => form.append('files', f))
     try {
-      const res  = await fetch(`${API}/api/gallery/upload?path=${encodeURIComponent(currentPath)}`, { method: 'POST', body: form })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Upload failed')
+      const json = await api.post(`/gallery/upload?path=${encodeURIComponent(currentPath)}`, form)
       toast.success(`${json.data.length} file(s) uploaded`)
       load(currentPath)
-    } catch (e) { toast.error(e.message) }
+    } catch (e) { toast.error(e.message || 'Upload failed') }
     finally { setUploading(false) }
   }
+
 
   const createFolder = async () => {
     const { value: name } = await Swal.fire({
@@ -156,10 +160,13 @@ export default function GalleryPicker({ open, onClose, onSelect, multiple = fals
     })
     
     if (!name || !name.trim()) return
-    const res = await fetch(`${API}/api/gallery/folder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: currentPath, name: name.trim() }) })
-    if (res.ok) { toast.success('Folder created'); load(currentPath) }
-    else { const j = await res.json(); toast.error(j.error) }
+    try {
+      await api.post('/gallery/folder', { path: currentPath, name: name.trim() })
+      toast.success('Folder created')
+      load(currentPath)
+    } catch (e) { toast.error(e.error || e.message || 'Failed to create folder') }
   }
+
 
   // ── Delete ──────────────────────────────────────────────────
   const deleteItem = async (item) => {
@@ -175,25 +182,22 @@ export default function GalleryPicker({ open, onClose, onSelect, multiple = fals
     if (!swalRes.isConfirmed) return
 
     try {
-      const endpoint = item.type === 'folder' ? '/api/gallery/folder' : '/api/gallery/file'
-      const res  = await fetch(`${API}${endpoint}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: item.path }) })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error)
+      const endpoint = item.type === 'folder' ? '/gallery/folder' : '/gallery/file'
+      await api.delete(endpoint, { data: { path: item.path } })
       // Remove from selection if it was selected
       setSelected(prev => prev.filter(p => p !== item.path))
       toast.success('Deleted')
       load(currentPath)
-    } catch (e) { toast.error(e.message) }
+    } catch (e) { toast.error(e.message || 'Delete failed') }
   }
+
 
   // ── Rename ──────────────────────────────────────────────────
   const doRename = async (newName) => {
     const item = renaming; setRenaming(null)
     if (!newName.trim() || newName === item.name) return
     try {
-      const res  = await fetch(`${API}/api/gallery/rename`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: item.path, name: newName.trim() }) })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error)
+      const json = await api.patch('/gallery/rename', { path: item.path, name: newName.trim() })
       // Update selection if renamed file was selected
       if (selected.includes(item.path)) {
         const newPath = json.path
@@ -201,8 +205,9 @@ export default function GalleryPicker({ open, onClose, onSelect, multiple = fals
       }
       toast.success('Renamed')
       load(currentPath)
-    } catch (e) { toast.error(e.message) }
+    } catch (e) { toast.error(e.message || 'Rename failed') }
   }
+
 
   const openCtx = (e, item) => {
     e.preventDefault()
@@ -224,53 +229,69 @@ export default function GalleryPicker({ open, onClose, onSelect, multiple = fals
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.7)' }} onClick={onClose}>
-      <div className="w-full max-w-5xl h-[85vh] flex flex-col rounded-2xl overflow-hidden shadow-2xl"
-        style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 sm:p-10"
+      style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="w-full max-w-6xl h-full flex flex-col rounded-[24px] overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)]"
+
+        style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', outline: '1px solid rgba(255,255,255,0.05)' }}
         onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-3 shrink-0"
+        <div className="flex items-center justify-between px-6 py-4 shrink-0"
           style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--surface-2)' }}>
-          <button onClick={createFolder} className="t-btn-ghost text-[12px]">New Folder</button>
-          <button onClick={() => fileInputRef.current?.click()} className="t-btn-ghost text-[12px]" disabled={uploading}>
-            {uploading ? 'Uploading…' : '⬆ Upload'}
+          <div className="flex items-center gap-4">
+            <h2 className="text-[17px] font-bold tracking-tight" style={{ color: 'var(--text)' }}>Media Gallery</h2>
+            <div className="h-4 w-[1px]" style={{ backgroundColor: 'var(--border)' }} />
+            <div className="flex items-center gap-1.5">
+              <button onClick={createFolder} className="t-btn-ghost text-[12px] h-8 px-3">
+                <span className="opacity-60">📁</span> New Folder
+              </button>
+              <button onClick={() => fileInputRef.current?.click()} className="t-btn-primary text-[12px] h-8 px-4" disabled={uploading}>
+                {uploading ? 'Uploading…' : '⬆ Upload Media'}
+              </button>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl transition-all hover:bg-red-500/10 hover:text-red-500"
+            style={{ color: 'var(--text-muted)', backgroundColor: 'var(--surface)' }}>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
           <input ref={fileInputRef} type="file" multiple accept="image/*,video/*" className="hidden"
             onChange={e => { doUpload(e.target.files); e.target.value = '' }} />
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors text-lg"
-            style={{ color: 'var(--text-muted)' }}>×</button>
         </div>
+
 
         {/* ── Navigation sub-bar: back + breadcrumbs ── */}
         {data && (
-          <div className="flex items-center gap-2 px-4 py-1.5 shrink-0"
-            style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'color-mix(in srgb, var(--surface-2) 60%, var(--surface))' }}>
+          <div className="flex items-center gap-3 px-6 py-2 shrink-0 border-b"
+            style={{ borderColor: 'var(--border)', backgroundColor: 'color-mix(in srgb, var(--surface-2) 40%, var(--surface))' }}>
             {currentPath ? (
               <button
                 onClick={() => load(data.breadcrumbs[data.breadcrumbs.length - 2]?.path ?? '')}
-                className="w-6 h-6 flex items-center justify-center rounded-md transition-colors shrink-0"
+                className="w-7 h-7 flex items-center justify-center rounded-lg transition-all shrink-0 hover:scale-105 active:scale-95"
                 style={{ color: 'var(--text-muted)', backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-                onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'var(--color-brand)' }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
                 title="Go up"
               >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
             ) : (
-              <div className="w-6 h-6 shrink-0" />
+              <div className="w-7 h-7 flex items-center justify-center rounded-lg opacity-20 shrink-0"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </div>
             )}
-            <div className="flex items-center gap-1 overflow-x-auto text-[11px]">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[12px] font-medium py-1">
               {data.breadcrumbs.map((crumb, i) => (
-                <span key={crumb.path} className="flex items-center gap-1">
-                  {i > 0 && <span style={{ color: 'var(--text-subtle)' }}>/</span>}
-                  <button className="px-1 rounded transition-colors whitespace-nowrap"
-                    style={{ color: i === data.breadcrumbs.length - 1 ? 'var(--text)' : 'var(--text-muted)' }}
-                    onMouseEnter={e => { if (i < data.breadcrumbs.length - 1) e.currentTarget.style.color = 'var(--color-brand)' }}
-                    onMouseLeave={e => { if (i < data.breadcrumbs.length - 1) e.currentTarget.style.color = 'var(--text-muted)' }}
+                <span key={crumb.path} className="flex items-center gap-1.5 shrink-0">
+                  {i > 0 && <span className="opacity-20" style={{ color: 'var(--text)' }}>/</span>}
+                  <button className="px-2 py-0.5 rounded-md transition-all hover:bg-white/5 active:scale-95"
+                    style={{ color: i === data.breadcrumbs.length - 1 ? 'var(--color-brand)' : 'var(--text-muted)' }}
                     onClick={() => load(crumb.path)}>{crumb.name}</button>
                 </span>
               ))}
@@ -300,58 +321,60 @@ export default function GalleryPicker({ open, onClose, onSelect, multiple = fals
             <>
               {/* Folders */}
               {data?.folders.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--text-subtle)' }}>Folders</p>
-                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                <div className="mb-8">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] mb-4 opacity-40 px-1" style={{ color: 'var(--text)' }}>Directories</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-6 gap-3">
                     {data.folders.map(f => (
                       <button key={f.path}
-                        className="rounded-lg p-2 flex flex-col items-center gap-1 transition-colors"
+                        className="group rounded-2xl p-4 flex flex-col items-center gap-3 transition-all hover:scale-[1.02] active:scale-95"
                         style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border)' }}
-                        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-brand)'}
-                        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
                         onContextMenu={e => openCtx(e, f)}
                         onClick={e => { e.stopPropagation(); load(f.path) }}>
                         <FolderIcon />
-                        <p className="text-[10px] truncate w-full text-center" style={{ color: 'var(--text)' }}>{f.name}</p>
+                        <p className="text-[12px] font-semibold truncate w-full text-center" style={{ color: 'var(--text)' }}>{f.name}</p>
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
+
               {/* Files */}
               {data?.files.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--text-subtle)' }}>Images &amp; Videos</p>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] mb-4 opacity-40 px-1" style={{ color: 'var(--text)' }}>Media Records</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-6 xl:grid-cols-8 gap-4">
                     {data.files.map(file => {
                       const isSel = selected.includes(file.path)
                       return (
                         <div key={file.path}
                           onClick={e => { e.stopPropagation(); toggleSelect(file) }}
                           onContextMenu={e => openCtx(e, file)}
-                          className="rounded-lg overflow-hidden cursor-pointer transition-all"
+                          className="group rounded-2xl overflow-hidden cursor-pointer transition-all hover:scale-[1.03] active:scale-95"
                           style={{
                             border: `2px solid ${isSel ? 'var(--color-brand)' : 'transparent'}`,
-                            outline: isSel ? `3px solid color-mix(in srgb, var(--color-brand) 30%, transparent)` : 'none',
+                            boxShadow: isSel ? `0 0 20px -5px var(--color-brand)` : 'none',
                             backgroundColor: 'var(--surface-2)',
                           }}>
-                          <div className="aspect-square relative overflow-hidden">
-                            <img src={galleryUrl(file.path)} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
+                          <div className="aspect-[4/5] relative overflow-hidden bg-black/20">
+                            <img src={galleryUrl(file.path)} alt={file.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             {isSel && (
-                              <div className="absolute inset-0 flex items-center justify-center"
-                                style={{ backgroundColor: 'color-mix(in srgb, var(--color-brand) 35%, transparent)' }}>
-                                <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-xs font-bold" style={{ color: 'var(--color-brand)' }}>✓</div>
+                              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white shadow-lg flex items-center justify-center text-[10px] font-bold" style={{ color: 'var(--color-brand)' }}>
+                                ✓
                               </div>
                             )}
                           </div>
-                          <p className="text-[9px] truncate px-1 py-0.5" style={{ color: 'var(--text-subtle)' }}>{file.name}</p>
+                          <div className="px-3 py-2">
+                             <p className="text-[11px] font-medium truncate" style={{ color: 'var(--text)' }}>{file.name}</p>
+                          </div>
                         </div>
                       )
                     })}
                   </div>
                 </div>
               )}
+
 
               {!data?.folders.length && !data?.files.length && (
                 <div className="flex flex-col items-center justify-center h-40" style={{ color: 'var(--text-subtle)' }}>

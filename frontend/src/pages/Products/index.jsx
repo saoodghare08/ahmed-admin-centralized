@@ -12,7 +12,10 @@ import { getCategories } from '../../api'
 const COUNTRIES = ['AE','SA','QA','BH','KW','OM']
 const FLAGS     = { AE:'🇦🇪', SA:'🇸🇦', QA:'🇶🇦', BH:'🇧🇭', KW:'🇰🇼', OM:'🇴🇲' }
 
+const FILTER_KEY = 'ahmed_product_filters'
+
 function StatusBadge({ active }) {
+
   return active
     ? <span className="t-badge-active"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />Active</span>
     : <span className="t-badge-inactive"><span className="w-1.5 h-1.5 rounded-full bg-red-400" />Inactive</span>
@@ -28,21 +31,30 @@ function ProductList() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const [country, setCountry] = useState(searchParams.get('country') || 'AE')
-  const [page, setPage]       = useState(Number(searchParams.get('page')) || 1)
-  const [search, setSearch]   = useState(searchParams.get('search') || '')
-  const [debouncedSearch] = useDebounce(search, 500)
+  const [filters] = useState(() => {
+    try {
+      const saved = localStorage.getItem(FILTER_KEY)
+      return saved ? JSON.parse(saved) : null
+    } catch { return null }
+  })
+
+  // Initial states merge URL params and saved filters
+  const [country, setCountry] = useState(() => searchParams.get('country') || filters?.country || 'AE')
+  const [page, setPage]       = useState(() => Number(searchParams.get('page')) || filters?.page || 1)
+  const [search, setSearch]   = useState(() => searchParams.get('search') || filters?.search || '')
+  const [debouncedSearch]     = useDebounce(search, 500)
   const [showImport, setShowImport] = useState(false)
   const [showBin, setShowBin] = useState(false)
 
   const [selectedProductIds, setSelectedProductIds] = useState(() => new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
   
-  const [catId, setCatId] = useState(searchParams.get('catId') || '')
-  const [subId, setSubId] = useState(searchParams.get('subId') || '')
-  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'id')
-  const [sortOrder, setSortOrder] = useState(searchParams.get('sortOrder') || 'DESC')
-  const [limit, setLimit] = useState(Number(searchParams.get('limit')) || 10)
+  const [catId, setCatId]         = useState(() => searchParams.get('catId') || filters?.catId || '')
+  const [subId, setSubId]         = useState(() => searchParams.get('subId') || filters?.subId || '')
+  const [sortBy, setSortBy]       = useState(() => searchParams.get('sortBy') || filters?.sortBy || 'id')
+  const [sortOrder, setSortOrder] = useState(() => searchParams.get('sortOrder') || filters?.sortOrder || 'DESC')
+  const [limit, setLimit]         = useState(() => Number(searchParams.get('limit')) || filters?.limit || 10)
+
 
   // Update URL search params when state changes
   useEffect(() => {
@@ -57,7 +69,11 @@ function ProductList() {
     if (limit !== 10) params.set('limit', String(limit))
     
     setSearchParams(params, { replace: true })
+
+    // Save to localStorage for persistence across re-mounts
+    localStorage.setItem(FILTER_KEY, JSON.stringify({ country, page, search, catId, subId, sortBy, sortOrder, limit }))
   }, [country, page, search, catId, subId, sortBy, sortOrder, limit, setSearchParams])
+
 
   const { data: catData } = useQuery({
     queryKey: ['categories-admin'],

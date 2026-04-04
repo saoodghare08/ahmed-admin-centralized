@@ -10,92 +10,188 @@ const router = express.Router();
 const toSlug = (str) =>
   String(str).toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').trim();
 
+// GET /api/categories/template
+router.get('/template', (_req, res) => {
+  const headers = ['Type', 'Name_EN', 'Name_AR', 'Parent_Category_EN', 'Sort_Order', 'Is_Active'];
+  
+  const exampleData = [
+    {
+      Type: 'Category',
+      Name_EN: 'Perfumes',
+      Name_AR: 'عطور',
+      Parent_Category_EN: '',
+      Sort_Order: 1,
+      Is_Active: 1,
+    },
+    {
+      Type: 'Subcategory',
+      Name_EN: 'Oud',
+      Name_AR: 'عود',
+      Parent_Category_EN: 'Perfumes',
+      Sort_Order: 1,
+      Is_Active: 1,
+    }
+  ];
+
+  const ws = xlsx.utils.json_to_sheet(exampleData, { header: headers });
+  ws['!cols'] = headers.map(() => ({ wch: 25 }));
+
+  const wb = xlsx.utils.book_new();
+  xlsx.utils.book_append_sheet(wb, ws, 'Categories');
+
+  const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  res.setHeader('Content-Disposition', 'attachment; filename="categories_import_template.xlsx"');
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.send(buf);
+});
+
 // POST /api/categories/import
 router.post('/import', upload.single('file'), async (req, res, next) => {
   if (!req.file) return res.status(400).json({ error: 'No Excel file uploaded' });
 
+  const dryRun = req.query.dry_run === 'true';
   const connection = await db.getConnection();
+
   try {
     await connection.beginTransaction();
 
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
-    const rawData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    const rawData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
 
     // Normalize headers (lowercase, remove spaces from keys)
-    const data = rawData.map(row => {
-      const normalizedRow = {};
+    const data = rawData.map((row, index) => {
+      const normalizedRow = { __rowNum: index + 2 };
       for (const key in row) {
+        if (key === '__rowNum') continue;
         const cleanKey = String(key).toLowerCase().replace(/\s+/g, '');
         normalizedRow[cleanKey] = row[key];
       }
       return normalizedRow;
     }).filter(row => row.type); // Filter out completely empty rows
 
-    console.log('--- EXCEL IMPORT DEBUG ---');
-    console.log('Raw parsed data length:', data?.length);
-    console.log('First row keys:', data?.length ? Object.keys(data[0]) : 'None');
-    console.log('First row data:', data?.[0]);
-
-    if (!data || data.length === 0) throw new Error('Excel sheet is empty or headers are missing/invalid');
+    if (!data || data.length === 0) {
+      return res.status(400).json({ error: 'Excel sheet is empty or headers are missing/invalid' });
+    }
 
     // Load existing categories to map names to IDs
     const [existingCats] = await connection.query(`SELECT id, LOWER(name_en) AS name_lower FROM categories`);
     const catMap = new Map();
     existingCats.forEach(c => catMap.set(c.name_lower, c.id));
 
+    const results = [];
+    let inserted = 0, skipped = 0, errors = 0;
+
     // Process Categories first
-    const newCategories = data.filter(r => {
-      if (!r.type) return false;
-      const t = String(r.type).trim().toLowerCase();
-      return t === 'category';
-    });
-
-    console.log(`Found ${newCategories.length} categories to insert.`);
-
+    const newCategories = data.filter(r => String(r.type).trim().toLowerCase() === 'category');
     for (const row of newCategories) {
-      if (!row.name_en || !row.name_ar) throw new Error('Missing name_en or name_ar on a category');
-      
-      const slug = toSlug(row.name_en);
-      const nameLower = String(row.name_en).toLowerCase().trim();
-      const sortOrder = parseInt(row.sort_order) || 0;
-      const isActive = row.is_active !== undefined ? (Number(row.is_active) === 1 ? 1 : 0) : 1;
+      const rowNum = row.__rowNum;
+      const t = 'Category';
+      const nameEn = String(row.name_en || '').trim();
+      const nameAr = String(row.name_ar || '').trim();
 
-      if (!catMap.has(nameLower)) {
-        const [result] = await connection.query(
-          `INSERT INTO categories (slug, name_en, name_ar, sort_order, is_active) VALUES (?, ?, ?, ?, ?)`,
-          [slug, row.name_en, row.name_ar, sortOrder, isActive]
-        );
-        catMap.set(nameLower, result.insertId);
+      if (!nameEn) {
+        results.push({ row: rowNum, type: t, name_en: nameEn || '—', parent: '—', status: 'error', reason: 'Missing name_en' });
+        errors++;
+        continue;
+      }
+
+      const nameLower = nameEn.toLowerCase();
+      if (catMap.has(nameLower)) {
+        results.push({ row: rowNum, type: t, name_en: nameEn, parent: '—', status: 'skip', reason: 'Category already exists' });
+        skipped++;
+        continue;
+      }
+
+      const slug = toSlug(nameEn);
+      const sortOrder = parseInt(row.sort_order) || 0;
+      const isActive = row.is_active !== undefined && row.is_active !== '' ? (Number(row.is_active) === 1 ? 1 : 0) : 1;
+
+      if (dryRun) {
+        catMap.set(nameLower, 'fake_id_for_dry_run');
+        results.push({ row: rowNum, type: t, name_en: nameEn, parent: '—', status: 'ready', reason: '' });
+        inserted++;
+      } else {
+        try {
+          const [result] = await connection.query(
+            `INSERT INTO categories (slug, name_en, name_ar, sort_order, is_active) VALUES (?, ?, ?, ?, ?)`,
+            [slug, nameEn, nameAr, sortOrder, isActive]
+          );
+          catMap.set(nameLower, result.insertId);
+          results.push({ row: rowNum, type: t, name_en: nameEn, parent: '—', status: 'inserted', reason: '' });
+          inserted++;
+        } catch (err) {
+          results.push({ row: rowNum, type: t, name_en: nameEn, parent: '—', status: 'error', reason: err.message });
+          errors++;
+        }
       }
     }
 
     // Process Subcategories next
-    const newSubcategories = data.filter(r => r.type?.toLowerCase() === 'subcategory');
+    const newSubcategories = data.filter(r => String(r.type).trim().toLowerCase() === 'subcategory');
     for (const row of newSubcategories) {
-      if (!row.name_en || !row.name_ar || !row.parent_category_en) {
-        throw new Error(`Missing name_en, name_ar, or parent_category_en on subcategory: ${row.name_en || 'Unknown'}`);
+      const rowNum = row.__rowNum;
+      const t = 'Subcategory';
+      const nameEn = String(row.name_en || '').trim();
+      const nameAr = String(row.name_ar || '').trim();
+      const parentName = String(row.parent_category_en || '').trim();
+
+      if (!nameEn || !parentName) {
+        results.push({ row: rowNum, type: t, name_en: nameEn || '—', parent: parentName || '—', status: 'error', reason: 'Missing name_en or parent' });
+        errors++;
+        continue;
       }
-      
-      const parentLower = String(row.parent_category_en).toLowerCase().trim();
+
+      const parentLower = parentName.toLowerCase();
       const parentId = catMap.get(parentLower);
 
       if (!parentId) {
-        throw new Error(`Parent category '${row.parent_category_en}' not found for subcategory '${row.name_en}'`);
+        results.push({ row: rowNum, type: t, name_en: nameEn, parent: parentName, status: 'error', reason: `Parent category '${parentName}' not found` });
+        errors++;
+        continue;
       }
 
-      const slug = toSlug(row.name_en);
+      const slug = toSlug(nameEn);
       const sortOrder = parseInt(row.sort_order) || 0;
-      const isActive = row.is_active !== undefined ? (Number(row.is_active) === 1 ? 1 : 0) : 1;
+      const isActive = row.is_active !== undefined && row.is_active !== '' ? (Number(row.is_active) === 1 ? 1 : 0) : 1;
 
-      await connection.query(
-        `INSERT INTO subcategories (category_id, slug, name_en, name_ar, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?)`,
-        [parentId, slug, row.name_en, row.name_ar, sortOrder, isActive]
-      );
+      if (dryRun) {
+        results.push({ row: rowNum, type: t, name_en: nameEn, parent: parentName, status: 'ready', reason: '' });
+        inserted++;
+      } else {
+        try {
+          await connection.query(
+            `INSERT INTO subcategories (category_id, slug, name_en, name_ar, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?)`,
+            [parentId, slug, nameEn, nameAr, sortOrder, isActive]
+          );
+          results.push({ row: rowNum, type: t, name_en: nameEn, parent: parentName, status: 'inserted', reason: '' });
+          inserted++;
+        } catch (err) {
+          if (err.code === 'ER_DUP_ENTRY') {
+             results.push({ row: rowNum, type: t, name_en: nameEn, parent: parentName, status: 'skip', reason: 'Duplicate slug' });
+             skipped++;
+          } else {
+             results.push({ row: rowNum, type: t, name_en: nameEn, parent: parentName, status: 'error', reason: err.message });
+             errors++;
+          }
+        }
+      }
     }
 
-    await connection.commit();
-    res.json({ message: 'Excel import successful', imported: data.length });
+    if (dryRun) {
+      await connection.rollback();
+    } else {
+      await connection.commit();
+    }
+
+    // Sort results by row number to match Excel order
+    results.sort((a, b) => a.row - b.row);
+
+    res.json({
+      dry_run: dryRun,
+      summary: { inserted, skipped, errors },
+      results
+    });
   } catch (err) {
     await connection.rollback();
     next(err);

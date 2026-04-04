@@ -64,6 +64,10 @@ export async function logAudit(req, actionArg, moduleArg, targetIdArg, detailsAr
   }
 
   try {
+    const ipRaw = req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress || '127.0.0.1';
+    const ip = ipRaw.split(',')[0].trim().replace('::ffff:', '');
+    const finalIp = (ip === '::1' || ip === '::') ? '127.0.0.1' : ip;
+
     await db.query(
       `INSERT INTO audit_logs (user_id, action, module, target_id, details, ip_address)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -73,7 +77,7 @@ export async function logAudit(req, actionArg, moduleArg, targetIdArg, detailsAr
         module,
         String(targetId || ''),
         JSON.stringify(details || {}),
-        req.ip || req.connection?.remoteAddress || null,
+        finalIp,
       ]
     );
   } catch (err) {

@@ -7,6 +7,7 @@ export default function Campaigns() {
     <Routes>
       <Route index element={<CampaignList />} />
       <Route path="new" element={<CampaignForm />} />
+      <Route path="edit/:id" element={<CampaignForm />} />
       <Route path=":id" element={<CampaignForm />} />
     </Routes>
   )

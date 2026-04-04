@@ -10,26 +10,20 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Attempt to fetch some quick global stats to make the dashboard look alive
     const reqs = [
-      api.get('/products?limit=1'),
-      api.get('/categories?admin=1'),
-      api.get('/campaigns?limit=1')
+      (hasPermission('products') || user?.role === 'admin') ? api.get('/products?limit=1') : Promise.resolve({ skip: true }),
+      (hasPermission('categories') || user?.role === 'admin') ? api.get('/categories?admin=1') : Promise.resolve({ skip: true }),
+      (hasPermission('campaigns') || user?.role === 'admin') ? api.get('/campaigns?limit=1') : Promise.resolve({ skip: true }),
+      (hasPermission('audit_logs') || user?.role === 'admin') ? api.get('/audit-logs?limit=6') : Promise.resolve({ skip: true })
     ]
-    // Only attempt to fetch audit logs if they have permission, otherwise return empty
-    if (hasPermission('audit_logs') || user?.role === 'admin') {
-      reqs.push(api.get('/audit-logs?limit=6'))
-    } else {
-      reqs.push(Promise.resolve({ data: { data: [] } }))
-    }
 
     Promise.allSettled(reqs).then(([prodRes, catRes, campRes, logRes]) => {
       setStats({
-        products: prodRes.status === 'fulfilled' ? prodRes.value.meta?.total || 0 : 0,
-        categories: catRes.status === 'fulfilled' ? (catRes.value.data?.data?.length || catRes.value.data?.length || 0) : 0,
-        campaigns: campRes.status === 'fulfilled' ? campRes.value.pagination?.total || 0 : 0
+        products: (prodRes.status === 'fulfilled' && !prodRes.value.skip) ? prodRes.value.meta?.total || 0 : 0,
+        categories: (catRes.status === 'fulfilled' && !catRes.value.skip) ? (catRes.value.data?.data?.length || catRes.value.data?.length || 0) : 0,
+        campaigns: (campRes.status === 'fulfilled' && !campRes.value.skip) ? (campRes.value.data?.pagination?.total || campRes.value.data?.meta?.total || 0) : 0
       })
-      if (logRes.status === 'fulfilled') {
+      if (logRes.status === 'fulfilled' && !logRes.value.skip) {
         setActivity(logRes.value.data?.data || logRes.value.data || [])
       }
       setLoading(false)
@@ -50,59 +44,65 @@ export default function Dashboard() {
 
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="flex flex-col gap-2 p-6 rounded-2xl transition-all hover:scale-[1.02]" 
-          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10 text-blue-500">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-              </svg>
+        {(hasPermission('products') || user?.role === 'admin') && (
+          <div className="flex flex-col gap-2 p-6 rounded-2xl transition-all hover:scale-[1.02]" 
+            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10 text-blue-500">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                </svg>
+              </div>
+              <h3 className="text-[14px] font-bold uppercase tracking-widest opacity-60">Catalogue</h3>
             </div>
-            <h3 className="text-[14px] font-bold uppercase tracking-widest opacity-60">Catalogue</h3>
+            {loading ? (
+               <div className="h-10 w-24 bg-(--surface-2) rounded" />
+            ) : (
+              <div className="text-4xl font-black">{stats.products}</div>
+            )}
+            <Link to="/products" className="text-[12px] font-bold text-blue-500 mt-2 hover:underline">Manage Products →</Link>
           </div>
-          {loading ? (
-             <div className="h-10 w-24 bg-(--surface-2) rounded animate-pulse" />
-          ) : (
-            <div className="text-4xl font-black">{stats.products}</div>
-          )}
-          <Link to="/products" className="text-[12px] font-bold text-blue-500 mt-2 hover:underline">Manage Products →</Link>
-        </div>
+        )}
 
-        <div className="flex flex-col gap-2 p-6 rounded-2xl transition-all hover:scale-[1.02]" 
-          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-500">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-              </svg>
+        {(hasPermission('categories') || user?.role === 'admin') && (
+          <div className="flex flex-col gap-2 p-6 rounded-2xl transition-all hover:scale-[1.02]" 
+            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-500">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+              </div>
+              <h3 className="text-[14px] font-bold uppercase tracking-widest opacity-60">Categories</h3>
             </div>
-            <h3 className="text-[14px] font-bold uppercase tracking-widest opacity-60">Categories</h3>
+            {loading ? (
+               <div className="h-10 w-24 bg-(--surface-2) rounded" />
+            ) : (
+               <div className="text-4xl font-black">{stats.categories}</div>
+            )}
+            <Link to="/categories" className="text-[12px] font-bold text-emerald-500 mt-2 hover:underline">Manage Taxonomy →</Link>
           </div>
-          {loading ? (
-             <div className="h-10 w-24 bg-(--surface-2) rounded animate-pulse" />
-          ) : (
-             <div className="text-4xl font-black">{stats.categories}</div>
-          )}
-          <Link to="/categories" className="text-[12px] font-bold text-emerald-500 mt-2 hover:underline">Manage Taxonomy →</Link>
-        </div>
+        )}
 
-        <div className="flex flex-col gap-2 p-6 rounded-2xl transition-all hover:scale-[1.02]" 
-          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-500/10 text-purple-500">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 18H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 12h7.5" />
-              </svg>
+        {(hasPermission('campaigns') || user?.role === 'admin') && (
+          <div className="flex flex-col gap-2 p-6 rounded-2xl transition-all hover:scale-[1.02]" 
+            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-500/10 text-purple-500">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 18H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 12h7.5" />
+                </svg>
+              </div>
+              <h3 className="text-[14px] font-bold uppercase tracking-widest opacity-60">Campaigns</h3>
             </div>
-            <h3 className="text-[14px] font-bold uppercase tracking-widest opacity-60">Campaigns</h3>
+            {loading ? (
+               <div className="h-10 w-24 bg-(--surface-2) rounded" />
+            ) : (
+               <div className="text-4xl font-black">{stats.campaigns}</div>
+            )}
+            <Link to="/campaigns" className="text-[12px] font-bold text-purple-500 mt-2 hover:underline">Manage Promotions →</Link>
           </div>
-          {loading ? (
-             <div className="h-10 w-24 bg-(--surface-2) rounded animate-pulse" />
-          ) : (
-             <div className="text-4xl font-black">{stats.campaigns}</div>
-          )}
-          <Link to="/campaigns" className="text-[12px] font-bold text-purple-500 mt-2 hover:underline">Manage Promotions →</Link>
-        </div>
+        )}
       </div>
 
       {/* Recent Activity */}
@@ -143,9 +143,9 @@ export default function Dashboard() {
                                   <span className="opacity-80 font-normal mr-1">{log.full_name || log.username || 'System'}</span>
                                   <span className="capitalize">{text}</span>
                                 </p>
-                                <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-subtle)' }}>
-                                  {new Date(log.created_at).toLocaleString()}
-                                </p>
+                                  <p className="text-[11px] mt-0.5 opacity-50" style={{ color: 'var(--text-subtle)' }}>
+                                    {new Date(log.created_at).toLocaleString()} • {log.ip_address || 'Local'}
+                                  </p>
                               </div>
                             </div>
                           </td>
