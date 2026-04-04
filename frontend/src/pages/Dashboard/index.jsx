@@ -20,8 +20,8 @@ export default function Dashboard() {
     Promise.allSettled(reqs).then(([prodRes, catRes, campRes, logRes]) => {
       setStats({
         products: (prodRes.status === 'fulfilled' && !prodRes.value.skip) ? prodRes.value.meta?.total || 0 : 0,
-        categories: (catRes.status === 'fulfilled' && !catRes.value.skip) ? (catRes.value.data?.data?.length || catRes.value.data?.length || 0) : 0,
-        campaigns: (campRes.status === 'fulfilled' && !campRes.value.skip) ? (campRes.value.data?.pagination?.total || campRes.value.data?.meta?.total || 0) : 0
+        categories: (catRes.status === 'fulfilled' && !catRes.value.skip) ? (catRes.value.data?.length || 0) : 0,
+        campaigns: (campRes.status === 'fulfilled' && !campRes.value.skip) ? (campRes.value.data?.length || 0) : 0
       })
       if (logRes.status === 'fulfilled' && !logRes.value.skip) {
         setActivity(logRes.value.data?.data || logRes.value.data || [])
