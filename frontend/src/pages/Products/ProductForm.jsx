@@ -18,12 +18,12 @@ import Swal from 'sweetalert2'
 
 // ── Constants ─────────────────────────────────────────────────
 const COUNTRIES = [
-  { id: 1, code: 'AE', name: 'UAE',     currency_id: 1, currency: 'AED', flag: '🇦🇪', decimals: 2 },
-  { id: 2, code: 'SA', name: 'KSA',     currency_id: 2, currency: 'SAR', flag: '🇸🇦', decimals: 2 },
-  { id: 3, code: 'QA', name: 'Qatar',   currency_id: 3, currency: 'QAR', flag: '🇶🇦', decimals: 2 },
+  { id: 1, code: 'AE', name: 'UAE', currency_id: 1, currency: 'AED', flag: '🇦🇪', decimals: 2 },
+  { id: 2, code: 'SA', name: 'KSA', currency_id: 2, currency: 'SAR', flag: '🇸🇦', decimals: 2 },
+  { id: 3, code: 'QA', name: 'Qatar', currency_id: 3, currency: 'QAR', flag: '🇶🇦', decimals: 2 },
   { id: 4, code: 'BH', name: 'Bahrain', currency_id: 4, currency: 'BHD', flag: '🇧🇭', decimals: 3 },
-  { id: 5, code: 'KW', name: 'Kuwait',  currency_id: 5, currency: 'KWD', flag: '🇰🇼', decimals: 3 },
-  { id: 6, code: 'OM', name: 'Oman',    currency_id: 6, currency: 'OMR', flag: '🇴🇲', decimals: 3 },
+  { id: 5, code: 'KW', name: 'Kuwait', currency_id: 5, currency: 'KWD', flag: '🇰🇼', decimals: 3 },
+  { id: 6, code: 'OM', name: 'Oman', currency_id: 6, currency: 'OMR', flag: '🇴🇲', decimals: 3 },
 ]
 
 const TABS = ['Core', 'Fragrance', 'Media', 'SEO', 'Inventory', 'Bundle']
@@ -99,7 +99,7 @@ function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, se
   const selectedCat = categories?.find(c => c.id === Number(form.category_id))
   return (
     <div className="grid grid-cols-1 gap-5">
-      
+
 
       <div className="grid grid-cols-2 gap-5">
         <SectionCard title="Identification">
@@ -171,15 +171,15 @@ function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, se
       <SectionCard title="Descriptions">
         <div className="grid grid-cols-2 gap-4">
           <Field label="Description (English)">
-            <textarea className="t-input h-32 leading-relaxed" 
-              value={form.description_en || ''} 
-              onChange={e => set('description_en', e.target.value)} 
+            <textarea className="t-input h-32 leading-relaxed"
+              value={form.description_en || ''}
+              onChange={e => set('description_en', e.target.value)}
               placeholder="Full product story and features in English..." />
           </Field>
           <Field label="Description (Arabic)">
             <textarea className="t-input h-32 leading-relaxed text-right" dir="rtl"
-              value={form.description_ar || ''} 
-              onChange={e => set('description_ar', e.target.value)} 
+              value={form.description_ar || ''}
+              onChange={e => set('description_ar', e.target.value)}
               placeholder="وصف المنتج وتفاصيله بالعربي..." />
           </Field>
         </div>
@@ -202,7 +202,7 @@ function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, se
         </div>
       </SectionCard>
 
-      
+
 
       <SectionCard title="Tags & Attributes">
         <div className="flex flex-col gap-5">
@@ -210,7 +210,7 @@ function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, se
             <input className="t-input" value={form.tags ?? ''} onChange={e => set('tags', e.target.value)}
               placeholder="oud, woody, luxury" />
           </Field>
-          
+
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-subtle)' }}>
               Product Attributes (Key/Value)
@@ -218,11 +218,11 @@ function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, se
             <div className="flex flex-col gap-2">
               {form.attributes?.map((attr, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <input className="t-input shadow-none flex-1" value={attr.key} 
+                  <input className="t-input shadow-none flex-1" value={attr.key}
                     onChange={e => {
                       const newAttrs = [...form.attributes]; newAttrs[i].key = e.target.value; set('attributes', newAttrs)
                     }} placeholder="Key e.g. Gender" />
-                  <input className="t-input shadow-none flex-1" value={attr.value} 
+                  <input className="t-input shadow-none flex-1" value={attr.value}
                     onChange={e => {
                       const newAttrs = [...form.attributes]; newAttrs[i].value = e.target.value; set('attributes', newAttrs)
                     }} placeholder="Value e.g. Unisex" />
@@ -294,8 +294,8 @@ function MediaTab({ mediaList, setMediaList, productId, setPrimaryMedia, deleteM
               {mediaList.map((item, idx) => (
                 <div key={item.id ?? idx}
                   className="group relative rounded-2xl overflow-hidden aspect-square cursor-pointer border transition-all duration-300"
-                  style={{ 
-                    borderColor: item.is_primary ? 'var(--color-brand)' : 'var(--border)', 
+                  style={{
+                    borderColor: item.is_primary ? 'var(--color-brand)' : 'var(--border)',
                     backgroundColor: 'var(--surface-2)',
                     boxShadow: item.is_primary ? '0 10px 20px -10px rgba(var(--color-brand-rgb), 0.3)' : 'none'
                   }}>
@@ -326,7 +326,7 @@ function MediaTab({ mediaList, setMediaList, productId, setPrimaryMedia, deleteM
               ))}
             </div>
           )}
-          
+
           <button type="button" onClick={() => setPickerOpen(true)}
             className="w-full rounded-2xl flex flex-col items-center justify-center gap-3 py-10 transition-all duration-300 hover:shadow-xl group"
             style={{ border: '2px dashed var(--border)', backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)' }}
@@ -343,7 +343,7 @@ function MediaTab({ mediaList, setMediaList, productId, setPrimaryMedia, deleteM
             </div>
           </button>
         </div>
-        
+
         <GalleryPicker open={pickerOpen} onClose={() => setPickerOpen(false)} multiple={true}
           onSelect={async (paths) => {
             const arr = Array.isArray(paths) ? paths : [paths]
@@ -374,9 +374,9 @@ function MediaTab({ mediaList, setMediaList, productId, setPrimaryMedia, deleteM
 // ── Tab: Fragrance Notes ──────────────────────────────────────
 function FragranceTab({ notes, setNotes }) {
   const NOTE_TYPES = [
-    { key: 'top',   label: 'Top Notes',   accent: '#d97706', border: 'color-mix(in srgb, #d97706 30%, transparent)', bg: 'color-mix(in srgb, #d97706 8%, transparent)' },
+    { key: 'top', label: 'Top Notes', accent: '#d97706', border: 'color-mix(in srgb, #d97706 30%, transparent)', bg: 'color-mix(in srgb, #d97706 8%, transparent)' },
     { key: 'heart', label: 'Heart Notes', accent: '#e11d48', border: 'color-mix(in srgb, #e11d48 30%, transparent)', bg: 'color-mix(in srgb, #e11d48 8%, transparent)' },
-    { key: 'base',  label: 'Base Notes',  accent: 'var(--color-brand)', border: 'color-mix(in srgb, var(--color-brand) 30%, transparent)', bg: 'color-mix(in srgb, var(--color-brand) 8%, transparent)' },
+    { key: 'base', label: 'Base Notes', accent: 'var(--color-brand)', border: 'color-mix(in srgb, var(--color-brand) 30%, transparent)', bg: 'color-mix(in srgb, var(--color-brand) 8%, transparent)' },
   ]
 
   const update = (type, field, val) =>
@@ -439,7 +439,7 @@ function FragranceTab({ notes, setNotes }) {
 // ── Tab: SEO ──────────────────────────────────────────────────
 function SEOTab({ configs, setConfigs }) {
   const [expandedId, setExpandedId] = useState(null)
-  
+
   const update = (countryId, field, val) =>
     setConfigs(prev => prev.map(c => c.country_id === countryId ? { ...c, [field]: val } : c))
 
@@ -449,18 +449,18 @@ function SEOTab({ configs, setConfigs }) {
         const country = COUNTRIES.find(co => co.id === c.country_id)
         const isExpanded = expandedId === c.country_id
         const hasData = c.slug_override || c.meta_title_en || c.meta_desc_en
-        
+
         return (
-          <div key={c.country_id} 
-            className="rounded-2xl border transition-all duration-300 overflow-hidden" 
-            style={{ 
-              borderColor: isExpanded ? 'var(--color-brand)' : 'var(--border)', 
+          <div key={c.country_id}
+            className="rounded-2xl border transition-all duration-300 overflow-hidden"
+            style={{
+              borderColor: isExpanded ? 'var(--color-brand)' : 'var(--border)',
               backgroundColor: isExpanded ? 'rgba(var(--color-brand-rgb), 0.02)' : 'var(--surface)',
               boxShadow: isExpanded ? '0 10px 30px -15px rgba(0,0,0,0.1)' : 'none'
             }}
           >
             {/* Accordion Header */}
-            <div 
+            <div
               onClick={() => setExpandedId(isExpanded ? null : c.country_id)}
               className="flex items-center justify-between p-4 cursor-pointer select-none hover:bg-black/2 transition-colors"
             >
@@ -484,52 +484,52 @@ function SEOTab({ configs, setConfigs }) {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                 <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
-                    <svg className="w-5 h-5 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                    </svg>
-                 </div>
+                <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                  <svg className="w-5 h-5 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </div>
               </div>
             </div>
 
             {/* Accordion Content */}
-            <div 
-              className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[800px] opacity-100 border-t' : 'max-h-0 opacity-0 pointers-events-none'}`} 
+            <div
+              className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[800px] opacity-100 border-t' : 'max-h-0 opacity-0 pointers-events-none'}`}
               style={{ borderColor: 'var(--border)' }}
             >
               <div className="p-6 flex flex-col gap-6">
                 <div className="grid grid-cols-2 gap-5">
-                   <Field label="Regional URL Slug" hint="Leave blank to use global slug">
-                      <div className="relative">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-black opacity-20 uppercase tracking-tighter">URL /</div>
-                        <input className="t-input font-mono text-[12px] pl-14" value={c.slug_override || ''}
-                          onChange={e => update(c.country_id, 'slug_override', e.target.value)} placeholder="localized-slug-here" />
-                      </div>
-                   </Field>
-                   <Field label="Display Sort Order" hint="Ranking in list">
-                      <input className="t-input font-bold" type="number" value={c.sort_order || 0}
-                        onChange={e => update(c.country_id, 'sort_order', Number(e.target.value))} />
-                   </Field>
+                  <Field label="Regional URL Slug" hint="Leave blank to use global slug">
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-black opacity-20 uppercase tracking-tighter">URL /</div>
+                      <input className="t-input font-mono text-[12px] pl-14" value={c.slug_override || ''}
+                        onChange={e => update(c.country_id, 'slug_override', e.target.value)} placeholder="localized-slug-here" />
+                    </div>
+                  </Field>
+                  <Field label="Display Sort Order" hint="Ranking in list">
+                    <input className="t-input font-bold" type="number" value={c.sort_order || 0}
+                      onChange={e => update(c.country_id, 'sort_order', Number(e.target.value))} />
+                  </Field>
                 </div>
 
                 <div className="grid grid-cols-2 gap-5">
                   <Field label="Meta Title (English)">
-                    <input className="t-input" value={c.meta_title_en || ''} 
+                    <input className="t-input" value={c.meta_title_en || ''}
                       onChange={e => update(c.country_id, 'meta_title_en', e.target.value)} placeholder="SEO head title..." />
                   </Field>
                   <Field label="Meta Title (Arabic)">
-                    <input className="t-input text-right font-medium" dir="rtl" value={c.meta_title_ar || ''} 
+                    <input className="t-input text-right font-medium" dir="rtl" value={c.meta_title_ar || ''}
                       onChange={e => update(c.country_id, 'meta_title_ar', e.target.value)} placeholder="عنوان الصفحة..." />
                   </Field>
                 </div>
 
                 <div className="grid grid-cols-2 gap-5">
                   <Field label="Meta Description (English)">
-                    <textarea className="t-input resize-none h-24 leading-relaxed" value={c.meta_desc_en || ''} 
+                    <textarea className="t-input resize-none h-24 leading-relaxed" value={c.meta_desc_en || ''}
                       onChange={e => update(c.country_id, 'meta_desc_en', e.target.value)} placeholder="Short summary for Google..." />
                   </Field>
                   <Field label="Meta Description (Arabic)">
-                    <textarea className="t-input resize-none h-24 text-right leading-relaxed font-medium" dir="rtl" value={c.meta_desc_ar || ''} 
+                    <textarea className="t-input resize-none h-24 text-right leading-relaxed font-medium" dir="rtl" value={c.meta_desc_ar || ''}
                       onChange={e => update(c.country_id, 'meta_desc_ar', e.target.value)} placeholder="وصف الميتا..." />
                   </Field>
                 </div>
@@ -553,19 +553,19 @@ function InventoryTab({ stocks, setStocks }) {
         const country = COUNTRIES.find(c => c.id === s.country_id)
         return (
           <SectionCard key={s.country_id} title={`${country?.name} Stock`}>
-             <Field label="Quantity in Hand" hint="units available">
-                <div className="flex items-center gap-3">
-                  <span className="text-xl leading-none">{country?.flag}</span>
-                  <input 
-                    type="number" 
-                    className="t-input font-bold" 
-                    value={s.quantity ?? ''} 
-                    onChange={e => update(s.country_id, e.target.value)}
-                    placeholder="0"
-                    min="0"
-                  />
-                </div>
-             </Field>
+            <Field label="Quantity in Hand" hint="units available">
+              <div className="flex items-center gap-3">
+                <span className="text-xl leading-none">{country?.flag}</span>
+                <input
+                  type="number"
+                  className="t-input font-bold"
+                  value={s.quantity ?? ''}
+                  onChange={e => update(s.country_id, e.target.value)}
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+            </Field>
           </SectionCard>
         )
       })}
@@ -576,47 +576,59 @@ function InventoryTab({ stocks, setStocks }) {
 // ── Tab: Bundle ───────────────────────────────────────────────
 function BundleTab({ isBundle, setIsBundle, items, setItems }) {
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [activeItemIdx, setActiveItemIdx] = useState(null)
-  const [search, setSearch] = useState('')
-  const [searchResults, setSearchResults] = useState([])
-  const [searching, setSearching] = useState(false)
+  const [activeImageIdx, setActiveImageIdx] = useState(null)
+  // Per-item search state (keyed by index) to avoid shared-search bugs
+  const [searches, setSearches] = useState({})
+  const [results, setResults] = useState({})
+  const [loading, setLoadingMap] = useState({})
 
-  const addItem = () => {
-    setItems(prev => [...prev, { product_id: null, component_name_en: '', component_name_ar: '', component_image_url: '', qty: 1, sort_order: prev.length }])
-  }
-
-  const updateItem = (idx, field, val) => {
+  const updateItem = (idx, field, val) =>
     setItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: val } : item))
-  }
 
   const removeItem = (idx) => {
     setItems(prev => prev.filter((_, i) => i !== idx))
+    setSearches(prev => { const n = { ...prev }; delete n[idx]; return n })
+    setResults(prev => { const n = { ...prev }; delete n[idx]; return n })
+    setLoadingMap(prev => { const n = { ...prev }; delete n[idx]; return n })
   }
 
-  const handleProductSearch = async (val) => {
-    setSearch(val)
-    if (!val || val.length < 2) { setSearchResults([]); return }
-    setSearching(true)
+  const addLinked = () => setItems(prev => [...prev, { product_id: null, _type: 'linked', component_name_en: '', component_name_ar: '', component_image_url: null, qty: 1, sort_order: prev.length }])
+  const addStandalone = () => setItems(prev => [...prev, { product_id: null, _type: 'standalone', component_name_en: '', component_name_ar: '', component_image_url: '', qty: 1, sort_order: prev.length }])
+
+  const handleSearch = async (idx, val) => {
+    setSearches(prev => ({ ...prev, [idx]: val }))
+    if (!val || val.length < 2) { setResults(prev => ({ ...prev, [idx]: [] })); return }
+    setLoadingMap(prev => ({ ...prev, [idx]: true }))
     try {
-      const res = await api.get('/products', { params: { search: val, limit: 5, admin: 1 } })
-      setSearchResults(res.data?.data || [])
+      const res = await api.get('/products', { params: { search: val, limit: 6, admin: 1 } })
+      setResults(prev => ({ ...prev, [idx]: res.data || res || [] }))
     } catch { /* ignore */ }
-    finally { setSearching(false) }
+    finally { setLoadingMap(prev => ({ ...prev, [idx]: false })) }
   }
 
   const selectProduct = (idx, prod) => {
     updateItem(idx, 'product_id', prod.id)
     updateItem(idx, 'component_name_en', prod.name_en)
     updateItem(idx, 'component_name_ar', prod.name_ar)
-    // Try to find primary image
-    const primary = prod.media?.find(m => m.is_primary) || prod.media?.[0]
-    if (primary) updateItem(idx, 'component_image_url', primary.url)
-    setSearch('')
-    setSearchResults([])
+    updateItem(idx, 'component_image_url', null)   // linked products use their own image; no override
+    setSearches(prev => ({ ...prev, [idx]: '' }))
+    setResults(prev => ({ ...prev, [idx]: [] }))
   }
 
+  const clearProduct = (idx) => {
+    updateItem(idx, 'product_id', null)
+    updateItem(idx, 'component_name_en', '')
+    updateItem(idx, 'component_name_ar', '')
+    setSearches(prev => ({ ...prev, [idx]: '' }))
+    setResults(prev => ({ ...prev, [idx]: [] }))
+  }
+
+  // Derive type: prefer _type flag (set on add / hydration), fallback to product_id presence
+  const getType = (item) => item._type || (item.product_id ? 'linked' : 'standalone')
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 h-screen">
+      {/* ── Enable toggle ── */}
       <SectionCard title="Bundle Configuration">
         <div className="flex items-center justify-between">
           <div>
@@ -629,111 +641,266 @@ function BundleTab({ isBundle, setIsBundle, items, setItems }) {
 
       {isBundle && (
         <div className="flex flex-col gap-4">
+
+          {/* ── Header row ── */}
           <div className="flex items-center justify-between">
-            <h3 className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-subtle)' }}>Bundle Items</h3>
-            <button type="button" onClick={addItem} className="t-btn-primary h-8 text-[11px]">
-              + Add Item
-            </button>
+            <div>
+              <h3 className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-subtle)' }}>Bundle Items</h3>
+              <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-subtle)', opacity: 0.5 }}>{items.length} item{items.length !== 1 ? 's' : ''} total</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={addLinked}
+                className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-bold transition-colors"
+                style={{ backgroundColor: 'rgba(96,165,250,0.12)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.25)' }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(96,165,250,0.2)'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(96,165,250,0.12)'}>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                + Linked Product
+              </button>
+              <button type="button" onClick={addStandalone}
+                className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-bold transition-colors"
+                style={{ backgroundColor: 'rgba(251,191,36,0.12)', color: '#f59e0b', border: '1px solid rgba(251,191,36,0.25)' }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(251,191,36,0.2)'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(251,191,36,0.12)'}>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                + Standalone
+              </button>
+            </div>
           </div>
 
+          {/* ── Empty state ── */}
           {!items.length && (
-            <div className="py-12 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed"
+            <div className="py-14 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed gap-3"
               style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)' }}>
-              <p className="text-[13px]" style={{ color: 'var(--text-subtle)' }}>No items added yet. Click "+ Add Item" to begin.</p>
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+                <svg className="w-5 h-5 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+              <div className="text-center">
+                <p className="text-[13px] font-semibold" style={{ color: 'var(--text-subtle)' }}>No items yet</p>
+                <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-subtle)', opacity: 0.5 }}>Add a linked product or a standalone component above</p>
+              </div>
             </div>
           )}
 
+          {/* ── Item cards ── */}
           <div className="flex flex-col gap-3">
-            {items.map((item, idx) => (
-              <div key={idx} className="rounded-xl p-4 flex flex-col gap-4"
-                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase opacity-30">Item #{idx + 1}</span>
-                  <button type="button" onClick={() => removeItem(idx)} className="text-red-500 text-[11px] font-bold uppercase hover:underline">Remove</button>
-                </div>
+            {items.map((item, idx) => {
+              const type = getType(item)
+              const isLinked = type === 'linked'
+              const itemSearch = searches[idx] || ''
+              const itemResults = results[idx] || []
+              const isSearching = loading[idx] || false
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
-                  {/* Image Source */}
-                  <div className="md:col-span-2">
-                    <Field label="Image">
-                      <div className="relative aspect-square rounded-lg overflow-hidden border cursor-pointer group"
-                        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)' }}
-                        onClick={() => { setActiveItemIdx(idx); setPickerOpen(true) }}>
-                        {item.component_image_url ? (
-                          <img src={resolveUrl(item.component_image_url)} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center opacity-30">
-                            <svg className="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 4v16m8-8H4"/></svg>
-                            <span className="text-[8px] font-bold uppercase">Select</span>
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                          <span className="text-[9px] text-white font-bold uppercase">Change</span>
-                        </div>
-                      </div>
-                    </Field>
+              return (
+                <div key={idx} className="rounded-2xl"
+                  style={{ border: '1px solid var(--border)', backgroundColor: 'var(--surface)' }}>
+
+                  {/* Card header */}
+                  <div className="flex items-center justify-between px-4 py-2.5 rounded-t-2xl"
+                    style={{ backgroundColor: 'var(--surface-2)', borderBottom: '1px solid var(--border)' }}>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[10px] font-black opacity-30 tabular-nums">#{String(idx + 1).padStart(2, '0')}</span>
+                      {isLinked ? (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full"
+                          style={{ color: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)' }}>
+                          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                          Linked Product
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full"
+                          style={{ color: '#f59e0b', backgroundColor: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)' }}>
+                          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                          </svg>
+                          Standalone
+                        </span>
+                      )}
+                    </div>
+                    <button type="button" onClick={() => removeItem(idx)}
+                      className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg transition-colors"
+                      style={{ color: '#ef4444', backgroundColor: 'rgba(239,68,68,0.06)' }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.14)'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.06)'}>
+                      Remove
+                    </button>
                   </div>
 
-                  {/* Identification & Links */}
-                  <div className="md:col-span-4 flex flex-col gap-3">
-                    <Field label="Linked Product" hint="Search existing products">
-                      <div className="relative">
-                        <input className="t-input text-[12px]" 
-                          placeholder="Search products..." 
-                          value={item.product_id ? `Linked (ID: ${item.product_id})` : search}
-                          onChange={e => handleProductSearch(e.target.value)}
-                          onFocus={() => { if(item.product_id) { updateItem(idx, 'product_id', null); setSearch('') } }}
-                        />
-                        {searching && <div className="absolute right-3 top-1/2 -translate-y-1/2 scale-75"><div className="animate-spin h-4 w-4 border-2 border-brand border-t-transparent rounded-full" /></div>}
-                        
-                        {searchResults.length > 0 && !item.product_id && (
-                          <div className="absolute z-10 left-0 right-0 mt-1 rounded-xl shadow-2xl border max-h-48 overflow-y-auto"
-                            style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-                            {searchResults.map(p => (
-                              <div key={p.id} onClick={() => selectProduct(idx, p)}
-                                className="px-3 py-2 text-[12px] cursor-pointer hover:bg-brand/10 transition-colors flex items-center justify-between border-b last:border-0"
-                                style={{ borderColor: 'var(--border-soft)' }}>
-                                <span className="font-medium">{p.name_en}</span>
-                                <span className="text-[10px] opacity-40">{p.fgd}</span>
+                  {/* Card body */}
+                  <div className="p-4">
+                    <div className="grid grid-cols-12 gap-4 items-end">
+
+                      {/* ─── LINKED PRODUCT fields ─── */}
+                      {isLinked && (
+                        <>
+                          {/* Product search / linked chip — col 1..5 */}
+                          <div className="col-span-12 md:col-span-5">
+                            <Field label="Linked Product" hint="Type to search by name or FGD">
+                              {item.product_id ? (
+                                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl"
+                                  style={{ backgroundColor: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.22)' }}>
+                                  <svg className="w-3.5 h-3.5 shrink-0" style={{ color: '#60a5fa' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                  </svg>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[12px] font-semibold truncate" style={{ color: 'var(--text)' }}>{item.component_name_en || `Product #${item.product_id}`}</p>
+                                    <p className="text-[9px] font-mono opacity-40">ID: {item.product_id}</p>
+                                  </div>
+                                  <button type="button" onClick={() => clearProduct(idx)}
+                                    className="shrink-0 text-[11px] font-bold opacity-30 hover:opacity-80 transition-opacity ml-1"
+                                    title="Unlink product">✕</button>
+                                </div>
+                              ) : (
+                                <div className="relative">
+                                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                    <svg className="w-3.5 h-3.5 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                  </div>
+                                  <input className="t-input text-[12px] pl-9"
+                                    placeholder="Search products by name or FGD…"
+                                    value={itemSearch}
+                                    onChange={e => handleSearch(idx, e.target.value)}
+                                    autoComplete="off"
+                                  />
+                                  {isSearching && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                      <div className="animate-spin h-3.5 w-3.5 border-2 rounded-full" style={{ borderColor: 'rgba(96,165,250,0.3)', borderTopColor: '#60a5fa' }} />
+                                    </div>
+                                  )}
+                                  {itemResults.length > 0 && (
+                                    <div className="absolute z-[100] left-0 right-0 mt-1 rounded-xl shadow-2xl border overflow-hidden"
+                                      style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                                      {itemResults.map(p => (
+                                        <div key={p.id} onClick={() => selectProduct(idx, p)}
+                                          className="px-3 py-2.5 cursor-pointer transition-colors flex items-center justify-between border-b last:border-0"
+                                          style={{ borderColor: 'var(--border)' }}
+                                          onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(96,165,250,0.06)'}
+                                          onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}>
+                                          <span className="text-[12px] font-semibold truncate" style={{ color: 'var(--text)' }}>{p.name_en}</span>
+                                          <span className="text-[10px] font-mono shrink-0 ml-3 opacity-30">{p.fgd}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </Field>
+                          </div>
+
+                          {/* Name EN — readonly autofill, col 6..8 */}
+                          <div className="col-span-6 md:col-span-3">
+                            <Field label="Name (EN)" hint="Autofilled">
+                              <input className="t-input text-[12px]" readOnly
+                                value={item.component_name_en}
+                                placeholder="Auto from product"
+                                style={{ opacity: 0.55, cursor: 'not-allowed' }}
+                              />
+                            </Field>
+                          </div>
+
+                          {/* Name AR — readonly autofill, col 9..10 */}
+                          <div className="col-span-6 md:col-span-2">
+                            <Field label="Name (AR)" hint="Autofilled">
+                              <input className="t-input text-[12px] text-right" dir="rtl" readOnly
+                                value={item.component_name_ar}
+                                placeholder="تلقائي"
+                                style={{ opacity: 0.55, cursor: 'not-allowed' }}
+                              />
+                            </Field>
+                          </div>
+                        </>
+                      )}
+
+                      {/* ─── STANDALONE fields ─── */}
+                      {!isLinked && (
+                        <>
+                          {/* Image picker — col 1..2 */}
+                          <div className="col-span-4 md:col-span-2">
+                            <Field label="Image" hint="optional">
+                              <div className="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
+                                style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)' }}
+                                onClick={() => { setActiveImageIdx(idx); setPickerOpen(true) }}>
+                                {item.component_image_url ? (
+                                  <img src={resolveUrl(item.component_image_url)} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                                    <svg className="w-5 h-5 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span className="text-[8px] font-bold uppercase opacity-20">Pick</span>
+                                  </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <span className="text-[9px] font-bold uppercase text-white">Change</span>
+                                </div>
                               </div>
-                            ))}
+                            </Field>
                           </div>
-                        )}
-                      </div>
-                    </Field>
-                    <Field label="Name (EN)">
-                      <input className="t-input text-[12px]" value={item.component_name_en} onChange={e => updateItem(idx, 'component_name_en', e.target.value)} />
-                    </Field>
-                  </div>
 
-                  {/* Arabic Name & Qty */}
-                  <div className="md:col-span-4 flex flex-col gap-3">
-                    <Field label="Name (AR)">
-                      <input className="t-input text-[12px] text-right" dir="rtl" value={item.component_name_ar} onChange={e => updateItem(idx, 'component_name_ar', e.target.value)} />
-                    </Field>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label="Qty">
-                        <input type="number" className="t-input text-[12px] font-bold" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', Number(e.target.value))} />
-                      </Field>
-                      <Field label="Sort">
-                        <input type="number" className="t-input text-[12px]" value={item.sort_order} onChange={e => updateItem(idx, 'sort_order', Number(e.target.value))} />
-                      </Field>
+                          {/* Name EN — col 3..6 */}
+                          <div className="col-span-8 md:col-span-4">
+                            <Field label="Name (EN)">
+                              <input className="t-input text-[12px]"
+                                value={item.component_name_en}
+                                onChange={e => updateItem(idx, 'component_name_en', e.target.value)}
+                                placeholder="e.g. Body Oil"
+                              />
+                            </Field>
+                          </div>
+
+                          {/* Name AR — col 7..10 */}
+                          <div className="col-span-12 md:col-span-4">
+                            <Field label="Name (AR)">
+                              <input className="t-input text-[12px] text-right" dir="rtl"
+                                value={item.component_name_ar}
+                                onChange={e => updateItem(idx, 'component_name_ar', e.target.value)}
+                                placeholder="زيت الجسم"
+                              />
+                            </Field>
+                          </div>
+                        </>
+                      )}
+
+                      {/* ─── Qty + Sort — always last 2 cols ─── */}
+                      <div className="col-span-12 md:col-span-2 grid grid-cols-2 gap-3">
+                        <Field label="Qty">
+                          <input type="number" className="t-input text-[12px] font-bold text-center" min="1"
+                            value={item.qty}
+                            onChange={e => updateItem(idx, 'qty', Number(e.target.value))}
+                          />
+                        </Field>
+                        <Field label="Sort">
+                          <input type="number" className="t-input text-[12px] text-center"
+                            value={item.sort_order}
+                            onChange={e => updateItem(idx, 'sort_order', Number(e.target.value))}
+                          />
+                        </Field>
+                      </div>
+
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
 
       <GalleryPicker open={pickerOpen} onClose={() => setPickerOpen(false)} multiple={false}
         onSelect={(path) => {
-          if (activeItemIdx !== null) {
-            updateItem(activeItemIdx, 'component_image_url', path.startsWith('/') ? path : `/gallery/${path}`)
+          if (activeImageIdx !== null) {
+            updateItem(activeImageIdx, 'component_image_url', path.startsWith('/') ? path : `/gallery/${path}`)
           }
-          setActiveItemIdx(null)
-        }} 
+          setActiveImageIdx(null)
+        }}
       />
     </div>
   )
@@ -742,7 +909,7 @@ function BundleTab({ isBundle, setIsBundle, items, setItems }) {
 // ── Main ProductForm ────────────────────────────────────────────
 export default function ProductForm() {
   const { hasPermission, user } = useAuth()
-  
+
   // Conditionally render tabs based on granular permissions (or fallback to full access if only broad 'products' is assigned)
   const availableTabs = TABS.filter(t => {
     if (user?.role === 'admin') return true;
@@ -758,25 +925,25 @@ export default function ProductForm() {
   const qc = useQueryClient()
   const isEdit = id && id !== 'new'
   const [createdId, setCreatedId] = useState(null) // Rescues state if a new product fails mid-save
-  const [resetKey, setResetKey]   = useState(0) // Forces hydration logic to re-run on discard
+  const [resetKey, setResetKey] = useState(0) // Forces hydration logic to re-run on discard
 
-  const [tab, setTab]         = useState(availableTabs[0] || 'Core')
-  const [saving, setSaving]   = useState(false)
-  const [form, setForm]       = useState({ ...EMPTY, attributes: [] })
-  const [notes, setNotes]     = useState({ top: { ...EMPTY_NOTE }, heart: { ...EMPTY_NOTE }, base: { ...EMPTY_NOTE } })
+  const [tab, setTab] = useState(availableTabs[0] || 'Core')
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({ ...EMPTY, attributes: [] })
+  const [notes, setNotes] = useState({ top: { ...EMPTY_NOTE }, heart: { ...EMPTY_NOTE }, base: { ...EMPTY_NOTE } })
   const [mediaList, setMediaList] = useState([])
   const [configs, setConfigs] = useState(COUNTRIES.map(c => ({ country_id: c.id, is_visible: 1, slug_override: '', meta_title_en: '', meta_title_ar: '', meta_desc_en: '', meta_desc_ar: '', sort_order: 0 })))
-  const [prices, setPrices]   = useState(COUNTRIES.map(c => ({ country_id: c.id, currency_id: c.currency_id, regular_price: '' })))
-  const [stocks, setStocks]   = useState(COUNTRIES.map(c => ({ country_id: c.id, quantity: 0 })))
+  const [prices, setPrices] = useState(COUNTRIES.map(c => ({ country_id: c.id, currency_id: c.currency_id, regular_price: '' })))
+  const [stocks, setStocks] = useState(COUNTRIES.map(c => ({ country_id: c.id, quantity: 0 })))
 
   const [isBundle, setIsBundle] = useState(false)
   const [bundleItems, setBundleItems] = useState([])
   const [originalBundleId, setOriginalBundleId] = useState(null)
 
   // Dirty tracking via ref (no extra state = no re-render loops)
-  const savedRef  = useRef(null)
-  const snap      = (f, n, c, p, s, ib, bi) => JSON.stringify({ f, n, c, p, s, ib, bi })
-  const isDirty   = savedRef.current !== null && savedRef.current !== snap(form, notes, configs, prices, stocks, isBundle, bundleItems)
+  const savedRef = useRef(null)
+  const snap = (f, n, c, p, s, ib, bi) => JSON.stringify({ f, n, c, p, s, ib, bi })
+  const isDirty = savedRef.current !== null && savedRef.current !== snap(form, notes, configs, prices, stocks, isBundle, bundleItems)
   const markClean = () => { savedRef.current = snap(form, notes, configs, prices, stocks, isBundle, bundleItems) }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -784,15 +951,15 @@ export default function ProductForm() {
   // Fetch categories
   const { data: catData } = useQuery({
     queryKey: ['categories-admin'],
-    queryFn:  () => api.get('/categories?admin=1'),
-    select:   res => res.data?.data || res.data || [],
+    queryFn: () => api.get('/categories?admin=1'),
+    select: res => res.data?.data || res.data || [],
   })
 
   // Fetch product on edit
   const { data: productData, isLoading } = useQuery({
     queryKey: ['product', id],
-    queryFn:  () => getProduct(id),
-    enabled:  !!isEdit,
+    queryFn: () => getProduct(id),
+    enabled: !!isEdit,
   })
 
   // Keep tab updated if availableTabs shrinks (e.g., auth check completes)
@@ -813,7 +980,7 @@ export default function ProductForm() {
       is_active: !!p.is_active, is_featured: !!p.is_featured,
       size_label_en: p.size_label_en || '', size_label_ar: p.size_label_ar || '',
       tags: Array.isArray(p.tags) ? p.tags.join(', ') : (p.tags || ''),
-      attributes: p.attributes ? Object.entries(p.attributes).map(([k,v]) => ({ key: k, value: String(v) })) : [],
+      attributes: p.attributes ? Object.entries(p.attributes).map(([k, v]) => ({ key: k, value: String(v) })) : [],
     }
     const n = { top: { ...EMPTY_NOTE }, heart: { ...EMPTY_NOTE }, base: { ...EMPTY_NOTE } }
     if (p.fragrance_notes?.length) {
@@ -837,9 +1004,9 @@ export default function ProductForm() {
   // Fetch country configs
   const { data: ccData } = useQuery({
     queryKey: ['product-countries', id],
-    queryFn:  () => getCountryConfigs(id),
-    enabled:  !!isEdit,
-    select:   r => r?.data || r || [],
+    queryFn: () => getCountryConfigs(id),
+    enabled: !!isEdit,
+    select: r => r?.data || r || [],
   })
   useEffect(() => {
     if (!Array.isArray(ccData) || !ccData.length) return
@@ -852,9 +1019,9 @@ export default function ProductForm() {
   // Fetch pricing
   const { data: pricingData } = useQuery({
     queryKey: ['pricing', id],
-    queryFn:  () => getPricing(id),
-    enabled:  !!isEdit,
-    select:   r => r?.data || r || [],
+    queryFn: () => getPricing(id),
+    enabled: !!isEdit,
+    select: r => r?.data || r || [],
   })
   useEffect(() => {
     if (!Array.isArray(pricingData) || !pricingData.length) return
@@ -869,9 +1036,9 @@ export default function ProductForm() {
   // Fetch stock
   const { data: stockData } = useQuery({
     queryKey: ['stock', id],
-    queryFn:  () => getProductStock(id),
-    enabled:  !!isEdit,
-    select:   r => r?.data || r || [],
+    queryFn: () => getProductStock(id),
+    enabled: !!isEdit,
+    select: r => r?.data || r || [],
   })
   useEffect(() => {
     if (!Array.isArray(stockData) || !stockData.length) return
@@ -884,9 +1051,9 @@ export default function ProductForm() {
   // Fetch bundle
   const { data: bundleData } = useQuery({
     queryKey: ['bundle', id],
-    queryFn:  () => getBundle(id),
-    enabled:  !!isEdit,
-    select:   r => r?.data || r || null,
+    queryFn: () => getBundle(id),
+    enabled: !!isEdit,
+    select: r => r?.data || r || null,
   })
   useEffect(() => {
     if (!bundleData) {
@@ -897,7 +1064,11 @@ export default function ProductForm() {
     }
     setIsBundle(true)
     setOriginalBundleId(bundleData.bundle_id)
-    setBundleItems(bundleData.items || [])
+    // Stamp _type so BundleTab renders the correct fields for each item
+    setBundleItems((bundleData.items || []).map(item => ({
+      ...item,
+      _type: item.product_id ? 'linked' : 'standalone',
+    })))
   }, [bundleData, resetKey])
 
   // Tracker for the latest state to avoid closure bugs in the timeout snapshot
@@ -955,9 +1126,9 @@ export default function ProductForm() {
 
       const payload = {
         ...form,
-        category_id:    Number(form.category_id),
+        category_id: Number(form.category_id),
         subcategory_id: form.subcategory_id ? Number(form.subcategory_id) : null,
-        is_active:   form.is_active ? 1 : 0,
+        is_active: form.is_active ? 1 : 0,
         is_featured: form.is_featured ? 1 : 0,
         tags: tagsArr,
         attributes: Object.keys(attrObj).length > 0 ? attrObj : null,
@@ -966,19 +1137,19 @@ export default function ProductForm() {
       const activeId = isEdit ? id : createdId
       let finalProductId = activeId
 
-      if (activeId) { 
-        await updateProduct(activeId, payload); 
-        toast.success('Core data updated') 
-      } else { 
-        const res = await createProduct(payload); 
+      if (activeId) {
+        await updateProduct(activeId, payload);
+        toast.success('Core data updated')
+      } else {
+        const res = await createProduct(payload);
         // The backend `res.status(201).json({ data: { id: productId } })` 
         // Axios wraps this in `res.data`. So the id is `res.data.data.id`
-        finalProductId = res.data?.data?.id || res.data?.id || res?.id; 
-        
+        finalProductId = res.data?.data?.id || res.data?.id || res?.id;
+
         if (!finalProductId) throw new Error("Backend did not return a valid Product ID")
-        
+
         setCreatedId(finalProductId);
-        toast.success('Product created') 
+        toast.success('Product created')
       }
 
       // Sync stock on save
@@ -1037,7 +1208,7 @@ export default function ProductForm() {
         }),
         updateVisibility(finalProductId, configs.map(c => ({ country_id: c.country_id, is_visible: c.is_visible }))),
         updateSEO(finalProductId, configs.map(c => ({
-          country_id: c.country_id, 
+          country_id: c.country_id,
           slug_override: c.slug_override,
           meta_title_en: c.meta_title_en,
           meta_title_ar: c.meta_title_ar,
@@ -1125,9 +1296,9 @@ export default function ProductForm() {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:-translate-x-0.5"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg>
             Back
           </button>
-          
+
           <div className="w-px h-5" style={{ backgroundColor: 'var(--border)' }}></div>
-          
+
           <h1 className="text-[16px] font-bold" style={{ color: 'var(--text)' }}>
             {isEdit ? `Edit: ${form.name_en || `Product #${id}`}` : 'New Product'}
           </h1>
@@ -1181,12 +1352,13 @@ export default function ProductForm() {
 
       {/* ── Tab content ── */}
       <div className="flex-1 overflow-y-auto px-8 py-6">
-        {tab === 'Core'      && <CoreTab form={form} set={set} categories={catData} isEdit={isEdit} prices={prices} setPrices={setPrices} configs={configs} setConfigs={setConfigs} stocks={stocks} setStocks={setStocks} />}
+        {tab === 'Core' && <CoreTab form={form} set={set} categories={catData} isEdit={isEdit} prices={prices} setPrices={setPrices} configs={configs} setConfigs={setConfigs} stocks={stocks} setStocks={setStocks} />}
         {tab === 'Fragrance' && <FragranceTab notes={notes} setNotes={setNotes} />}
-        {tab === 'Media'     && <MediaTab mediaList={mediaList} setMediaList={setMediaList} productId={isEdit ? id : createdId} setPrimaryMedia={setPrimaryMedia} deleteMedia={deleteMedia} />}
-        {tab === 'SEO'       && <SEOTab configs={configs} setConfigs={setConfigs} />}
+        {tab === 'Media' && <MediaTab mediaList={mediaList} setMediaList={setMediaList} productId={isEdit ? id : createdId} setPrimaryMedia={setPrimaryMedia} deleteMedia={deleteMedia} />}
+        {tab === 'SEO' && <SEOTab configs={configs} setConfigs={setConfigs} />}
         {tab === 'Inventory' && <InventoryTab stocks={stocks} setStocks={setStocks} />}
-        {tab === 'Bundle'    && <BundleTab isBundle={isBundle} setIsBundle={setIsBundle} items={bundleItems} setItems={setBundleItems} />}
+        {tab === 'Bundle' && <BundleTab isBundle={isBundle} setIsBundle={setIsBundle} items={bundleItems} setItems={setBundleItems} />}
+
       </div>
     </div>
   )
