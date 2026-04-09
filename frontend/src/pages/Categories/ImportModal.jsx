@@ -33,7 +33,7 @@ export default function ImportModal({ onClose }) {
   const downloadTemplate = async () => {
     try {
       const resp = await api.get('/categories/template', { responseType: 'blob' })
-      const url = window.URL.createObjectURL(new Blob([resp.data]))
+      const url = window.URL.createObjectURL(resp)
       const link = document.createElement('a')
       link.href = url
       link.setAttribute('download', 'categories_import_template.xlsx')
@@ -54,7 +54,7 @@ export default function ImportModal({ onClose }) {
       const fd = new FormData()
       fd.append('file', selectedFile)
       const res = await importCategories(fd, true)
-      setPreview(res.data)
+      setPreview(res)
       setStep(2)
     } catch (e) {
       toast.error(e?.response?.data?.error || e?.message || 'Preview failed')
@@ -75,9 +75,9 @@ export default function ImportModal({ onClose }) {
       const fd = new FormData()
       fd.append('file', file)
       const res = await importCategories(fd, false)
-      setResult(res.data)
+      setResult(res)
       setStep(3)
-      if (res.data.summary.inserted > 0) qc.invalidateQueries({ queryKey: ['categories-admin'] })
+      if (res.summary.inserted > 0) qc.invalidateQueries({ queryKey: ['categories-admin'] })
     } catch (e) {
       toast.error(e?.response?.data?.error || e?.message || 'Import failed')
     } finally {

@@ -12,10 +12,14 @@ async function buildProduct(productId, countryCode) {
   const [[product]] = await db.query(
     `SELECT p.*,
             c.name_en  AS category_name_en,  c.name_ar  AS category_name_ar,
-            sc.name_en AS sub_name_en,        sc.name_ar AS sub_name_ar
+            sc.name_en AS sub_name_en,        sc.name_ar AS sub_name_ar,
+            sz.label_en AS size_label_en, sz.label_ar AS size_label_ar,
+            lb.name_en AS label_name_en, lb.name_ar AS label_name_ar, lb.image_url AS label_image_url
      FROM products p
      LEFT JOIN categories    c  ON c.id  = p.category_id
      LEFT JOIN subcategories sc ON sc.id = p.subcategory_id
+     LEFT JOIN product_sizes sz ON sz.id = p.size_id
+     LEFT JOIN product_labels lb ON lb.id = p.label_id
      WHERE p.id = ?`, [productId]
   );
   if (!product) return null;
@@ -88,6 +92,17 @@ async function buildProduct(productId, countryCode) {
     [productId]
   );
 
+  // Related Products
+  const [relatedProducts] = await db.query(
+    `SELECT rp.*, p.name_en AS name_en, p.name_ar AS name_ar, pm.url as image_url
+     FROM related_products rp
+     JOIN products p ON p.id = rp.related_product_id
+     LEFT JOIN product_media pm ON pm.product_id = p.id AND pm.is_primary = 1
+     WHERE rp.product_id = ?
+     ORDER BY rp.sort_order`,
+    [productId]
+  );
+
   return { 
     ...product, 
     fragrance_notes: notes, 
@@ -95,7 +110,8 @@ async function buildProduct(productId, countryCode) {
     media,
     stock,
     country_visibility,
-    country_slug
+    country_slug,
+    related_products: relatedProducts
   };
 }
 
@@ -194,7 +210,7 @@ router.post('/', async (req, res, next) => {
       fgd, slug, name_en, name_ar, description_en, description_ar,
       category_id, subcategory_id, barcode,
       is_active = 1, is_featured = 0, tags, attributes,
-      size_label_en, size_label_ar,
+      size_id, label_id,
       fragrance_notes = [], country_configs = [], prices = []
     } = req.body;
 
@@ -202,14 +218,15 @@ router.post('/', async (req, res, next) => {
     const [result] = await conn.query(
       `INSERT INTO products
         (fgd, barcode, slug, name_en, name_ar, description_en, description_ar,
-         category_id, subcategory_id, is_active, is_featured, tags, attributes, size_label_en, size_label_ar)
+         category_id, subcategory_id, is_active, is_featured, tags, attributes, size_id, label_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [fgd, barcode || fgd || null, slug, name_en, name_ar, description_en, description_ar,
        category_id, subcategory_id || null,
        is_active, is_featured,
        tags ? JSON.stringify(tags) : null,
        attributes ? JSON.stringify(attributes) : null,
-       size_label_en || null, size_label_ar || null]
+       size_id || null,
+       label_id || null]
     );
     const productId = result.insertId;
 
@@ -279,7 +296,7 @@ router.put('/:id', async (req, res, next) => {
       fgd, slug, name_en, name_ar, description_en, description_ar,
       category_id, subcategory_id, barcode,
       is_active, is_featured, tags, attributes,
-      size_label_en, size_label_ar
+      size_id, label_id
     } = req.body;
 
     await db.query(
@@ -287,14 +304,15 @@ router.put('/:id', async (req, res, next) => {
         fgd=?, barcode=?, slug=?, name_en=?, name_ar=?, description_en=?, description_ar=?,
         category_id=?, subcategory_id=?,
         is_active=?, is_featured=?, tags=?, attributes=?,
-        size_label_en=?, size_label_ar=?
+        size_id=?, label_id=?
        WHERE id=?`,
       [fgd, barcode || fgd || null, slug, name_en, name_ar, description_en, description_ar,
        category_id, subcategory_id || null,
        is_active ?? 1, is_featured ?? 0,
        tags ? JSON.stringify(tags) : null,
        attributes ? JSON.stringify(attributes) : null,
-       size_label_en || null, size_label_ar || null,
+       size_id || null,
+       label_id || null,
        req.params.id]
     );
     
@@ -516,6 +534,31 @@ router.put('/:id/stock', async (req, res, next) => {
     res.json({ message: 'Stock saved' });
   } catch (err) { await conn.rollback(); next(err); }
   finally { conn.release(); }
+});
+// PUT /api/products/:id/related
+router.put('/:id/related', async (req, res, next) => {
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.query('DELETE FROM related_products WHERE product_id = ?', [req.params.id]);
+    
+    const items = req.body.related_products || [];
+    for (let i = 0; i < items.length; i++) {
+      await conn.query(
+        `INSERT INTO related_products (product_id, related_product_id, sort_order)
+         VALUES (?, ?, ?)`,
+        [req.params.id, items[i].related_product_id, i]
+      );
+    }
+    
+    await conn.commit();
+    res.json({ message: 'Related products updated' });
+  } catch (err) {
+    await conn.rollback();
+    next(err);
+  } finally {
+    conn.release();
+  }
 });
 
 export default router;

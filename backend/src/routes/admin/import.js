@@ -6,16 +6,6 @@ import db from '../../config/db.js';
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// ── Country map ───────────────────────────────────────────────
-const COUNTRIES = [
-  { id: 1, code: 'AE', currency_id: 1 },
-  { id: 2, code: 'SA', currency_id: 2 },
-  { id: 3, code: 'QA', currency_id: 3 },
-  { id: 4, code: 'BH', currency_id: 4 },
-  { id: 5, code: 'KW', currency_id: 5 },
-  { id: 6, code: 'OM', currency_id: 6 },
-];
-
 // ── Helpers ───────────────────────────────────────────────────
 const toSlug = (str) =>
   String(str).toLowerCase().trim()
@@ -40,36 +30,27 @@ function parseAttributes(raw) {
 }
 
 // ── GET /api/import/template ─────────────────────────────────
-router.get('/template', (_req, res) => {
+router.get('/template', async (_req, res) => {
+  const [dbCountries] = await db.query(`SELECT code FROM countries WHERE is_active = 1`);
   const headers = [
-    // Core
     'fgd', 'barcode', 'slug', 'name_en', 'name_ar', 'description_en', 'description_ar',
-    'category', 'subcategory', 'size_label_en', 'size_label_ar',
+    'category', 'subcategory', 'size_label_en', 'size_label_ar', 'label',
     'tags', 'attributes', 'is_active', 'is_featured',
-    // Pricing
-    'price_AE', 'price_SA', 'price_QA', 'price_BH', 'price_KW', 'price_OM',
-    // Visibility
-    'visible_AE', 'visible_SA', 'visible_QA', 'visible_BH', 'visible_KW', 'visible_OM',
-    // Images
+    ...dbCountries.map(c => `price_${c.code}`),
+    ...dbCountries.map(c => `visible_${c.code}`),
     'image_1', 'image_2', 'image_3',
-    // Notes — Top
     'notes_top_ingd_en', 'notes_top_ingd_ar', 'notes_top_desc_en', 'notes_top_desc_ar', 'notes_top_image',
-    // Notes — Heart
     'notes_heart_ingd_en', 'notes_heart_ingd_ar', 'notes_heart_desc_en', 'notes_heart_desc_ar', 'notes_heart_image',
-    // Notes — Base
     'notes_base_ingd_en', 'notes_base_ingd_ar', 'notes_base_desc_en', 'notes_base_desc_ar', 'notes_base_image',
   ];
 
-  // Example row so users see the expected format
   const exampleRow = {
     fgd: 'FGD-1001', barcode: 'FGD-1001', slug: '', name_en: 'Example Perfume', name_ar: 'مثال عطر',
     description_en: 'A rich oud fragrance', description_ar: 'عطر عود غني',
     category: 'Perfumes', subcategory: 'Oud',
-    size_label_en: '50ML', size_label_ar: '٥٠ مل',
+    size_label_en: '50ML', size_label_ar: '٥٠ مل', label: 'New',
     tags: 'oud,woody,luxury', attributes: 'Gender=Unisex;Origin=Morocco',
     is_active: 1, is_featured: 0,
-    price_AE: 299, price_SA: 299, price_QA: 0, price_BH: 0, price_KW: 0, price_OM: 0,
-    visible_AE: 1, visible_SA: 1, visible_QA: 1, visible_BH: 1, visible_KW: 1, visible_OM: 1,
     image_1: '/gallery/products/example.jpg', image_2: '', image_3: '',
     notes_top_ingd_en: 'Bergamot,Lemon', notes_top_ingd_ar: 'برغموت,ليمون',
     notes_top_desc_en: 'Fresh citrus opening', notes_top_desc_ar: 'افتتاح حمضي منعش', notes_top_image: '',
@@ -78,6 +59,10 @@ router.get('/template', (_req, res) => {
     notes_base_ingd_en: 'Oud,Amber', notes_base_ingd_ar: 'عود,عنبر',
     notes_base_desc_en: 'Woody base', notes_base_desc_ar: 'قاعدة خشبية', notes_base_image: '',
   };
+  dbCountries.forEach(c => {
+    exampleRow[`price_${c.code}`] = 299;
+    exampleRow[`visible_${c.code}`] = 1;
+  });
 
   const ws = XLSX.utils.json_to_sheet([exampleRow], { header: headers });
   // Style the header row width hints
@@ -106,9 +91,12 @@ router.post('/products', upload.single('file'), async (req, res, next) => {
 
     if (!rows.length) return res.status(400).json({ error: 'Excel file is empty' });
 
-    // Pre-load categories + subcategories
+    // Pre-load dynamic data
+    const [dbCountries] = await db.query(`SELECT id, code, currency_id FROM countries WHERE is_active = 1`);
     const [cats] = await db.query(`SELECT id, name_en FROM categories`);
     const [subs] = await db.query(`SELECT id, name_en, category_id FROM subcategories`);
+    const [sizes] = await db.query(`SELECT id, label_en FROM product_sizes`);
+    const [labels] = await db.query(`SELECT id, name_en FROM product_labels`);
 
     // Pre-load existing FGD codes to check duplicates
     const [existingFgds] = await db.query(`SELECT fgd FROM products`);
@@ -166,14 +154,16 @@ router.post('/products', upload.single('file'), async (req, res, next) => {
       const barcode = str(row.barcode) || fgd; // fall back to FGD if not provided
       const tags = str(row.tags) ? str(row.tags).split(',').map((t) => t.trim()).filter(Boolean) : null;
       const attributes = parseAttributes(row.attributes);
+      const sizeLabelEn = str(row.size_label_en);
+      const sizeLabelAr = str(row.size_label_ar) || sizeLabelEn;
 
-      const prices = COUNTRIES.map((c) => ({
+      const prices = dbCountries.map((c) => ({
         country_id: c.id,
         currency_id: c.currency_id,
         regular_price: num(row[`price_${c.code}`]),
       })).filter((p) => p.regular_price !== null && p.regular_price > 0);
 
-      const countryConfigs = COUNTRIES.map((c) => ({
+      const countryConfigs = dbCountries.map((c) => ({
         country_id: c.id,
         is_visible: flag(row[`visible_${c.code}`], 1),
       }));
@@ -215,12 +205,33 @@ router.post('/products', upload.single('file'), async (req, res, next) => {
       try {
         await conn.beginTransaction();
 
+        let rowSizeId = null;
+        if (sizeLabelEn) {
+           let sizeObj = sizes.find(s => s.label_en.toLowerCase() === sizeLabelEn.toLowerCase());
+           if (!sizeObj) {
+              const valMlMatch = sizeLabelEn.match(/(\d+)/);
+              const valMl = valMlMatch ? parseInt(valMlMatch[1], 10) : null;
+              const [szRes] = await conn.query(`INSERT INTO product_sizes (label_en, label_ar, value_ml) VALUES (?, ?, ?)`, [sizeLabelEn, sizeLabelAr, valMl]);
+              rowSizeId = szRes.insertId;
+              sizes.push({ id: rowSizeId, label_en: sizeLabelEn }); // save for subsequent rows
+           } else {
+              rowSizeId = sizeObj.id;
+           }
+        }
+
+        let labelId = null;
+        const labelName = str(row.label);
+        if (labelName) {
+          const lbl = labels.find(l => l.name_en.toLowerCase() === labelName.toLowerCase());
+          if (lbl) labelId = lbl.id;
+        }
+
         // products
         const [res2] = await conn.query(
           `INSERT INTO products
             (fgd, barcode, slug, name_en, name_ar, description_en, description_ar,
              category_id, subcategory_id, is_active, is_featured, tags, attributes,
-             size_label_en, size_label_ar)
+             size_id, label_id)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             fgd, barcode, slug, str(row.name_en), str(row.name_ar),
@@ -229,7 +240,7 @@ router.post('/products', upload.single('file'), async (req, res, next) => {
             flag(row.is_active, 1), flag(row.is_featured, 0),
             tags ? JSON.stringify(tags) : null,
             attributes ? JSON.stringify(attributes) : null,
-            str(row.size_label_en) || null, str(row.size_label_ar) || null,
+            rowSizeId, labelId
           ]
         );
         const productId = res2.insertId;

@@ -1,7 +1,7 @@
 import express from 'express';
 import db from '../../config/db.js';
 import multer from 'multer';
-import xlsx from 'xlsx';
+import * as XLSX from 'xlsx';
 import { logAudit } from '../../middleware/auth.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -33,16 +33,16 @@ router.get('/template', (_req, res) => {
     }
   ];
 
-  const ws = xlsx.utils.json_to_sheet(exampleData, { header: headers });
+  const ws = XLSX.utils.json_to_sheet(exampleData, { header: headers });
   ws['!cols'] = headers.map(() => ({ wch: 25 }));
 
-  const wb = xlsx.utils.book_new();
-  xlsx.utils.book_append_sheet(wb, ws, 'Categories');
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Categories');
 
-  const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   res.setHeader('Content-Disposition', 'attachment; filename="categories_import_template.xlsx"');
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.send(buf);
+  res.status(200).send(buf);
 });
 
 // POST /api/categories/import
@@ -55,9 +55,9 @@ router.post('/import', upload.single('file'), async (req, res, next) => {
   try {
     await connection.beginTransaction();
 
-    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
-    const rawData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
+    const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
 
     // Normalize headers (lowercase, remove spaces from keys)
     const data = rawData.map((row, index) => {

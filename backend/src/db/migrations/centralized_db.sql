@@ -1,12 +1,3 @@
--- phpMyAdmin SQL Dump
--- version 5.2.1
--- https://www.phpmyadmin.net/
---
--- Host: 127.0.0.1
--- Generation Time: Apr 06, 2026 at 08:01 AM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
-
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
@@ -38,176 +29,6 @@ CREATE TABLE `audit_logs` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `audit_logs`
---
-
-INSERT INTO `audit_logs` (`id`, `user_id`, `action`, `module`, `target_id`, `details`, `ip_address`, `created_at`) VALUES
-(1, 1, 'create', 'categories', '1', '{\"slug\":\"test\",\"name_en\":\"test\",\"name_ar\":\"test\",\"image_url\":\"\",\"sort_order\":0,\"is_active\":true}', '::1', '2026-04-01 12:38:02'),
-(2, 1, 'create', 'subcategories', '1', '{\"category_id\":\"1\",\"slug\":\"sub\",\"name_en\":\"sub\",\"name_ar\":\"sub\",\"image_url\":\"\",\"sort_order\":0}', '::1', '2026-04-01 12:38:15'),
-(3, 1, 'create', 'subcategories', '2', '{\"category_id\":\"1\",\"slug\":\"sub-2\",\"name_en\":\"sub 2\",\"name_ar\":\"sub 2\",\"image_url\":\"\",\"sort_order\":0}', '::1', '2026-04-01 12:38:27'),
-(4, 1, 'update', 'categories', '1', '{\"action\":\"move_to_bin_with_subcategories\"}', '::1', '2026-04-01 13:06:13'),
-(5, 1, 'create', 'categories', '21', '{\"slug\":\"test1\",\"name_en\":\"test1\",\"name_ar\":\"test1\",\"image_url\":\"\",\"sort_order\":0,\"is_active\":true}', '::1', '2026-04-01 13:06:37'),
-(6, 1, 'update', 'categories', '21', '{\"action\":\"move_to_bin_with_subcategories\"}', '::1', '2026-04-01 13:06:48'),
-(7, 1, 'update', 'subcategories', '1', '{\"action\":\"restore_from_bin\"}', '::1', '2026-04-01 13:07:10'),
-(8, 1, 'update', 'categories', '1', '{\"action\":\"restore_category\"}', '::1', '2026-04-01 13:07:32'),
-(9, 1, 'update', 'categories', '21', '{\"action\":\"restore_category\"}', '::1', '2026-04-01 13:07:34'),
-(10, 1, 'update', 'subcategories', '1', '{\"action\":\"move_to_bin\"}', '::1', '2026-04-01 13:07:41'),
-(11, 1, 'create', 'categories', '22', '{\"slug\":\"test\",\"name_en\":\"test\",\"name_ar\":\"\",\"image_url\":\"\",\"sort_order\":0,\"is_active\":true}', '::1', '2026-04-01 13:13:27'),
-(12, 1, 'update', 'categories', '22', '{\"action\":\"move_to_bin_with_subcategories\"}', '::1', '2026-04-01 13:17:44'),
-(13, 1, 'delete', 'categories', '22', '{\"action\":\"permanent_delete_category\"}', '::1', '2026-04-01 13:17:47'),
-(14, 1, 'create', 'products', '1', '{\"name_en\":\"test\",\"name_ar\":\"test ar\",\"fgd\":\"FGD1111\",\"barcode\":\"12213211414135\",\"slug\":\"test\",\"category_id\":23,\"subcategory_id\":4}', '::1', '2026-04-01 13:20:50'),
-(15, 1, 'update', 'products', '1', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-01 13:20:50'),
-(16, 1, 'update', 'pricing', '1', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":10},{\"country_id\":2,\"currency_id\":2,\"regular_price\":11},{\"country_id\":3,\"currency_id\":3,\"regular_price\":1},{\"country_id\":4,\"currency_id\":4,\"regular_price\":14},{\"country_id\":5,\"currency_id\":5,\"regular_price\":9},{\"country_id\":6,\"currency_id\":6,\"regular_price\":2}]}', '::1', '2026-04-01 13:20:50'),
-(17, 1, 'update', 'products', '1', '{\"name_en\":\"test\",\"name_ar\":\"test ar\",\"fgd\":\"FGD1111\",\"barcode\":\"12213211414135\",\"slug\":\"test\",\"category_id\":23,\"subcategory_id\":4,\"is_active\":1,\"is_featured\":1}', '::1', '2026-04-01 13:20:57'),
-(18, 1, 'update', 'products', '1', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-01 13:20:57'),
-(19, 1, 'update', 'pricing', '1', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":10},{\"country_id\":2,\"currency_id\":2,\"regular_price\":11},{\"country_id\":3,\"currency_id\":3,\"regular_price\":1},{\"country_id\":4,\"currency_id\":4,\"regular_price\":14},{\"country_id\":5,\"currency_id\":5,\"regular_price\":9},{\"country_id\":6,\"currency_id\":6,\"regular_price\":2}]}', '::1', '2026-04-01 13:20:57'),
-(20, 1, 'update', 'products', '1', '{\"action\":\"move_to_bin\"}', '::1', '2026-04-01 13:21:11'),
-(21, 1, 'delete', 'products', '1', '{\"action\":\"permanent_delete\"}', '::1', '2026-04-01 13:21:16'),
-(22, 1, 'create', 'products', '4', '{\"name_en\":\"test1\",\"name_ar\":\"test\",\"fgd\":\"FGD123\",\"barcode\":\"1111111\",\"slug\":\"test1\",\"category_id\":23,\"subcategory_id\":3}', '::1', '2026-04-01 13:28:50'),
-(23, 1, 'update', 'products', '4', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-01 13:28:50'),
-(24, 1, 'update', 'pricing', '4', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":11},{\"country_id\":2,\"currency_id\":2,\"regular_price\":22},{\"country_id\":3,\"currency_id\":3,\"regular_price\":33},{\"country_id\":4,\"currency_id\":4,\"regular_price\":44},{\"country_id\":5,\"currency_id\":5,\"regular_price\":55},{\"country_id\":6,\"currency_id\":6,\"regular_price\":66}]}', '::1', '2026-04-01 13:28:50'),
-(25, 1, 'update', 'products', '4', '{\"name_en\":\"test1\",\"name_ar\":\"test\",\"fgd\":\"FGD123\",\"barcode\":\"1111111\",\"slug\":\"test1\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-01 13:31:29'),
-(26, 1, 'update', 'products', '4', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-01 13:31:29'),
-(27, 1, 'update', 'products', '4', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-01 13:31:29'),
-(28, 1, 'update', 'pricing', '4', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":11},{\"country_id\":2,\"currency_id\":2,\"regular_price\":22},{\"country_id\":3,\"currency_id\":3,\"regular_price\":33},{\"country_id\":4,\"currency_id\":4,\"regular_price\":44},{\"country_id\":5,\"currency_id\":5,\"regular_price\":55},{\"country_id\":6,\"currency_id\":6,\"regular_price\":66}]}', '::1', '2026-04-01 13:31:29'),
-(29, 1, 'update', 'products', '4', '{\"name_en\":\"test1\",\"name_ar\":\"test\",\"fgd\":\"FGD123\",\"barcode\":\"1111111\",\"slug\":\"test1\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-01 13:31:50'),
-(30, 1, 'update', 'products', '4', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-01 13:31:50'),
-(31, 1, 'update', 'products', '4', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-01 13:31:50'),
-(32, 1, 'update', 'pricing', '4', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":11},{\"country_id\":2,\"currency_id\":2,\"regular_price\":22},{\"country_id\":3,\"currency_id\":3,\"regular_price\":33},{\"country_id\":4,\"currency_id\":4,\"regular_price\":44},{\"country_id\":5,\"currency_id\":5,\"regular_price\":55},{\"country_id\":6,\"currency_id\":6,\"regular_price\":66}]}', '::1', '2026-04-01 13:31:50'),
-(33, 1, 'update', 'products', '4', '{\"name_en\":\"test1\",\"name_ar\":\"test\",\"fgd\":\"FGD123\",\"barcode\":\"1111111\",\"slug\":\"test1\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-01 13:33:19'),
-(34, 1, 'update', 'products', '4', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-01 13:33:19'),
-(35, 1, 'update', 'products', '4', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-01 13:33:19'),
-(36, 1, 'update', 'pricing', '4', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":11},{\"country_id\":2,\"currency_id\":2,\"regular_price\":22},{\"country_id\":3,\"currency_id\":3,\"regular_price\":33},{\"country_id\":4,\"currency_id\":4,\"regular_price\":44},{\"country_id\":5,\"currency_id\":5,\"regular_price\":55},{\"country_id\":6,\"currency_id\":6,\"regular_price\":66}]}', '::1', '2026-04-01 13:33:19'),
-(37, 1, 'update', 'products', '4', '{\"action\":\"toggle_country_visibility\",\"country\":\"AE\"}', '::1', '2026-04-01 13:41:44'),
-(38, 1, 'update', 'products', '4', '{\"action\":\"toggle_country_visibility\",\"country\":\"AE\"}', '::1', '2026-04-01 13:42:15'),
-(39, 1, 'update', 'products', '4', '{\"action\":\"toggle_country_visibility\",\"country\":\"AE\"}', '::1', '2026-04-01 13:42:16'),
-(40, 1, 'update', 'products', '4', '{\"action\":\"move_to_bin\"}', '::1', '2026-04-01 13:42:21'),
-(41, 1, 'delete', 'products', '4', '{\"action\":\"permanent_delete\"}', '::1', '2026-04-01 13:42:25'),
-(42, 1, 'create', 'users', '2', '{\"username\":\"1\",\"email\":\"2@2.c\",\"full_name\":\"3\",\"role\":\"user\",\"permissions\":[\"products\",\"categories\"]}', '::1', '2026-04-02 07:20:37'),
-(43, 1, 'create', 'users', '3', '{\"username\":\"test\",\"email\":\"test@amg.com\",\"full_name\":\"testing\",\"role\":\"master\",\"permissions\":[\"products\",\"gallery\",\"bundles\"]}', '::1', '2026-04-02 07:21:47'),
-(44, 1, 'update', 'users', '3', '{\"username\":\"test\",\"email\":\"test@amg.com\",\"full_name\":\"testing\",\"role\":\"\",\"permissions\":[\"products\",\"gallery\",\"bundles\"],\"is_active\":0}', '::1', '2026-04-02 07:37:21'),
-(45, 1, 'update', 'users', '2', '{\"username\":\"saood\",\"email\":\"2@2.c\",\"full_name\":\"saood\",\"role\":\"user\",\"permissions\":[]}', '::1', '2026-04-02 07:43:10'),
-(46, 1, 'update', 'products', '218', '{\"action\":\"toggle_country_visibility\",\"country\":\"AE\"}', '::1', '2026-04-02 10:30:23'),
-(47, 1, 'update', 'products', '218', '{\"action\":\"toggle_country_visibility\",\"country\":\"AE\"}', '::1', '2026-04-02 10:30:24'),
-(48, 1, 'update', 'products', '218', '{\"action\":\"toggle_country_visibility\",\"country\":\"QA\"}', '::1', '2026-04-02 10:30:27'),
-(49, 1, 'update', 'products', '218', '{\"action\":\"toggle_country_visibility\",\"country\":\"KW\"}', '::1', '2026-04-02 10:30:30'),
-(50, 1, 'update', 'products', '218', '{\"action\":\"toggle_country_visibility\",\"country\":\"AE\"}', '::1', '2026-04-02 11:36:42'),
-(51, 1, 'update', 'products', '218', '{\"action\":\"toggle_country_visibility\",\"country\":\"AE\"}', '::1', '2026-04-02 11:36:43'),
-(52, 1, 'update', 'products', '5', '{\"name_en\":\"Aayah\",\"name_ar\":\"آية\",\"fgd\":\"FGD02229\",\"barcode\":\"6290360614564\",\"slug\":\"aayah\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":0,\"is_featured\":0}', '::1', '2026-04-02 11:57:42'),
-(53, 1, 'update', 'products', '5', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-02 11:57:42'),
-(54, 1, 'update', 'pricing', '5', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":175},{\"country_id\":2,\"currency_id\":2,\"regular_price\":175},{\"country_id\":3,\"currency_id\":3,\"regular_price\":175},{\"country_id\":4,\"currency_id\":4,\"regular_price\":175},{\"country_id\":5,\"currency_id\":5,\"regular_price\":175},{\"country_id\":6,\"currency_id\":6,\"regular_price\":175}]}', '::1', '2026-04-02 11:57:42'),
-(55, 1, 'update', 'products', '5', '{\"name_en\":\"Aayah\",\"name_ar\":\"آية\",\"fgd\":\"FGD02229\",\"barcode\":\"6290360614564\",\"slug\":\"aayah\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-02 11:57:49'),
-(56, 1, 'update', 'products', '5', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-02 11:57:49'),
-(57, 1, 'update', 'pricing', '5', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":175},{\"country_id\":2,\"currency_id\":2,\"regular_price\":175},{\"country_id\":3,\"currency_id\":3,\"regular_price\":175},{\"country_id\":4,\"currency_id\":4,\"regular_price\":175},{\"country_id\":5,\"currency_id\":5,\"regular_price\":175},{\"country_id\":6,\"currency_id\":6,\"regular_price\":175}]}', '::1', '2026-04-02 11:57:49'),
-(58, 1, 'update', 'products', '218', '{\"name_en\":\"Marin\",\"name_ar\":\"مارين\",\"fgd\":\"FGD01976\",\"barcode\":\"FGD01976\",\"slug\":\"marin\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-02 12:29:04'),
-(59, 1, 'update', 'products', '218', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-02 12:29:05'),
-(60, 1, 'update', 'pricing', '218', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":70},{\"country_id\":2,\"currency_id\":2,\"regular_price\":70},{\"country_id\":3,\"currency_id\":3,\"regular_price\":70},{\"country_id\":4,\"currency_id\":4,\"regular_price\":70},{\"country_id\":5,\"currency_id\":5,\"regular_price\":70},{\"country_id\":6,\"currency_id\":6,\"regular_price\":70}]}', '::1', '2026-04-02 12:29:05'),
-(61, 1, 'update', 'products', '218', '{\"name_en\":\"Marin\",\"name_ar\":\"مارين\",\"fgd\":\"FGD01976\",\"barcode\":\"FGD01976\",\"slug\":\"marin\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-02 12:31:11'),
-(62, 1, 'update', 'products', '218', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-02 12:31:11'),
-(63, 1, 'update', 'products', '218', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-02 12:31:11'),
-(64, 1, 'update', 'pricing', '218', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":70},{\"country_id\":2,\"currency_id\":2,\"regular_price\":70},{\"country_id\":3,\"currency_id\":3,\"regular_price\":70},{\"country_id\":4,\"currency_id\":4,\"regular_price\":70},{\"country_id\":5,\"currency_id\":5,\"regular_price\":70},{\"country_id\":6,\"currency_id\":6,\"regular_price\":70}]}', '::1', '2026-04-02 12:31:11'),
-(65, 1, 'update', 'products', '218', '{\"name_en\":\"Marin\",\"name_ar\":\"مارين\",\"fgd\":\"FGD01976\",\"barcode\":\"FGD01976\",\"slug\":\"marin\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-02 12:31:14'),
-(66, 1, 'update', 'products', '218', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-02 12:31:14'),
-(67, 1, 'update', 'products', '218', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-02 12:31:14'),
-(68, 1, 'update', 'pricing', '218', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":70},{\"country_id\":2,\"currency_id\":2,\"regular_price\":70},{\"country_id\":3,\"currency_id\":3,\"regular_price\":70},{\"country_id\":4,\"currency_id\":4,\"regular_price\":70},{\"country_id\":5,\"currency_id\":5,\"regular_price\":70},{\"country_id\":6,\"currency_id\":6,\"regular_price\":70}]}', '::1', '2026-04-02 12:31:14'),
-(69, 1, 'update', 'products', '5', '{\"name_en\":\"Aayah\",\"name_ar\":\"آية\",\"fgd\":\"FGD02229\",\"barcode\":\"6290360614564\",\"slug\":\"aayah\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-02 12:45:33'),
-(70, 1, 'update', 'products', '5', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-02 12:45:33'),
-(71, 1, 'update', 'products', '5', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-02 12:45:33'),
-(72, 1, 'update', 'pricing', '5', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":175},{\"country_id\":2,\"currency_id\":2,\"regular_price\":175},{\"country_id\":3,\"currency_id\":3,\"regular_price\":175},{\"country_id\":4,\"currency_id\":4,\"regular_price\":175},{\"country_id\":5,\"currency_id\":5,\"regular_price\":175},{\"country_id\":6,\"currency_id\":6,\"regular_price\":175}]}', '::1', '2026-04-02 12:45:33'),
-(73, 1, 'update', 'products', '218', '{\"action\":\"toggle_country_visibility\",\"country\":\"AE\"}', '::1', '2026-04-02 12:51:56'),
-(74, 1, 'update', 'products', '218', '{\"action\":\"toggle_country_visibility\",\"country\":\"AE\"}', '::1', '2026-04-02 12:52:02'),
-(75, 1, 'update', 'products', '218', '{\"name_en\":\"Marin\",\"name_ar\":\"مارين\",\"fgd\":\"FGD01976\",\"barcode\":\"FGD01976\",\"slug\":\"marin\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":0,\"is_featured\":0}', '::1', '2026-04-02 12:52:27'),
-(76, 1, 'update', 'products', '218', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-02 12:52:27'),
-(77, 1, 'update', 'products', '218', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-02 12:52:27'),
-(78, 1, 'update', 'pricing', '218', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":70},{\"country_id\":2,\"currency_id\":2,\"regular_price\":70},{\"country_id\":3,\"currency_id\":3,\"regular_price\":70},{\"country_id\":4,\"currency_id\":4,\"regular_price\":70},{\"country_id\":5,\"currency_id\":5,\"regular_price\":70},{\"country_id\":6,\"currency_id\":6,\"regular_price\":70}]}', '::1', '2026-04-02 12:52:27'),
-(79, 1, 'update', 'categories', '23', '{\"action\":\"move_to_bin_with_subcategories\"}', '::1', '2026-04-02 12:53:25'),
-(80, 1, 'update', 'categories', '23', '{\"action\":\"restore_category\"}', '::1', '2026-04-02 12:53:48'),
-(81, 1, 'update', 'categories', '23', '{\"action\":\"move_to_bin_with_subcategories\"}', '::1', '2026-04-02 12:53:52'),
-(82, 1, 'update', 'subcategories', '3', '{\"action\":\"restore_from_bin\"}', '::1', '2026-04-02 12:54:01'),
-(83, 1, 'update', 'categories', '23', '{\"action\":\"restore_category\"}', '::1', '2026-04-02 12:54:19'),
-(84, 1, 'update', 'subcategories', '3', '{\"action\":\"move_to_bin\"}', '::1', '2026-04-02 12:54:25'),
-(85, 1, 'update', 'categories', '23', '{\"action\":\"move_to_bin_with_subcategories\"}', '::1', '2026-04-02 12:54:42'),
-(86, 1, 'update', 'categories', '23', '{\"action\":\"restore_category\"}', '::1', '2026-04-02 12:54:44'),
-(87, 1, 'update', 'products', '218', '{\"action\":\"toggle_country_visibility\",\"country\":\"AE\"}', '::1', '2026-04-02 12:54:56'),
-(88, 1, 'update', 'products', '218', '{\"name_en\":\"Marin\",\"name_ar\":\"مارين\",\"fgd\":\"FGD01976\",\"barcode\":\"FGD01976\",\"slug\":\"marin\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-02 12:55:00'),
-(89, 1, 'update', 'products', '218', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-02 12:55:00'),
-(90, 1, 'update', 'products', '218', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-02 12:55:00'),
-(91, 1, 'update', 'pricing', '218', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":70},{\"country_id\":2,\"currency_id\":2,\"regular_price\":70},{\"country_id\":3,\"currency_id\":3,\"regular_price\":70},{\"country_id\":4,\"currency_id\":4,\"regular_price\":70},{\"country_id\":5,\"currency_id\":5,\"regular_price\":70},{\"country_id\":6,\"currency_id\":6,\"regular_price\":70}]}', '::1', '2026-04-02 12:55:00'),
-(92, 1, 'update', 'products', '218', '{\"action\":\"toggle_country_visibility\",\"country\":\"AE\"}', '::1', '2026-04-02 12:55:05'),
-(93, 1, 'update', 'products', '5', '{\"name_en\":\"Aayah\",\"name_ar\":\"آية\",\"fgd\":\"FGD02229\",\"barcode\":\"6290360614564\",\"slug\":\"aayah\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-02 13:12:16'),
-(94, 1, 'update', 'products', '5', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-02 13:12:16'),
-(95, 1, 'update', 'products', '5', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-02 13:12:16'),
-(96, 1, 'update', 'pricing', '5', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":175},{\"country_id\":2,\"currency_id\":2,\"regular_price\":175},{\"country_id\":3,\"currency_id\":3,\"regular_price\":175},{\"country_id\":4,\"currency_id\":4,\"regular_price\":175},{\"country_id\":5,\"currency_id\":5,\"regular_price\":175},{\"country_id\":6,\"currency_id\":6,\"regular_price\":175}]}', '::1', '2026-04-02 13:12:16'),
-(97, 1, 'update', 'products', '5', '{\"name_en\":\"Aayah\",\"name_ar\":\"آية\",\"fgd\":\"FGD02229\",\"barcode\":\"6290360614564\",\"slug\":\"aayah\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-02 13:12:18'),
-(98, 1, 'update', 'products', '5', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-02 13:12:18'),
-(99, 1, 'update', 'products', '5', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-02 13:12:18'),
-(100, 1, 'update', 'pricing', '5', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":175},{\"country_id\":2,\"currency_id\":2,\"regular_price\":175},{\"country_id\":3,\"currency_id\":3,\"regular_price\":175},{\"country_id\":4,\"currency_id\":4,\"regular_price\":175},{\"country_id\":5,\"currency_id\":5,\"regular_price\":175},{\"country_id\":6,\"currency_id\":6,\"regular_price\":175}]}', '::1', '2026-04-02 13:12:18'),
-(101, 1, 'update', 'products', '5', '{\"name_en\":\"Aayah\",\"name_ar\":\"آية\",\"fgd\":\"FGD02229\",\"barcode\":\"6290360614564\",\"slug\":\"aayah\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-02 13:12:19'),
-(102, 1, 'update', 'products', '5', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-02 13:12:19'),
-(103, 1, 'update', 'products', '5', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-02 13:12:19'),
-(104, 1, 'update', 'pricing', '5', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":175},{\"country_id\":2,\"currency_id\":2,\"regular_price\":175},{\"country_id\":3,\"currency_id\":3,\"regular_price\":175},{\"country_id\":4,\"currency_id\":4,\"regular_price\":175},{\"country_id\":5,\"currency_id\":5,\"regular_price\":175},{\"country_id\":6,\"currency_id\":6,\"regular_price\":175}]}', '::1', '2026-04-02 13:12:19'),
-(105, 1, 'update', 'products', '5', '{\"name_en\":\"Aayah\",\"name_ar\":\"آية\",\"fgd\":\"FGD02229\",\"barcode\":\"6290360614564\",\"slug\":\"aayah\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-02 13:14:22'),
-(106, 1, 'update', 'products', '5', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-02 13:14:22'),
-(107, 1, 'update', 'products', '5', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-02 13:14:22'),
-(108, 1, 'update', 'pricing', '5', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":175},{\"country_id\":2,\"currency_id\":2,\"regular_price\":175},{\"country_id\":3,\"currency_id\":3,\"regular_price\":175},{\"country_id\":4,\"currency_id\":4,\"regular_price\":175},{\"country_id\":5,\"currency_id\":5,\"regular_price\":175},{\"country_id\":6,\"currency_id\":6,\"regular_price\":175}]}', '::1', '2026-04-02 13:14:22'),
-(109, 1, 'update', 'products', '5', '{\"name_en\":\"Aayah\",\"name_ar\":\"آية\",\"fgd\":\"FGD02229\",\"barcode\":\"6290360614564\",\"slug\":\"aayah\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-02 13:14:35'),
-(110, 1, 'update', 'products', '5', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-02 13:14:35'),
-(111, 1, 'update', 'products', '5', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-02 13:14:35'),
-(112, 1, 'update', 'pricing', '5', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":175},{\"country_id\":2,\"currency_id\":2,\"regular_price\":175},{\"country_id\":3,\"currency_id\":3,\"regular_price\":175},{\"country_id\":4,\"currency_id\":4,\"regular_price\":175},{\"country_id\":5,\"currency_id\":5,\"regular_price\":175},{\"country_id\":6,\"currency_id\":6,\"regular_price\":175}]}', '::1', '2026-04-02 13:14:35'),
-(113, 1, 'update', 'categories', '23', '{\"slug\":\"perfumes\",\"name_en\":\"Perfumes\",\"name_ar\":\"عطور\",\"image_url\":\"/gallery/Test/test.jpg\",\"sort_order\":1,\"is_active\":1}', '::1', '2026-04-02 13:42:52'),
-(114, 1, 'login', 'auth', '1', '{\"username\":\"admin\",\"email\":\"admin@ahmedalmaghribi.com\"}', '::1', '2026-04-03 05:27:23'),
-(115, 1, 'update', 'users', '1', '{\"username\":\"admin\",\"email\":\"admin@ahmedalmaghribi.com\",\"full_name\":\"Saood\",\"role\":\"admin\",\"permissions\":[\"products\",\"categories\",\"pricing\",\"bundles\",\"sales\",\"gallery\",\"analytics\",\"users\",\"audit_logs\"]}', '::1', '2026-04-03 05:27:37'),
-(116, 1, 'delete', 'users', '2', '{\"action\":\"deactivated\"}', '::1', '2026-04-03 05:42:39'),
-(117, 1, 'update', 'users', '2', '{\"username\":\"saood\",\"email\":\"2@2.c\",\"full_name\":\"saood\",\"role\":\"user\",\"permissions\":[],\"is_active\":1}', '::1', '2026-04-03 05:42:45'),
-(118, 1, 'delete', 'users', '2', '{\"action\":\"deactivated\"}', '::1', '2026-04-03 05:42:48'),
-(119, 1, 'update', 'users', '2', '{\"username\":\"saood\",\"email\":\"2@2.c\",\"full_name\":\"saood\",\"role\":\"user\",\"permissions\":[],\"is_active\":1}', '::1', '2026-04-03 05:42:50'),
-(120, 1, 'update', 'users', '3', '{\"username\":\"test\",\"email\":\"test@amg.com\",\"full_name\":\"testing\",\"role\":\"user\",\"permissions\":[\"products\",\"gallery\",\"bundles\"],\"is_active\":1}', '::1', '2026-04-03 05:42:51'),
-(121, 1, 'delete', 'users', '3', '{\"action\":\"deactivated\"}', '::1', '2026-04-03 05:42:53'),
-(122, 1, 'delete', 'users', '2', '{\"action\":\"deactivated\"}', '::1', '2026-04-03 05:43:57'),
-(123, 1, 'update', 'users', '2', '{\"username\":\"saood\",\"email\":\"2@2.c\",\"full_name\":\"saood\",\"role\":\"user\",\"permissions\":[],\"is_active\":1}', '::1', '2026-04-03 05:43:59'),
-(124, 1, 'update', 'products', '5', '{\"action\":\"toggle_country_visibility\",\"country\":\"AE\"}', '::1', '2026-04-03 05:55:26'),
-(125, 1, 'update', 'products', '6', '{\"action\":\"toggle_country_visibility\",\"country\":\"AE\"}', '::1', '2026-04-03 05:55:27'),
-(126, 1, 'login', 'auth', '1', '{\"username\":\"admin\",\"email\":\"admin@ahmedalmaghribi.com\"}', '::1', '2026-04-03 10:55:14'),
-(127, 1, 'update', 'users', '2', '{\"action\":\"password_reset\"}', '::1', '2026-04-03 13:04:42'),
-(128, NULL, 'login', 'auth', '2', '{\"username\":\"saood\",\"email\":\"2@2.c\"}', '::1', '2026-04-03 13:04:47'),
-(129, 1, 'update', 'users', '2', '{\"username\":\"saood\",\"email\":\"2@2.c\",\"full_name\":\"saood\",\"role\":\"user\",\"permissions\":[\"products.core\"]}', '::1', '2026-04-03 13:05:02'),
-(130, 1, 'update', 'users', '2', '{\"username\":\"saood\",\"email\":\"2@2.c\",\"full_name\":\"saood\",\"role\":\"user\",\"permissions\":[\"products\",\"products.seo\",\"products.core\"]}', '::1', '2026-04-03 13:05:24'),
-(131, 1, 'delete', 'users', '2', '{\"action\":\"hard_deleted\"}', '::1', '2026-04-03 13:06:07'),
-(132, 1, 'delete', 'users', '3', '{\"action\":\"hard_deleted\"}', '::1', '2026-04-03 13:06:11'),
-(133, 1, 'create', 'users', '4', '{\"username\":\"ecom\",\"email\":\"ecom@ahmedalmaghribi.com\",\"full_name\":\"Ecommerce\",\"role\":\"user\",\"permissions\":[\"products\",\"categories\",\"bundles\",\"pricing\",\"sales\",\"gallery\",\"audit_logs\"]}', '::1', '2026-04-03 13:09:32'),
-(134, 4, 'login', 'auth', '4', '{\"username\":\"ecom\",\"email\":\"ecom@ahmedalmaghribi.com\"}', '::1', '2026-04-03 13:09:48'),
-(135, 4, 'update', 'products', '218', '{\"name_en\":\"Marin\",\"name_ar\":\"مارين\",\"fgd\":\"FGD01976\",\"barcode\":\"FGD01976\",\"slug\":\"marin\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-03 13:11:43'),
-(136, 4, 'update', 'products', '218', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-03 13:11:43'),
-(137, 4, 'update', 'products', '218', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-03 13:11:43'),
-(138, 4, 'update', 'pricing', '218', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":70},{\"country_id\":2,\"currency_id\":2,\"regular_price\":70},{\"country_id\":3,\"currency_id\":3,\"regular_price\":70},{\"country_id\":4,\"currency_id\":4,\"regular_price\":70},{\"country_id\":5,\"currency_id\":5,\"regular_price\":70},{\"country_id\":6,\"currency_id\":6,\"regular_price\":70}]}', '::1', '2026-04-03 13:11:44'),
-(139, 1, 'create', 'users', '5', '{\"username\":\"seo\",\"email\":\"digitizer@ahmedalmaghribi.com\",\"full_name\":\"Digitizer Team\",\"role\":\"user\",\"permissions\":[\"products.seo\",\"products\",\"categories\",\"categories.seo\"]}', '::1', '2026-04-03 13:16:12'),
-(140, 1, 'update', 'users', '4', '{\"username\":\"ecom\",\"email\":\"ecom@ahmedalmaghribi.com\",\"full_name\":\"Ecommerce\",\"role\":\"user\",\"permissions\":[\"products\",\"categories\",\"bundles\",\"pricing\",\"sales\",\"gallery\"]}', '::1', '2026-04-03 13:16:27'),
-(141, 5, 'login', 'auth', '5', '{\"username\":\"seo\",\"email\":\"digitizer@ahmedalmaghribi.com\"}', '::1', '2026-04-03 13:16:40'),
-(142, 5, 'update', 'categories', '23', '{\"slug\":\"perfumes\",\"name_en\":\"Perfumes11\",\"name_ar\":\"عطور\",\"image_url\":\"/gallery/Test/test.jpg\",\"sort_order\":1,\"is_active\":1}', '::1', '2026-04-03 13:17:15'),
-(143, 5, 'update', 'categories', '23', '{\"slug\":\"perfumes\",\"name_en\":\"Perfumes\",\"name_ar\":\"عطور\",\"image_url\":\"/gallery/Test/test.jpg\",\"sort_order\":1,\"is_active\":1}', '::1', '2026-04-03 13:17:22'),
-(144, 1, 'update', 'users', '4', '{\"username\":\"ecom\",\"email\":\"ecom@ahmedalmaghribi.com\",\"full_name\":\"Ecommerce\",\"role\":\"user\",\"permissions\":[\"products\",\"categories\",\"bundles\",\"pricing\",\"sales\",\"gallery\",\"campaigns\",\"users\",\"audit_logs\"]}', '::1', '2026-04-03 13:22:14'),
-(145, 1, 'update', 'users', '5', '{\"username\":\"seo\",\"email\":\"digitizer@ahmedalmaghribi.com\",\"full_name\":\"Digitizer Team\",\"role\":\"user\",\"permissions\":[\"products.seo\",\"products\",\"categories\",\"categories.seo\"]}', '::1', '2026-04-03 13:22:20'),
-(146, 4, 'login', 'auth', '4', '{\"username\":\"ecom\",\"email\":\"ecom@ahmedalmaghribi.com\"}', '::1', '2026-04-03 13:22:37'),
-(147, 5, 'login', 'auth', '5', '{\"username\":\"seo\",\"email\":\"digitizer@ahmedalmaghribi.com\"}', '::1', '2026-04-03 13:23:06'),
-(148, 4, 'login', 'auth', '4', '{\"username\":\"ecom\",\"email\":\"ecom@ahmedalmaghribi.com\"}', '::1', '2026-04-03 13:24:45'),
-(149, 1, 'login', 'auth', '1', '{\"username\":\"admin\",\"email\":\"admin@ahmedalmaghribi.com\"}', '::1', '2026-04-03 13:25:06'),
-(150, 1, 'update', 'users', '4', '{\"username\":\"ecom\",\"email\":\"ecom@ahmedalmaghribi.com\",\"full_name\":\"Ecommerce\",\"role\":\"user\",\"permissions\":[\"products\"]}', '::1', '2026-04-03 13:25:42'),
-(151, 4, 'login', 'auth', '4', '{\"username\":\"ecom\",\"email\":\"ecom@ahmedalmaghribi.com\"}', '::1', '2026-04-03 13:25:50'),
-(152, 4, 'update', 'products', '5', '{\"name_en\":\"Aayah\",\"name_ar\":\"آية\",\"fgd\":\"FGD02229\",\"barcode\":\"6290360614564\",\"slug\":\"aayah\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '::1', '2026-04-03 13:25:56'),
-(153, 4, 'update', 'products', '5', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '::1', '2026-04-03 13:25:56'),
-(154, 4, 'update', 'products', '5', '{\"action\":\"update_seo\",\"count\":6}', '::1', '2026-04-03 13:25:56'),
-(155, 1, 'login', 'auth', '1', '{\"username\":\"admin\",\"email\":\"admin@ahmedalmaghribi.com\"}', '::1', '2026-04-03 13:33:00'),
-(156, 1, 'update', 'users', '4', '{\"username\":\"ecom\",\"email\":\"ecom@ahmedalmaghribi.com\",\"full_name\":\"Ecommerce\",\"role\":\"user\",\"permissions\":[\"products\",\"products.core\",\"products.fragrance\",\"products.media\",\"products.seo\",\"products.inventory\",\"categories\",\"categories.core\",\"categories.seo\",\"pricing\",\"bundles\",\"sales\",\"gallery\",\"campaigns\",\"users\",\"audit_logs\"]}', '::1', '2026-04-03 13:33:15'),
-(157, 1, 'update', 'users', '4', '{\"username\":\"ecom\",\"email\":\"ecom@ahmedalmaghribi.com\",\"full_name\":\"Ecommerce\",\"role\":\"user\",\"permissions\":[\"products\",\"products.core\",\"products.fragrance\",\"products.media\",\"products.seo\",\"products.inventory\",\"categories\",\"categories.core\",\"categories.seo\",\"pricing\",\"bundles\",\"sales\",\"gallery\",\"campaigns\"]}', '::1', '2026-04-03 13:33:28'),
-(158, 4, 'login', 'auth', '4', '{\"username\":\"ecom\",\"email\":\"ecom@ahmedalmaghribi.com\"}', '::1', '2026-04-03 13:33:33'),
-(159, 1, 'login', 'auth', '1', '{\"username\":\"admin\",\"email\":\"admin@ahmedalmaghribi.com\"}', '::1', '2026-04-03 13:33:49'),
-(160, 1, 'update', 'products', '5', '{\"name_en\":\"Aayah\",\"name_ar\":\"آية\",\"fgd\":\"FGD02229\",\"barcode\":\"6290360614564\",\"slug\":\"aayah\",\"category_id\":23,\"subcategory_id\":3,\"is_active\":1,\"is_featured\":0}', '127.0.0.1', '2026-04-03 13:45:46'),
-(161, 1, 'update', 'products', '5', '{\"action\":\"update_fragrance_notes\",\"count\":3}', '127.0.0.1', '2026-04-03 13:45:46'),
-(162, 1, 'update', 'products', '5', '{\"action\":\"update_seo\",\"count\":6}', '127.0.0.1', '2026-04-03 13:45:46'),
-(163, 1, 'update', 'pricing', '5', '{\"action\":\"bulk_update_prices\",\"prices\":[{\"country_id\":1,\"currency_id\":1,\"regular_price\":175},{\"country_id\":2,\"currency_id\":2,\"regular_price\":175},{\"country_id\":3,\"currency_id\":3,\"regular_price\":175},{\"country_id\":4,\"currency_id\":4,\"regular_price\":175},{\"country_id\":5,\"currency_id\":5,\"regular_price\":175},{\"country_id\":6,\"currency_id\":6,\"regular_price\":175}]}', '127.0.0.1', '2026-04-03 13:45:46'),
-(164, 1, 'update', 'campaigns', '2', '{\"name_en\":\"Test 2\",\"name_ar\":\"\",\"type\":\"discount\",\"start_at\":\"2026-04-03T09:32\",\"end_at\":\"2026-04-10T09:32\",\"is_all_products\":0}', '127.0.0.1', '2026-04-03 13:49:29');
-
 -- --------------------------------------------------------
 
 --
@@ -218,13 +39,6 @@ CREATE TABLE `bundles` (
   `id` int(10) UNSIGNED NOT NULL,
   `product_id` int(10) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `bundles`
---
-
-INSERT INTO `bundles` (`id`, `product_id`) VALUES
-(1, 202);
 
 -- --------------------------------------------------------
 
@@ -242,15 +56,6 @@ CREATE TABLE `bundle_items` (
   `qty` tinyint(3) UNSIGNED NOT NULL DEFAULT 1,
   `sort_order` smallint(6) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `bundle_items`
---
-
-INSERT INTO `bundle_items` (`id`, `bundle_id`, `product_id`, `component_name_en`, `component_name_ar`, `component_image_url`, `qty`, `sort_order`) VALUES
-(1, 1, 218, 'Marin', 'مارين', NULL, 1, 0),
-(2, 1, 217, 'Haam', 'هام', NULL, 3, 1),
-(3, 1, NULL, 'OIL En', 'OIL AR', NULL, 1, 2);
 
 -- --------------------------------------------------------
 
@@ -274,14 +79,6 @@ CREATE TABLE `campaigns` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `campaigns`
---
-
-INSERT INTO `campaigns` (`id`, `name_en`, `name_ar`, `type`, `status`, `priority`, `start_at`, `end_at`, `is_all_products`, `is_stackable`, `notes`, `created_at`, `updated_at`) VALUES
-(1, 'Test 1', '', 'discount', 'active', 100, '2026-04-03 04:46:00', '2026-04-10 04:46:00', 0, 0, '', '2026-04-03 12:47:27', '2026-04-03 13:00:21'),
-(2, 'Test 2', '', 'discount', 'active', 100, '2026-04-03 09:32:00', '2026-04-10 09:32:00', 0, 0, '', '2026-04-03 13:44:52', '2026-04-03 13:49:29');
-
 -- --------------------------------------------------------
 
 --
@@ -292,16 +89,6 @@ CREATE TABLE `campaign_countries` (
   `campaign_id` int(10) UNSIGNED NOT NULL,
   `country_id` tinyint(3) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `campaign_countries`
---
-
-INSERT INTO `campaign_countries` (`campaign_id`, `country_id`) VALUES
-(1, 1),
-(1, 3),
-(2, 3),
-(2, 5);
 
 -- --------------------------------------------------------
 
@@ -317,14 +104,6 @@ CREATE TABLE `campaign_discounts` (
   `min_price_floor` decimal(12,3) NOT NULL DEFAULT 0.000
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `campaign_discounts`
---
-
-INSERT INTO `campaign_discounts` (`id`, `campaign_id`, `discount_type`, `discount_value`, `min_price_floor`) VALUES
-(3, 1, 'percentage', 0.000, 0.000),
-(5, 2, 'percentage', 0.000, 0.000);
-
 -- --------------------------------------------------------
 
 --
@@ -339,18 +118,6 @@ CREATE TABLE `campaign_items` (
   `discount_value` decimal(12,3) DEFAULT NULL,
   `is_excluded` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `campaign_items`
---
-
-INSERT INTO `campaign_items` (`id`, `campaign_id`, `product_id`, `discount_type`, `discount_value`, `is_excluded`) VALUES
-(9, 1, 22, 'percentage', 50.000, 0),
-(10, 1, 140, 'fixed', 50.000, 0),
-(11, 1, 7, 'percentage', 30.000, 0),
-(12, 1, 35, 'percentage', 30.000, 0),
-(15, 2, 201, 'fixed', 63.000, 0),
-(16, 2, 202, 'fixed', 53.000, 0);
 
 -- --------------------------------------------------------
 
@@ -381,23 +148,6 @@ CREATE TABLE `categories` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `categories`
---
-
-INSERT INTO `categories` (`id`, `slug`, `name_en`, `name_ar`, `description_en`, `description_ar`, `image_url`, `meta_title_en`, `meta_title_ar`, `meta_desc_en`, `meta_desc_ar`, `icon_image`, `menu_image2`, `mobile_image`, `video`, `sort_order`, `is_active`, `deleted_status`, `created_at`, `updated_at`) VALUES
-(22, 'test', 'test', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, 'permanent', '2026-04-01 13:13:27', '2026-04-01 13:17:47'),
-(23, 'perfumes', 'Perfumes', 'عطور', NULL, NULL, '/gallery/Test/test.jpg', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:22'),
-(24, 'concentrated-parfum', 'Concentrated Parfum', 'العطورالزيتية', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:22'),
-(25, 'dakhoon', 'Dakhoon', 'دخون', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(26, 'gift-sets', 'Gift Sets', 'أطقم هدايا', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 3, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(27, 'collections', 'Collections', 'المجموعات', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(28, 'online-exclusive', 'Online Exclusive', 'حصرياً على الإنترنت', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 5, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(29, 'care-essentials', 'Care Essentials', 'أساسيات العناية', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 6, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(30, 'sale', 'Sale', 'تخفيضات', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 7, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(31, 'worldwide-distributions', 'Worldwide Distributions', 'توزيع عالمي', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(32, 'extrait-de-parfum', 'Extrait De Parfum', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, 0, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11');
-
 -- --------------------------------------------------------
 
 --
@@ -426,18 +176,6 @@ CREATE TABLE `countries` (
   `is_active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `countries`
---
-
-INSERT INTO `countries` (`id`, `code`, `name_en`, `name_ar`, `currency_id`, `domain_prefix`, `is_active`) VALUES
-(1, 'AE', 'United Arab Emirates', 'الإمارات العربية المتحدة', 1, 'ae', 1),
-(2, 'SA', 'Saudi Arabia', 'المملكة العربية السعودية', 2, 'sa', 1),
-(3, 'QA', 'Qatar', 'قطر', 3, 'qa', 1),
-(4, 'BH', 'Bahrain', 'البحرين', 4, 'bh', 1),
-(5, 'KW', 'Kuwait', 'الكويت', 5, 'kw', 1),
-(6, 'OM', 'Oman', 'سلطنة عُمان', 6, 'om', 1);
-
 -- --------------------------------------------------------
 
 --
@@ -451,18 +189,6 @@ CREATE TABLE `currencies` (
   `symbol_ar` varchar(10) NOT NULL,
   `decimal_places` tinyint(4) NOT NULL DEFAULT 2
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `currencies`
---
-
-INSERT INTO `currencies` (`id`, `code`, `symbol_en`, `symbol_ar`, `decimal_places`) VALUES
-(1, 'AED', 'AED', 'د.إ', 2),
-(2, 'SAR', 'SAR', 'ر.س', 2),
-(3, 'QAR', 'QAR', 'ر.ق', 2),
-(4, 'BHD', 'BHD', 'د.ب', 3),
-(5, 'KWD', 'KWD', 'د.ك', 3),
-(6, 'OMR', 'OMR', 'ر.ع', 3);
 
 -- --------------------------------------------------------
 
@@ -480,6 +206,318 @@ CREATE TABLE `fragrance_notes` (
   `description_ar` text DEFAULT NULL,
   `image_url` varchar(700) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `products`
+--
+
+CREATE TABLE `products` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `fgd` varchar(100) NOT NULL,
+  `barcode` varchar(100) DEFAULT NULL,
+  `slug` varchar(220) NOT NULL,
+  `name_en` varchar(255) NOT NULL,
+  `name_ar` varchar(255) NOT NULL,
+  `description_en` text DEFAULT NULL,
+  `description_ar` text DEFAULT NULL,
+  `category_id` int(10) UNSIGNED NOT NULL,
+  `subcategory_id` int(10) UNSIGNED DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `is_featured` tinyint(1) NOT NULL DEFAULT 0,
+  `tags` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tags`)),
+  `attributes` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`attributes`)),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `size_id` int(10) UNSIGNED DEFAULT NULL,
+  `label_id` int(10) UNSIGNED DEFAULT NULL,
+  `media_url` varchar(255) DEFAULT NULL,
+  `deleted_status` enum('active','bin','permanent') DEFAULT 'active'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `product_country`
+--
+
+CREATE TABLE `product_country` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `product_id` int(10) UNSIGNED NOT NULL,
+  `country_id` tinyint(3) UNSIGNED NOT NULL,
+  `is_visible` tinyint(1) NOT NULL DEFAULT 1,
+  `slug_override` varchar(220) DEFAULT NULL,
+  `meta_title_en` varchar(255) DEFAULT NULL,
+  `meta_title_ar` varchar(255) DEFAULT NULL,
+  `meta_desc_en` varchar(500) DEFAULT NULL,
+  `meta_desc_ar` varchar(500) DEFAULT NULL,
+  `sort_order` smallint(6) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `product_prices`
+--
+
+CREATE TABLE `product_prices` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `product_id` int(10) UNSIGNED NOT NULL,
+  `country_id` tinyint(3) UNSIGNED NOT NULL,
+  `currency_id` tinyint(3) UNSIGNED NOT NULL,
+  `regular_price` decimal(12,3) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `product_media`
+--
+
+CREATE TABLE `product_media` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `product_id` int(10) UNSIGNED NOT NULL,
+  `size_id` int(10) UNSIGNED DEFAULT NULL,
+  `url` varchar(700) NOT NULL,
+  `alt_en` varchar(255) DEFAULT NULL,
+  `alt_ar` varchar(255) DEFAULT NULL,
+  `media_type` enum('image','video') NOT NULL DEFAULT 'image',
+  `is_primary` tinyint(1) NOT NULL DEFAULT 0,
+  `sort_order` smallint(6) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `product_sales_log`
+--
+
+CREATE TABLE `product_sales_log` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `product_id` int(10) UNSIGNED NOT NULL,
+  `country_id` tinyint(3) UNSIGNED NOT NULL,
+  `qty_sold` smallint(5) UNSIGNED NOT NULL DEFAULT 1,
+  `unit_price` decimal(12,3) DEFAULT NULL,
+  `currency_id` tinyint(3) UNSIGNED DEFAULT NULL,
+  `sold_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `order_ref` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+--
+-- Table structure for table `product_labels`
+--
+
+CREATE TABLE `product_labels` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `name_en` varchar(100) NOT NULL,
+  `name_ar` varchar(100) NOT NULL,
+  `image_url` varchar(255) DEFAULT NULL,
+  `sort_order` smallint(6) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `product_labels`
+--
+
+INSERT INTO `product_labels` (`id`, `name_en`, `name_ar`, `image_url`, `sort_order`) VALUES
+(1, 'Hot', 'حار مبيعاً', 'hot-selling-1.png', 1),
+(2, 'New', 'جديد', 'new-arrival.png', 2),
+(3, 'Sale', 'تخفيضات', 'sale.png', 3);
+
+--
+-- Table structure for table `product_sizes`
+--
+
+CREATE TABLE `product_sizes` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `label_en` varchar(60) NOT NULL,
+  `label_ar` varchar(60) NOT NULL,
+  `value_ml` smallint(5) UNSIGNED DEFAULT NULL,
+  `sort_order` smallint(6) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `product_sizes`
+--
+
+INSERT INTO `product_sizes` (`id`, `label_en`, `label_ar`, `value_ml`, `sort_order`) VALUES
+(1, '15ML', '١٥ مل', 15, 1),
+(2, '30ML', '٣٠ مل', 30, 2),
+(3, '50ML', '٥٠ مل', 50, 3),
+(4, '60ML', '٦٠ مل', 60, 4),
+(5, '75ML', '٧٥ مل', 75, 5),
+(6, '100ML', '١٠٠ مل', 100, 6),
+(7, '150ML', '١٥٠ مل', 150, 7),
+(8, '200ML', '٢٠٠ مل', 200, 8);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `product_stock`
+--
+
+CREATE TABLE `product_stock` (
+  `product_id` int(10) UNSIGNED NOT NULL,
+  `country_id` tinyint(3) UNSIGNED NOT NULL,
+  `quantity` int(11) DEFAULT 0,
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `subcategories`
+--
+
+CREATE TABLE `subcategories` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `category_id` int(10) UNSIGNED NOT NULL,
+  `slug` varchar(120) NOT NULL,
+  `name_en` varchar(120) NOT NULL,
+  `name_ar` varchar(120) NOT NULL,
+  `image_url` varchar(700) DEFAULT NULL,
+  `meta_title_en` varchar(255) DEFAULT NULL,
+  `meta_title_ar` varchar(255) DEFAULT NULL,
+  `meta_desc_en` varchar(500) DEFAULT NULL,
+  `meta_desc_ar` varchar(500) DEFAULT NULL,
+  `mobile_image` varchar(700) DEFAULT NULL,
+  `video` varchar(700) DEFAULT NULL,
+  `description_en` text DEFAULT NULL,
+  `description_ar` text DEFAULT NULL,
+  `sort_order` smallint(6) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `deleted_status` enum('active','bin','permanent') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `users`
+--
+
+CREATE TABLE `users` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `username` varchar(100) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `full_name` varchar(200) NOT NULL DEFAULT '',
+  `role` enum('admin','user') NOT NULL DEFAULT 'user',
+  `permissions` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`permissions`)),
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `bundles`
+--
+
+INSERT INTO `bundles` (`id`, `product_id`) VALUES
+(1, 202);
+
+
+--
+-- Dumping data for table `bundle_items`
+--
+
+INSERT INTO `bundle_items` (`id`, `bundle_id`, `product_id`, `component_name_en`, `component_name_ar`, `component_image_url`, `qty`, `sort_order`) VALUES
+(1, 1, 218, 'Marin', 'مارين', NULL, 1, 0),
+(2, 1, 217, 'Haam', 'هام', NULL, 3, 1),
+(3, 1, NULL, 'OIL En', 'OIL AR', NULL, 1, 2);
+
+
+--
+-- Dumping data for table `campaigns`
+--
+
+INSERT INTO `campaigns` (`id`, `name_en`, `name_ar`, `type`, `status`, `priority`, `start_at`, `end_at`, `is_all_products`, `is_stackable`, `notes`, `created_at`, `updated_at`) VALUES
+(1, 'Test 1', '', 'discount', 'active', 100, '2026-04-03 04:46:00', '2026-04-10 04:46:00', 0, 0, '', '2026-04-03 12:47:27', '2026-04-03 13:00:21'),
+(2, 'Test 2', '', 'discount', 'active', 100, '2026-04-03 09:32:00', '2026-04-10 09:32:00', 0, 0, '', '2026-04-03 13:44:52', '2026-04-03 13:49:29');
+
+
+--
+-- Dumping data for table `campaign_countries`
+--
+
+INSERT INTO `campaign_countries` (`campaign_id`, `country_id`) VALUES
+(1, 1),
+(1, 3),
+(2, 3),
+(2, 5);
+
+
+--
+-- Dumping data for table `campaign_discounts`
+--
+
+INSERT INTO `campaign_discounts` (`id`, `campaign_id`, `discount_type`, `discount_value`, `min_price_floor`) VALUES
+(3, 1, 'percentage', 0.000, 0.000),
+(5, 2, 'percentage', 0.000, 0.000);
+
+
+--
+-- Dumping data for table `campaign_items`
+--
+
+INSERT INTO `campaign_items` (`id`, `campaign_id`, `product_id`, `discount_type`, `discount_value`, `is_excluded`) VALUES
+(9, 1, 22, 'percentage', 50.000, 0),
+(10, 1, 140, 'fixed', 50.000, 0),
+(11, 1, 7, 'percentage', 30.000, 0),
+(12, 1, 35, 'percentage', 30.000, 0),
+(15, 2, 201, 'fixed', 63.000, 0),
+(16, 2, 202, 'fixed', 53.000, 0);
+
+
+--
+-- Dumping data for table `categories`
+--
+
+INSERT INTO `categories` (`id`, `slug`, `name_en`, `name_ar`, `description_en`, `description_ar`, `image_url`, `meta_title_en`, `meta_title_ar`, `meta_desc_en`, `meta_desc_ar`, `icon_image`, `menu_image2`, `mobile_image`, `video`, `sort_order`, `is_active`, `deleted_status`, `created_at`, `updated_at`) VALUES
+(22, 'test', 'test', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, 'permanent', '2026-04-01 13:13:27', '2026-04-01 13:17:47'),
+(23, 'perfumes', 'Perfumes', 'عطور', NULL, NULL, '/gallery/Test/test.jpg', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:22'),
+(24, 'concentrated-parfum', 'Concentrated Parfum', 'العطورالزيتية', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:22'),
+(25, 'dakhoon', 'Dakhoon', 'دخون', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
+(26, 'gift-sets', 'Gift Sets', 'أطقم هدايا', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 3, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
+(27, 'collections', 'Collections', 'المجموعات', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
+(28, 'online-exclusive', 'Online Exclusive', 'حصرياً على الإنترنت', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 5, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
+(29, 'care-essentials', 'Care Essentials', 'أساسيات العناية', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 6, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
+(30, 'sale', 'Sale', 'تخفيضات', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 7, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
+(31, 'worldwide-distributions', 'Worldwide Distributions', 'توزيع عالمي', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
+(32, 'extrait-de-parfum', 'Extrait De Parfum', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, 0, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11');
+
+
+--
+-- Dumping data for table `countries`
+--
+
+INSERT INTO `countries` (`id`, `code`, `name_en`, `name_ar`, `currency_id`, `domain_prefix`, `is_active`) VALUES
+(1, 'AE', 'United Arab Emirates', 'الإمارات العربية المتحدة', 1, 'ae', 1),
+(2, 'SA', 'Saudi Arabia', 'المملكة العربية السعودية', 2, 'sa', 1),
+(3, 'QA', 'Qatar', 'قطر', 3, 'qa', 1),
+(4, 'BH', 'Bahrain', 'البحرين', 4, 'bh', 1),
+(5, 'KW', 'Kuwait', 'الكويت', 5, 'kw', 1),
+(6, 'OM', 'Oman', 'سلطنة عُمان', 6, 'om', 1);
+
+
+--
+-- Dumping data for table `currencies`
+--
+
+INSERT INTO `currencies` (`id`, `code`, `symbol_en`, `symbol_ar`, `decimal_places`) VALUES
+(1, 'AED', 'AED', 'د.إ', 2),
+(2, 'SAR', 'SAR', 'ر.س', 2),
+(3, 'QAR', 'QAR', 'ر.ق', 2),
+(4, 'BHD', 'BHD', 'د.ب', 3),
+(5, 'KWD', 'KWD', 'د.ك', 3),
+(6, 'OMR', 'OMR', 'ر.ع', 3);
+
 
 --
 -- Dumping data for table `fragrance_notes`
@@ -1062,34 +1100,6 @@ INSERT INTO `fragrance_notes` (`id`, `product_id`, `note_type`, `ingredients_en`
 (582, 218, 'heart', '[\"Peach\",\"Rose\"]', '[\"خوخ،  ورد\"]', '<p>Peach softens the profile while rose adds a refined floral touch—smooth, romantic, and gently luminous.</p>', '<p>الخوخ يمنح نعومة مخملية، والورد يضيف لمسة زهرية راقية—رومانسي، ناعم، ومضيء بهدوء.</p>', NULL),
 (583, 218, 'base', '[\"Sandalwood\",\"Vanilla Beans\",\"Woods\"]', '[\"خشب الصندل،  حبوب الفانيلا،  أخشاب\"]', '<p>Vanilla beans melt into warm woods, with sandalwood bringing a creamy, elegant depth that lingers beautifully.</p>', '<p>حبوب الفانيلا تذوب داخل أخشاب دافئة، ويمنح خشب الصندل عمقاً كريماً أنيقاً يدوم بأثر جميل.</p>', NULL);
 
--- --------------------------------------------------------
-
---
--- Table structure for table `products`
---
-
-CREATE TABLE `products` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `fgd` varchar(100) NOT NULL,
-  `barcode` varchar(100) DEFAULT NULL,
-  `slug` varchar(220) NOT NULL,
-  `name_en` varchar(255) NOT NULL,
-  `name_ar` varchar(255) NOT NULL,
-  `description_en` text DEFAULT NULL,
-  `description_ar` text DEFAULT NULL,
-  `category_id` int(10) UNSIGNED NOT NULL,
-  `subcategory_id` int(10) UNSIGNED DEFAULT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `is_featured` tinyint(1) NOT NULL DEFAULT 0,
-  `tags` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tags`)),
-  `attributes` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`attributes`)),
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `size_label_en` varchar(255) DEFAULT NULL,
-  `size_label_ar` varchar(255) DEFAULT NULL,
-  `media_url` varchar(255) DEFAULT NULL,
-  `deleted_status` enum('active','bin','permanent') DEFAULT 'active'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `products`
@@ -1319,24 +1329,6 @@ INSERT INTO `products` (`id`, `fgd`, `barcode`, `slug`, `name_en`, `name_ar`, `d
 (217, 'FGD01977', 'FGD01977', 'haam', 'Haam', 'هام', '<p>HAAM opens with a bright floral–citrus breeze, melts into ambered musk, then settles into a smooth woody trail of ambergris and cashmere wood.<br>A refined composition that balances freshness with warmth—its luminous opening feels clean and uplifting, while the heart wraps you in a soft, sensual glow of musk and amber. As it dries down, woody tones deepen the scent with a polished, comforting finish where ambergris nuance meets the velvety touch of cashmere wood.</p>', '<p>يبدأ <strong>هام</strong> بنفحات زهرية-حمضية مشرقة، ثم يذوب في قلب من المسك والعنبر، ويستقر على قاعدة خشبية ناعمة من العنبر الرمادي وخشب الكشمير.<br>تركيبة راقية تجمع بين الانتعاش والدفء—افتتاحية مضيئة تمنح إحساساً نظيفاً ومنعشاً، بينما يحتضنك القلب بوهج مخملي من المسك والعنبر. وفي الثبات، تتعمّق الأخشاب لتترك أثراً أنيقاً ومريحاً حيث يلتقي طابع العنبر الرمادي بلمسة خشب الكشمير الناعمة.</p>', 23, 3, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', NULL, NULL, NULL, 'active'),
 (218, 'FGD01976', 'FGD01976', 'marin', 'Marin', 'مارين', '<p>Marin is a juicy fruity-floral—sparkling pineapple and red berries melt into peachy rose, finishing in creamy vanilla and smooth sandalwood woods.<br>It opens with a bright, mouthwatering burst of pineapple wrapped in strawberry and raspberry sweetness. As it settles, a soft heart of peach and rose adds an elegant, velvety glow. The base brings comfort and depth—vanilla beans folded into gentle woods, with sandalwood lending a creamy, refined finish.</p>', '<p>مارين عطر فاكهي–زهري نابض؛ أناناس وتوت أحمر متلألئ ينساب إلى خوخ وورد، ويستقر على فانيلا كريمية وخشب صندل دافئ.<br>يبدأ بإشراقة شهية من الأناناس تتداخل مع حلاوة الفراولة والتوت العليق. ثم يتوازن القلب بلمسة مخملية من الخوخ والورد تمنح العطر رُقياً ناعماً. وفي النهاية، يقدّم قاعدة مريحة وعميقة من حبوب الفانيلا مع الأخشاب، بينما يضيف خشب الصندل لمسة كريمية راقية تُطيل الإحساس بالدفء.</p>', 23, 3, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-02 12:55:00', NULL, NULL, NULL, 'active');
 
--- --------------------------------------------------------
-
---
--- Table structure for table `product_country`
---
-
-CREATE TABLE `product_country` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `product_id` int(10) UNSIGNED NOT NULL,
-  `country_id` tinyint(3) UNSIGNED NOT NULL,
-  `is_visible` tinyint(1) NOT NULL DEFAULT 1,
-  `slug_override` varchar(220) DEFAULT NULL,
-  `meta_title_en` varchar(255) DEFAULT NULL,
-  `meta_title_ar` varchar(255) DEFAULT NULL,
-  `meta_desc_en` varchar(500) DEFAULT NULL,
-  `meta_desc_ar` varchar(500) DEFAULT NULL,
-  `sort_order` smallint(6) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `product_country`
@@ -2641,38 +2633,6 @@ INSERT INTO `product_country` (`id`, `product_id`, `country_id`, `is_visible`, `
 (1355, 218, 5, 0, NULL, NULL, NULL, NULL, NULL, 0),
 (1356, 218, 6, 1, NULL, NULL, NULL, NULL, NULL, 0);
 
--- --------------------------------------------------------
-
---
--- Table structure for table `product_media`
---
-
-CREATE TABLE `product_media` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `product_id` int(10) UNSIGNED NOT NULL,
-  `size_id` int(10) UNSIGNED DEFAULT NULL,
-  `url` varchar(700) NOT NULL,
-  `alt_en` varchar(255) DEFAULT NULL,
-  `alt_ar` varchar(255) DEFAULT NULL,
-  `media_type` enum('image','video') NOT NULL DEFAULT 'image',
-  `is_primary` tinyint(1) NOT NULL DEFAULT 0,
-  `sort_order` smallint(6) NOT NULL DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `product_prices`
---
-
-CREATE TABLE `product_prices` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `product_id` int(10) UNSIGNED NOT NULL,
-  `country_id` tinyint(3) UNSIGNED NOT NULL,
-  `currency_id` tinyint(3) UNSIGNED NOT NULL,
-  `regular_price` decimal(12,3) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `product_prices`
@@ -3976,50 +3936,6 @@ INSERT INTO `product_prices` (`id`, `product_id`, `country_id`, `currency_id`, `
 (1319, 218, 5, 5, 70.000),
 (1320, 218, 6, 6, 70.000);
 
--- --------------------------------------------------------
-
---
--- Table structure for table `product_sales_log`
---
-
-CREATE TABLE `product_sales_log` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `product_id` int(10) UNSIGNED NOT NULL,
-  `country_id` tinyint(3) UNSIGNED NOT NULL,
-  `qty_sold` smallint(5) UNSIGNED NOT NULL DEFAULT 1,
-  `unit_price` decimal(12,3) DEFAULT NULL,
-  `currency_id` tinyint(3) UNSIGNED DEFAULT NULL,
-  `sold_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `order_ref` varchar(100) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `product_sizes`
---
-
-CREATE TABLE `product_sizes` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `product_id` int(10) UNSIGNED NOT NULL,
-  `label_en` varchar(60) NOT NULL,
-  `label_ar` varchar(60) NOT NULL,
-  `value_ml` smallint(5) UNSIGNED DEFAULT NULL,
-  `sort_order` smallint(6) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `product_stock`
---
-
-CREATE TABLE `product_stock` (
-  `product_id` int(10) UNSIGNED NOT NULL,
-  `country_id` tinyint(3) UNSIGNED NOT NULL,
-  `quantity` int(11) DEFAULT 0,
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `product_stock`
@@ -4051,33 +3967,6 @@ INSERT INTO `product_stock` (`product_id`, `country_id`, `quantity`, `updated_at
 (218, 5, 0, '2026-04-02 12:29:04'),
 (218, 6, 0, '2026-04-02 12:29:04');
 
--- --------------------------------------------------------
-
---
--- Table structure for table `subcategories`
---
-
-CREATE TABLE `subcategories` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `category_id` int(10) UNSIGNED NOT NULL,
-  `slug` varchar(120) NOT NULL,
-  `name_en` varchar(120) NOT NULL,
-  `name_ar` varchar(120) NOT NULL,
-  `image_url` varchar(700) DEFAULT NULL,
-  `meta_title_en` varchar(255) DEFAULT NULL,
-  `meta_title_ar` varchar(255) DEFAULT NULL,
-  `meta_desc_en` varchar(500) DEFAULT NULL,
-  `meta_desc_ar` varchar(500) DEFAULT NULL,
-  `mobile_image` varchar(700) DEFAULT NULL,
-  `video` varchar(700) DEFAULT NULL,
-  `description_en` text DEFAULT NULL,
-  `description_ar` text DEFAULT NULL,
-  `sort_order` smallint(6) NOT NULL DEFAULT 0,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `deleted_status` enum('active','bin','permanent') DEFAULT 'active',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `subcategories`
@@ -4094,24 +3983,6 @@ INSERT INTO `subcategories` (`id`, `category_id`, `slug`, `name_en`, `name_ar`, 
 (10, 29, 'body-gel', 'Body Gel', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, 'active', '2026-04-01 13:17:56', '2026-04-01 13:17:56'),
 (11, 29, 'hair-mist', 'Hair Mist', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 'active', '2026-04-01 13:17:56', '2026-04-01 13:46:06');
 
--- --------------------------------------------------------
-
---
--- Table structure for table `users`
---
-
-CREATE TABLE `users` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `username` varchar(100) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
-  `full_name` varchar(200) NOT NULL DEFAULT '',
-  `role` enum('admin','user') NOT NULL DEFAULT 'user',
-  `permissions` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`permissions`)),
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `users`

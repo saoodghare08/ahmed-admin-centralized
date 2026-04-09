@@ -6,7 +6,7 @@ import {
 } from '../../api'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import toast from 'react-hot-toast'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import ImageUploader from '../../components/ImageUploader'
 import Swal from 'sweetalert2'
 import ImportModal from './ImportModal'
@@ -330,6 +330,21 @@ function SubcategoryDrawer({ open, onClose, initial, categoryId, categoryName, o
   )
 }
 
+
+// ── StrictMode-safe Droppable (for React 18) ──────────────────
+function StrictModeDroppable({ children, ...props }) {
+  const [enabled, setEnabled] = useState(false)
+  useEffect(() => {
+    const animation = requestAnimationFrame(() => setEnabled(true))
+    return () => {
+      cancelAnimationFrame(animation)
+      setEnabled(false)
+    }
+  }, [])
+  if (!enabled) return null
+  return <Droppable {...props}>{children}</Droppable>
+}
+
 // ── Main Page ────────────────────────────────────────────────
 export default function Categories() {
   const qc = useQueryClient()
@@ -427,7 +442,8 @@ export default function Categories() {
     if (!destination) return
     if (source.droppableId === destination.droppableId && source.index === destination.index) return
 
-    const oldData = qc.getQueryData(['categories-admin'])
+    const queryKey = ['categories-admin', showBin]
+    const oldData = qc.getQueryData(queryKey)
     const newCategories = Array.from(oldData?.data || [])
 
     if (type === 'category') {
@@ -435,12 +451,19 @@ export default function Categories() {
       newCategories.splice(destination.index, 0, moved)
       const newOrder = newCategories.map((c, i) => ({ id: c.id, sort_order: i }))
 
-      qc.setQueryData(['categories-admin'], { ...oldData, data: newCategories })
+      qc.setQueryData(queryKey, { ...oldData, data: newCategories })
       try { await reorderCategories(newOrder); refresh() }
       catch { toast.error('Failed to sort categories'); refresh() }
     } else if (type === 'subcategory') {
-      const sourceCatIdx = newCategories.findIndex(c => String(c.id) === source.droppableId)
-      const destCatIdx = newCategories.findIndex(c => String(c.id) === destination.droppableId)
+      // Extract IDs from droppableId (prefixed with 'sub-drop-')
+      const sourceCatId = source.droppableId.replace('sub-drop-', '')
+      const destCatId = destination.droppableId.replace('sub-drop-', '')
+
+      const sourceCatIdx = newCategories.findIndex(c => String(c.id) === sourceCatId)
+      const destCatIdx = newCategories.findIndex(c => String(c.id) === destCatId)
+      
+      if (sourceCatIdx === -1 || destCatIdx === -1) return
+
       const sourceCat = newCategories[sourceCatIdx]
       const destCat = newCategories[destCatIdx]
 
@@ -455,7 +478,7 @@ export default function Categories() {
       newCategories[destCatIdx] = { ...destCat, subcategories: destSubs }
 
       const newOrder = destSubs.map((s, i) => ({ id: s.id, sort_order: i, category_id: destCat.id }))
-      qc.setQueryData(['categories-admin'], { ...oldData, data: newCategories })
+      qc.setQueryData(queryKey, { ...oldData, data: newCategories })
       try { await reorderSubcategories(newOrder); refresh() }
       catch { toast.error('Failed to move subcategory'); refresh() }
     }
@@ -516,7 +539,7 @@ export default function Categories() {
               <p className="text-[15px]">No categories yet</p>
             </div>
           ) : (
-            <Droppable droppableId="categoriesRoot" type="category" isDropDisabled={showBin}>
+            <StrictModeDroppable droppableId="categoriesRoot" type="category" isDropDisabled={showBin}>
               {(providedRoot) => (
                 <div ref={providedRoot.innerRef} {...providedRoot.droppableProps} className="flex flex-col gap-3">
                   {categories.map((cat, index) => (
@@ -608,7 +631,7 @@ export default function Categories() {
 
                           {/* Subcategories Container */}
                           {expanded.includes(cat.id) && (
-                            <Droppable droppableId={String(cat.id)} type="subcategory" isDropDisabled={showBin}>
+                            <StrictModeDroppable droppableId={`sub-drop-${cat.id}`} type="subcategory" isDropDisabled={showBin}>
                               {(provSubDrop, snapSubDrop) => (
                                 <div className="p-4 pt-0" style={{ backgroundColor: 'var(--surface)' }}>
                                   <div ref={provSubDrop.innerRef} {...provSubDrop.droppableProps} className="mt-2 ml-3 pl-6 border-l-2 space-y-3 min-h-[60px] transition-colors rounded-br-xl" style={{ borderColor: 'var(--border-soft)', backgroundColor: snapSubDrop.isDraggingOver ? 'var(--surface-2)' : '' }}>
@@ -683,7 +706,7 @@ export default function Categories() {
                                   </div>
                                 </div>
                               )}
-                            </Droppable>
+                            </StrictModeDroppable>
                           )}
                         </div>
                       )}
@@ -692,7 +715,7 @@ export default function Categories() {
                   {providedRoot.placeholder}
                 </div>
               )}
-            </Droppable>
+            </StrictModeDroppable>
           )}
         </div>
       </DragDropContext>

@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
-import db from '../config/db.js';
-import { authorize, logAudit } from '../middleware/auth.js';
+import db from '../../config/db.js';
+import { authorize, logAudit } from '../../middleware/auth.js';
 
 const router = express.Router();
 const SALT_ROUNDS = 10;

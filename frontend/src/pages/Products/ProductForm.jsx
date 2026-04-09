@@ -15,6 +15,7 @@ import { useAuth } from '../../context/AuthContext'
 import GalleryPicker from '../../components/GalleryPicker'
 import ImageUploader from '../../components/ImageUploader'
 import Swal from 'sweetalert2'
+import CreatableSelect from 'react-select/creatable'
 
 // ── Constants ─────────────────────────────────────────────────
 const COUNTRIES = [
@@ -26,7 +27,7 @@ const COUNTRIES = [
   { id: 6, code: 'OM', name: 'Oman', currency_id: 6, currency: 'OMR', flag: '🇴🇲', decimals: 3 },
 ]
 
-const TABS = ['Core', 'Fragrance', 'Media', 'SEO', 'Inventory', 'Bundle']
+const TABS = ['Core', 'Fragrance', 'Media', 'SEO', 'Inventory', 'Bundle', 'Related']
 
 const EMPTY = {
   fgd: '', barcode: '', slug: '', name_en: '', name_ar: '',
@@ -34,7 +35,8 @@ const EMPTY = {
   category_id: '', subcategory_id: null,
   is_active: true, is_featured: false,
   tags: '',
-  size_label_en: '', size_label_ar: ''
+  size_id: '',
+  label_id: ''
 }
 
 const EMPTY_NOTE = { ingredients_en: '', ingredients_ar: '', description_en: '', description_ar: '', image_url: '' }
@@ -89,12 +91,80 @@ const resolveUrl = (src) => {
 }
 
 // ── Tab: Core Info ────────────────────────────────────────────
-function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, setConfigs, stocks, setStocks }) {
+function CoreTab({ form, set, categories, sizes, labels, isEdit, prices, setPrices, configs, setConfigs, stocks, setStocks, qc }) {
   const updateVisibility = (countryId, val) =>
     setConfigs(prev => prev.map(c => c.country_id === countryId ? { ...c, is_visible: val } : c))
 
   const updateStocks = (countryId, val) =>
     setStocks(prev => prev.map(s => s.country_id === countryId ? { ...s, quantity: Number(val) } : s))
+
+  const handleCreateSize = async (rawInputValue) => {
+    const inputValue = rawInputValue.toLowerCase().trim();
+
+    // Generate suggested Arabic text for various measurements
+    const match = inputValue.match(/^([\d.]+)\s*([a-z]+)?$/i);
+    let suggestedAr = inputValue;
+
+    if (match) {
+      const numberPart = match[1];
+      const unitPart = match[2] || '';
+
+      const digitMap = { '0': '٠', '1': '١', '2': '٢', '3': '٣', '4': '٤', '5': '٥', '6': '٦', '7': '٧', '8': '٨', '9': '٩', '.': '٫' };
+      const arNumber = numberPart.split('').map(d => digitMap[d] || d).join('');
+
+      const unitMap = {
+        'ml': 'مل', 'l': 'لتر', 'gm': 'جم', 'kg': 'كجم', 'mg': 'مجم',
+        'oz': 'أونصة', 'pcs': 'قطع', 'piece': 'قطعة', 'cm': 'سم', 'm': 'م'
+      };
+
+      const unitKey = unitPart.toLowerCase();
+      const arUnit = unitMap[unitKey] || unitKey; // fallback to english string if unknown
+
+      suggestedAr = arUnit ? `${arNumber} ${arUnit}`.trim() : arNumber;
+    }
+
+    const { value: formValues, isConfirmed } = await Swal.fire({
+      title: 'Create Product Size',
+      html: `
+        <div class="flex flex-col gap-4 text-left mt-2" style="font-family: inherit;">
+          <div>
+            <label class="block text-[11px] font-bold mb-1.5 uppercase tracking-wider" style="color: var(--text-subtle)">Size (English)</label>
+            <input id="swal-size-en" class="w-full px-3 py-2 border rounded-lg focus:outline-none" style="border-color: var(--border); background: var(--surface-2); color: var(--text)" value="${inputValue}">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold mb-1.5 uppercase tracking-wider" style="color: var(--text-subtle)">Size (Arabic)</label>
+            <input id="swal-size-ar" class="w-full px-3 py-2 border rounded-lg focus:outline-none text-right font-medium" dir="rtl" style="border-color: var(--border); background: var(--surface-2); color: var(--text)" value="${suggestedAr}">
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Create Size',
+      confirmButtonColor: 'var(--color-brand)',
+      background: 'var(--surface)',
+      color: 'var(--text)',
+      preConfirm: () => {
+        return {
+          label_en: document.getElementById('swal-size-en').value,
+          label_ar: document.getElementById('swal-size-ar').value
+        }
+      }
+    });
+
+    if (!isConfirmed || !formValues) return;
+
+    try {
+      const res = await api.post('/sizes', formValues);
+      const newSize = res.data?.data || res.data;
+      if (newSize?.id) {
+        toast.success(`Created size: ${newSize.label_en}`);
+        qc.invalidateQueries({ queryKey: ['sizes'] });
+        set('size_id', newSize.id);
+      }
+    } catch (err) {
+      toast.error('Failed to create size');
+    }
+  }
 
   const selectedCat = categories?.find(c => c.id === Number(form.category_id))
   return (
@@ -142,14 +212,65 @@ function CoreTab({ form, set, categories, isEdit, prices, setPrices, configs, se
               {selectedCat?.subcategories?.map(s => <option key={s.id} value={s.id}>{s.name_en}</option>)}
             </select>
           </Field>
-          <div className="grid grid-cols-2 gap-3 mt-2">
-            <Field label="Size Label (EN)">
-              <input className="t-input" value={form.size_label_en || ''}
-                onChange={e => set('size_label_en', e.target.value)} placeholder="e.g. 50ML" />
+          <div className="grid grid-cols-1 gap-3 mt-2">
+            <Field label="Product Size">
+              <CreatableSelect
+                isClearable
+                placeholder="— select or type to create —"
+                options={sizes?.map(sz => ({ value: sz.id, label: `${sz.label_en} / ${sz.label_ar}` }))}
+                value={form.size_id ? { value: form.size_id, label: sizes?.find(s => s.id == form.size_id) ? `${sizes.find(s => s.id == form.size_id).label_en} / ${sizes.find(s => s.id == form.size_id).label_ar}` : '' } : null}
+                onChange={selected => set('size_id', selected ? selected.value : '')}
+                onCreateOption={handleCreateSize}
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    backgroundColor: 'var(--surface)',
+                    borderColor: 'var(--border)',
+                    minHeight: '42px',
+                    borderRadius: '0.5rem',
+                    boxShadow: 'none',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      borderColor: 'var(--border)'
+                    }
+                  }),
+                  singleValue: (base) => ({
+                    ...base,
+                    color: 'var(--text)',
+                    fontSize: '14px'
+                  }),
+                  input: (base) => ({
+                    ...base,
+                    color: 'var(--text)',
+                    fontSize: '14px'
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    backgroundColor: 'var(--surface-2)',
+                    border: '1px solid var(--border)',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                    zIndex: 50
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isFocused ? 'var(--color-brand)' : 'transparent',
+                    color: state.isFocused ? 'white' : 'var(--text)',
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  })
+                }}
+              />
             </Field>
-            <Field label="Size Label (AR)">
-              <input className="t-input text-right" dir="rtl" value={form.size_label_ar || ''}
-                onChange={e => set('size_label_ar', e.target.value)} placeholder="٥٠ مل" />
+          </div>
+          <div className="grid grid-cols-1 gap-3 mt-4">
+            <Field label="Product Label" hint="Optional badge (e.g. Hot, New)">
+              <select className="t-input" value={form.label_id || ''}
+                onChange={e => set('label_id', e.target.value)}>
+                <option value="">— none —</option>
+                {labels?.map(lb => (
+                  <option key={lb.id} value={lb.id}>{lb.name_en} / {lb.name_ar}</option>
+                ))}
+              </select>
             </Field>
           </div>
         </SectionCard>
@@ -906,6 +1027,89 @@ function BundleTab({ isBundle, setIsBundle, items, setItems }) {
   )
 }
 
+// ── Tab: Related Products ────────────────────────────────────────────
+function RelatedTab({ items, setItems }) {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [results, setResults] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  const handleSearch = async (val) => {
+    setSearchTerm(val)
+    if (!val || val.length < 2) { setResults([]); return }
+    setLoading(true)
+    try {
+      const res = await api.get('/products', { params: { search: val, limit: 10, admin: 1 } })
+      setResults(res.data?.data || res.data || [])
+    } catch { /* ignore */ }
+    finally { setLoading(false) }
+  }
+
+  const addProduct = (prod) => {
+    if (!items.find(i => i.related_product_id === prod.id)) {
+      setItems(prev => [...prev, { related_product_id: prod.id, name_en: prod.name_en, fgd: prod.fgd }])
+    }
+    setSearchTerm('')
+    setResults([])
+  }
+
+  const removeProduct = (idx) => {
+    setItems(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  return (
+    <div className="flex flex-col gap-6 h-screen">
+      <SectionCard title="Manual Related Products">
+        <p className="text-[11px] mb-2" style={{ color: 'var(--text-subtle)' }}>
+          If left empty, the storefront will automatically suggest 4 active products from the same category.
+        </p>
+
+        <div className="relative mb-4">
+          <input className="t-input w-full"
+            placeholder="Search products by name or FGD to add..."
+            value={searchTerm}
+            onChange={e => handleSearch(e.target.value)}
+          />
+          {loading && <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <div className="animate-spin h-3.5 w-3.5 border-2 rounded-full border-t-transparent" style={{ borderColor: 'rgba(96,165,250,0.3)', borderTopColor: '#60a5fa' }} />
+          </div>}
+          {results.length > 0 && (
+            <div className="absolute z-50 left-0 right-0 mt-1 rounded-xl shadow-2xl border overflow-hidden max-h-60 overflow-y-auto" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}>
+              {results.map(p => (
+                <div key={p.id} onClick={() => addProduct(p)}
+                  className="px-4 py-3 cursor-pointer transition-colors border-b last:border-0 hover:bg-black/5 flex justify-between items-center"
+                  style={{ borderColor: 'var(--border)' }}>
+                  <span className="text-[12px] font-semibold" style={{ color: 'var(--text)' }}>{p.name_en}</span>
+                  <span className="text-[10px] font-mono opacity-50" style={{ color: 'var(--text-subtle)' }}>{p.fgd}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {items.map((item, idx) => (
+            <div key={item.related_product_id || idx} className="flex items-center justify-between p-3 rounded-xl border" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-2)' }}>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-black opacity-30 w-6">#{idx + 1}</span>
+                <span className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{item.name_en}</span>
+                <span className="text-[10px] font-mono opacity-50" style={{ color: 'var(--text-subtle)' }}>{item.fgd}</span>
+              </div>
+              <button type="button" onClick={() => removeProduct(idx)} className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+          ))}
+          {items.length === 0 && (
+            <div className="text-center py-8 text-[12px] border border-dashed rounded-xl" style={{ borderColor: 'var(--border)', color: 'var(--text-subtle)' }}>
+              No manual related products selected.
+            </div>
+          )}
+        </div>
+      </SectionCard>
+    </div>
+  )
+}
+
 // ── Main ProductForm ────────────────────────────────────────────
 export default function ProductForm() {
   const { hasPermission, user } = useAuth()
@@ -940,11 +1144,13 @@ export default function ProductForm() {
   const [bundleItems, setBundleItems] = useState([])
   const [originalBundleId, setOriginalBundleId] = useState(null)
 
+  const [relatedItems, setRelatedItems] = useState([])
+
   // Dirty tracking via ref (no extra state = no re-render loops)
   const savedRef = useRef(null)
-  const snap = (f, n, c, p, s, ib, bi) => JSON.stringify({ f, n, c, p, s, ib, bi })
-  const isDirty = savedRef.current !== null && savedRef.current !== snap(form, notes, configs, prices, stocks, isBundle, bundleItems)
-  const markClean = () => { savedRef.current = snap(form, notes, configs, prices, stocks, isBundle, bundleItems) }
+  const snap = (f, n, c, p, s, ib, bi, ri) => JSON.stringify({ f, n, c, p, s, ib, bi, ri })
+  const isDirty = savedRef.current !== null && savedRef.current !== snap(form, notes, configs, prices, stocks, isBundle, bundleItems, relatedItems)
+  const markClean = () => { savedRef.current = snap(form, notes, configs, prices, stocks, isBundle, bundleItems, relatedItems) }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -953,6 +1159,20 @@ export default function ProductForm() {
     queryKey: ['categories-admin'],
     queryFn: () => api.get('/categories?admin=1'),
     select: res => res.data?.data || res.data || [],
+  })
+
+  // Fetch sizes
+  const { data: sizes } = useQuery({
+    queryKey: ['sizes'],
+    queryFn: () => api.get('/sizes'),
+    select: res => res?.data || res || [],
+  })
+
+  // Fetch labels
+  const { data: labels } = useQuery({
+    queryKey: ['labels'],
+    queryFn: () => api.get('/labels'),
+    select: res => res?.data || res || [],
   })
 
   // Fetch product on edit
@@ -978,7 +1198,8 @@ export default function ProductForm() {
       description_en: p.description_en || '', description_ar: p.description_ar || '',
       category_id: p.category_id || '', subcategory_id: p.subcategory_id || null,
       is_active: !!p.is_active, is_featured: !!p.is_featured,
-      size_label_en: p.size_label_en || '', size_label_ar: p.size_label_ar || '',
+      size_id: p.size_id || '',
+      label_id: p.label_id || '',
       tags: Array.isArray(p.tags) ? p.tags.join(', ') : (p.tags || ''),
       attributes: p.attributes ? Object.entries(p.attributes).map(([k, v]) => ({ key: k, value: String(v) })) : [],
     }
@@ -998,6 +1219,12 @@ export default function ProductForm() {
     setNotes(n)
     // Hydrate mediaList from real product_media rows
     setMediaList(p.media?.length ? p.media : [])
+    // Hydrate manual related products
+    if (p.related_products?.length) {
+      setRelatedItems(p.related_products)
+    } else {
+      setRelatedItems([])
+    }
     // Snapshot will be set once configs+prices effects also fire (see combined effect)
   }, [productData, resetKey])
 
@@ -1073,7 +1300,7 @@ export default function ProductForm() {
 
   // Tracker for the latest state to avoid closure bugs in the timeout snapshot
   const latestState = useRef()
-  latestState.current = { form, notes, configs, prices, stocks, isBundle, bundleItems }
+  latestState.current = { form, notes, configs, prices, stocks, isBundle, bundleItems, relatedItems }
 
   // Mark clean snapshot once all data is in state
   // For new products: immediately after mount
@@ -1086,6 +1313,7 @@ export default function ProductForm() {
       COUNTRIES.map(c => ({ country_id: c.id, currency_id: c.currency_id, regular_price: '' })),
       COUNTRIES.map(c => ({ country_id: c.id, quantity: 0 })),
       false,
+      [],
       []
     )
   }, [isEdit])
@@ -1095,8 +1323,8 @@ export default function ProductForm() {
     if (!isEdit || !productData || !ccData || !pricingData) return
     const t = setTimeout(() => {
       if (savedRef.current === null) {
-        const { form, notes, configs, prices, stocks, isBundle, bundleItems } = latestState.current
-        savedRef.current = snap(form, notes, configs, prices, stocks, isBundle, bundleItems)
+        const { form, notes, configs, prices, stocks, isBundle, bundleItems, relatedItems } = latestState.current
+        savedRef.current = snap(form, notes, configs, prices, stocks, isBundle, bundleItems, relatedItems)
       }
     }, 250) // Increased to guarantee all data including bundle is in
     return () => clearTimeout(t)
@@ -1219,6 +1447,7 @@ export default function ProductForm() {
         updateAllPrices(finalProductId, prices.filter(p => p.regular_price).map(p => ({
           ...p, regular_price: Number(p.regular_price)
         }))),
+        api.put(`/products/${finalProductId}/related`, { related_products: relatedItems }),
       ])
 
       // Mark clean after successful save
@@ -1352,12 +1581,13 @@ export default function ProductForm() {
 
       {/* ── Tab content ── */}
       <div className="flex-1 overflow-y-auto px-8 py-6">
-        {tab === 'Core' && <CoreTab form={form} set={set} categories={catData} isEdit={isEdit} prices={prices} setPrices={setPrices} configs={configs} setConfigs={setConfigs} stocks={stocks} setStocks={setStocks} />}
+        {tab === 'Core' && <CoreTab form={form} set={set} categories={catData} sizes={sizes} labels={labels} isEdit={isEdit} prices={prices} setPrices={setPrices} configs={configs} setConfigs={setConfigs} stocks={stocks} setStocks={setStocks} qc={qc} />}
         {tab === 'Fragrance' && <FragranceTab notes={notes} setNotes={setNotes} />}
         {tab === 'Media' && <MediaTab mediaList={mediaList} setMediaList={setMediaList} productId={isEdit ? id : createdId} setPrimaryMedia={setPrimaryMedia} deleteMedia={deleteMedia} />}
         {tab === 'SEO' && <SEOTab configs={configs} setConfigs={setConfigs} />}
         {tab === 'Inventory' && <InventoryTab stocks={stocks} setStocks={setStocks} />}
         {tab === 'Bundle' && <BundleTab isBundle={isBundle} setIsBundle={setIsBundle} items={bundleItems} setItems={setBundleItems} />}
+        {tab === 'Related' && <RelatedTab items={relatedItems} setItems={setRelatedItems} />}
 
       </div>
     </div>
