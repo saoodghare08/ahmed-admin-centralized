@@ -1,21 +1,27 @@
 import { useQuery } from '@tanstack/react-query'
-import { getProducts, updateAllPrices, getPricing } from '../../api'
+import { getProducts, updateAllPrices, getPricing, getCountries } from '../../api'
 import toast from 'react-hot-toast'
 import { useState } from 'react'
 
-const COUNTRIES = [
-  { id:1, code:'AE', flag:'🇦🇪', label:'UAE',     currency:'AED', decimals:2 },
-  { id:2, code:'SA', flag:'🇸🇦', label:'KSA',     currency:'SAR', decimals:2 },
-  { id:3, code:'QA', flag:'🇶🇦', label:'Qatar',   currency:'QAR', decimals:2 },
-  { id:4, code:'BH', flag:'🇧🇭', label:'Bahrain', currency:'BHD', decimals:3 },
-  { id:5, code:'KW', flag:'🇰🇼', label:'Kuwait',  currency:'KWD', decimals:3 },
-  { id:6, code:'OM', flag:'🇴🇲', label:'Oman',    currency:'OMR', decimals:3 },
-]
+const getFlagEmoji = (countryCode) => {
+  if (!countryCode) return '';
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+}
 
 export default function Pricing() {
   const [productId, setProductId] = useState('')
   const [search, setSearch]       = useState('')
   const [draft, setDraft]         = useState({})
+
+  const { data: countriesData } = useQuery({
+    queryKey: ['countries'],
+    queryFn: getCountries,
+    select: res => res.data?.data || res.data || []
+  })
 
   const { data: products } = useQuery({
     queryKey: ['products-all'],
@@ -43,9 +49,9 @@ export default function Pricing() {
 
   const handleSave = async () => {
     if (!productId) return
-    const prices = COUNTRIES.map(c => ({
+    const prices = (countriesData || []).map(c => ({
       country_id:    c.id,
-      currency_id:   c.id,
+      currency_id:   c.currency_id || c.id,
       regular_price: parseFloat(draft[c.id]?.regular_price || 0),
       cost_price:    draft[c.id]?.cost_price ? parseFloat(draft[c.id].cost_price) : null,
     })).filter(p => p.regular_price > 0)
@@ -111,17 +117,17 @@ export default function Pricing() {
       {/* 6-country price grid */}
       {productId ? (
         <div className="grid grid-cols-3 gap-4">
-          {COUNTRIES.map(c => (
+          {(countriesData || []).map(c => (
             <div key={c.id} className="rounded-xl p-5 transition-colors"
               style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
               onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-brand)'}
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
             >
               <div className="flex items-center gap-2.5 mb-4">
-                <span className="text-2xl">{c.flag}</span>
+                <span className="text-2xl">{getFlagEmoji(c.code)}</span>
                 <div>
-                  <p className="font-semibold text-[14px]" style={{ color: 'var(--text)' }}>{c.label}</p>
-                  <p className="text-[11px]" style={{ color: 'var(--text-subtle)' }}>{c.currency} · {c.decimals} decimals</p>
+                  <p className="font-semibold text-[14px]" style={{ color: 'var(--text)' }}>{c.name_en}</p>
+                  <p className="text-[11px]" style={{ color: 'var(--text-subtle)' }}>{c.currency_code} · {c.decimal_places} decimals</p>
                 </div>
               </div>
               <div className="space-y-3">
@@ -132,14 +138,14 @@ export default function Pricing() {
                   <div className="relative">
                     <input
                       type="number"
-                      step={c.decimals === 3 ? '0.001' : '0.01'}
-                      placeholder={c.decimals === 3 ? '0.000' : '0.00'}
+                      step={c.decimal_places === 3 ? '0.001' : '0.01'}
+                      placeholder={c.decimal_places === 3 ? '0.000' : '0.00'}
                       value={draft[c.id]?.regular_price ?? ''}
                       onChange={e => setField(c.id, 'regular_price', e.target.value)}
                       className="t-input pr-14 text-[14px] font-semibold"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold" style={{ color: 'var(--text-subtle)' }}>
-                      {c.currency}
+                      {c.currency_code}
                     </span>
                   </div>
                 </div>
@@ -150,14 +156,14 @@ export default function Pricing() {
                   <div className="relative">
                     <input
                       type="number"
-                      step={c.decimals === 3 ? '0.001' : '0.01'}
+                      step={c.decimal_places === 3 ? '0.001' : '0.01'}
                       placeholder="—"
                       value={draft[c.id]?.cost_price ?? ''}
                       onChange={e => setField(c.id, 'cost_price', e.target.value)}
                       className="t-input pr-14"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold" style={{ color: 'var(--text-subtle)' }}>
-                      {c.currency}
+                      {c.currency_code}
                     </span>
                   </div>
                 </div>

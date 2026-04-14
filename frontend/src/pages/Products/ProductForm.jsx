@@ -9,7 +9,8 @@ import {
   getCountryConfigs, updateVisibility, updateSEO,
   deleteMedia, setPrimaryMedia,
   getProductStock, updateProductStock,
-  getBundle, createBundle, updateBundle, deleteBundle
+  getBundle, createBundle, updateBundle, deleteBundle,
+  getCountries
 } from '../../api'
 import { useAuth } from '../../context/AuthContext'
 import GalleryPicker from '../../components/GalleryPicker'
@@ -18,14 +19,14 @@ import Swal from 'sweetalert2'
 import CreatableSelect from 'react-select/creatable'
 
 // ── Constants ─────────────────────────────────────────────────
-const COUNTRIES = [
-  { id: 1, code: 'AE', name: 'UAE', currency_id: 1, currency: 'AED', flag: '🇦🇪', decimals: 2 },
-  { id: 2, code: 'SA', name: 'KSA', currency_id: 2, currency: 'SAR', flag: '🇸🇦', decimals: 2 },
-  { id: 3, code: 'QA', name: 'Qatar', currency_id: 3, currency: 'QAR', flag: '🇶🇦', decimals: 2 },
-  { id: 4, code: 'BH', name: 'Bahrain', currency_id: 4, currency: 'BHD', flag: '🇧🇭', decimals: 3 },
-  { id: 5, code: 'KW', name: 'Kuwait', currency_id: 5, currency: 'KWD', flag: '🇰🇼', decimals: 3 },
-  { id: 6, code: 'OM', name: 'Oman', currency_id: 6, currency: 'OMR', flag: '🇴🇲', decimals: 3 },
-]
+const getFlagEmoji = (countryCode) => {
+  if (!countryCode) return '';
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+}
 
 const TABS = ['Core', 'Fragrance', 'Media', 'SEO', 'Inventory', 'Bundle', 'Related']
 
@@ -91,12 +92,11 @@ const resolveUrl = (src) => {
 }
 
 // ── Tab: Core Info ────────────────────────────────────────────
-function CoreTab({ form, set, categories, sizes, labels, isEdit, prices, setPrices, configs, setConfigs, stocks, setStocks, qc }) {
+function CoreTab({ form, set, categories, sizes, labels, isEdit, prices, setPrices, configs, setConfigs, stocks, setStocks, qc, countries }) {
   const updateVisibility = (countryId, val) =>
     setConfigs(prev => prev.map(c => c.country_id === countryId ? { ...c, is_visible: val } : c))
 
-  const updateStocks = (countryId, val) =>
-    setStocks(prev => prev.map(s => s.country_id === countryId ? { ...s, quantity: Number(val) } : s))
+  const updateStocks = (countryId, val) => setStocks(prev => prev.map(s => s.country_id === countryId ? { ...s, quantity: Number(val) } : s))
 
   const handleCreateSize = async (rawInputValue) => {
     const inputValue = rawInputValue.toLowerCase().trim();
@@ -309,11 +309,11 @@ function CoreTab({ form, set, categories, sizes, labels, isEdit, prices, setPric
       <SectionCard title="Regional Visibility">
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
           {configs.map(c => {
-            const country = COUNTRIES.find(co => co.id === c.country_id)
+            const country = countries?.find(co => co.id === c.country_id)
             return (
               <div key={c.country_id} className="flex flex-col gap-2 p-3 rounded-xl" style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-soft)' }}>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">{country?.flag}</span>
+                  <span className="text-lg">{getFlagEmoji(country?.code)}</span>
                   <span className="text-[11px] font-bold">{country?.code}</span>
                 </div>
                 <Toggle checked={!!c.is_visible} onChange={v => updateVisibility(c.country_id, v ? 1 : 0)} label="Visible" />
@@ -322,8 +322,6 @@ function CoreTab({ form, set, categories, sizes, labels, isEdit, prices, setPric
           })}
         </div>
       </SectionCard>
-
-
 
       <SectionCard title="Tags & Attributes">
         <div className="flex flex-col gap-5">
@@ -363,13 +361,13 @@ function CoreTab({ form, set, categories, sizes, labels, isEdit, prices, setPric
       <SectionCard title="Pricing">
         <div className="grid grid-cols-3 gap-5">
           {prices.map(p => {
-            const country = COUNTRIES.find(c => c.id === p.country_id)
+            const country = countries?.find(c => c.id === p.country_id)
             return (
-              <Field key={p.country_id} label={`${country?.name} Price (${country?.currency})`}>
+              <Field key={p.country_id} label={`${country?.name_en} Price (${country?.currency_code})`}>
                 <div className="flex items-center gap-3">
-                  <span className="text-xl leading-none" title={country?.name}>{country?.flag}</span>
+                  <span className="text-xl leading-none" title={country?.name_en}>{getFlagEmoji(country?.code)}</span>
                   <input className="t-input w-full shadow-none" type="number"
-                    step={country?.decimals === 3 ? '0.001' : '0.01'}
+                    step={country?.decimal_places === 3 ? '0.001' : '0.01'}
                     value={p.regular_price || ''} min="0"
                     onChange={e => setPrices(prev => prev.map(x => x.country_id === p.country_id ? { ...x, regular_price: e.target.value } : x))}
                     placeholder="0.00" />
@@ -383,11 +381,11 @@ function CoreTab({ form, set, categories, sizes, labels, isEdit, prices, setPric
       <SectionCard title="Stock Management">
         <div className="grid grid-cols-3 gap-5">
           {stocks.map(s => {
-            const country = COUNTRIES.find(c => c.id === s.country_id)
+            const country = countries?.find(c => c.id === s.country_id)
             return (
-              <Field key={s.country_id} label={`${country?.name} Stock`}>
+              <Field key={s.country_id} label={`${country?.name_en} Stock`}>
                 <div className="flex items-center gap-3">
-                  <span className="text-xl leading-none">{country?.flag}</span>
+                  <span className="text-xl leading-none">{getFlagEmoji(country?.code)}</span>
                   <input className="t-input w-full shadow-none font-bold" type="number"
                     value={s.quantity ?? ''} min="0"
                     onChange={e => updateStocks(s.country_id, e.target.value)}
@@ -558,7 +556,7 @@ function FragranceTab({ notes, setNotes }) {
 }
 
 // ── Tab: SEO ──────────────────────────────────────────────────
-function SEOTab({ configs, setConfigs }) {
+function SEOTab({ configs, setConfigs, countries }) {
   const [expandedId, setExpandedId] = useState(null)
 
   const update = (countryId, field, val) =>
@@ -567,7 +565,7 @@ function SEOTab({ configs, setConfigs }) {
   return (
     <div className="flex flex-col gap-2">
       {configs.map(c => {
-        const country = COUNTRIES.find(co => co.id === c.country_id)
+        const country = countries?.find(co => co.id === c.country_id)
         const isExpanded = expandedId === c.country_id
         const hasData = c.slug_override || c.meta_title_en || c.meta_desc_en
 
@@ -587,11 +585,11 @@ function SEOTab({ configs, setConfigs }) {
             >
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-inner" style={{ backgroundColor: 'var(--surface-2)' }}>
-                  {country?.flag}
+                  {getFlagEmoji(country?.code)}
                 </div>
                 <div>
                   <h4 className="text-[14px] font-bold tracking-tight" style={{ color: 'var(--text)' }}>
-                    {country?.name} <span className="text-[10px] opacity-30 ml-1 uppercase">{country?.code}</span>
+                    {country?.name_en} <span className="text-[10px] opacity-30 ml-1 uppercase">{country?.code}</span>
                   </h4>
                   <div className="flex items-center gap-2 mt-0.5">
                     {hasData ? (
@@ -664,19 +662,19 @@ function SEOTab({ configs, setConfigs }) {
 }
 
 // ── Tab: Inventory ────────────────────────────────────────────
-function InventoryTab({ stocks, setStocks }) {
+function InventoryTab({ stocks, setStocks, countries }) {
   const update = (countryId, val) =>
     setStocks(prev => prev.map(s => s.country_id === countryId ? { ...s, quantity: Number(val) } : s))
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
       {stocks.map(s => {
-        const country = COUNTRIES.find(c => c.id === s.country_id)
+        const country = countries?.find(c => c.id === s.country_id)
         return (
-          <SectionCard key={s.country_id} title={`${country?.name} Stock`}>
+          <SectionCard key={s.country_id} title={`${country?.name_en} Stock`}>
             <Field label="Quantity in Hand" hint="units available">
               <div className="flex items-center gap-3">
-                <span className="text-xl leading-none">{country?.flag}</span>
+                <span className="text-xl leading-none">{getFlagEmoji(country?.code)}</span>
                 <input
                   type="number"
                   className="t-input font-bold"
@@ -1136,15 +1134,16 @@ export default function ProductForm() {
   const [form, setForm] = useState({ ...EMPTY, attributes: [] })
   const [notes, setNotes] = useState({ top: { ...EMPTY_NOTE }, heart: { ...EMPTY_NOTE }, base: { ...EMPTY_NOTE } })
   const [mediaList, setMediaList] = useState([])
-  const [configs, setConfigs] = useState(COUNTRIES.map(c => ({ country_id: c.id, is_visible: 1, slug_override: '', meta_title_en: '', meta_title_ar: '', meta_desc_en: '', meta_desc_ar: '', sort_order: 0 })))
-  const [prices, setPrices] = useState(COUNTRIES.map(c => ({ country_id: c.id, currency_id: c.currency_id, regular_price: '' })))
-  const [stocks, setStocks] = useState(COUNTRIES.map(c => ({ country_id: c.id, quantity: 0 })))
+  const [configs, setConfigs] = useState([])
+  const [prices, setPrices] = useState([])
+  const [stocks, setStocks] = useState([])
 
   const [isBundle, setIsBundle] = useState(false)
   const [bundleItems, setBundleItems] = useState([])
   const [originalBundleId, setOriginalBundleId] = useState(null)
 
   const [relatedItems, setRelatedItems] = useState([])
+
 
   // Dirty tracking via ref (no extra state = no re-render loops)
   const savedRef = useRef(null)
@@ -1160,6 +1159,22 @@ export default function ProductForm() {
     queryFn: () => api.get('/categories?admin=1'),
     select: res => res.data?.data || res.data || [],
   })
+
+  // Fetch countries
+  const { data: countries } = useQuery({
+    queryKey: ['countries'],
+    queryFn: getCountries,
+    select: res => res.data?.data || res.data || [],
+  })
+
+  // Populate regional defaults when countries arrive (for new products)
+  useEffect(() => {
+    if (!isEdit && countries?.length && !configs.length) {
+      setConfigs(countries.map(c => ({ country_id: c.id, is_visible: 1, slug_override: '', meta_title_en: '', meta_title_ar: '', meta_desc_en: '', meta_desc_ar: '', sort_order: 0 })))
+      setPrices(countries.map(c => ({ country_id: c.id, currency_id: c.currency_id, regular_price: '' })))
+      setStocks(countries.map(c => ({ country_id: c.id, quantity: 0 })))
+    }
+  }, [countries, isEdit, configs.length])
 
   // Fetch sizes
   const { data: sizes } = useQuery({
@@ -1236,12 +1251,12 @@ export default function ProductForm() {
     select: r => r?.data || r || [],
   })
   useEffect(() => {
-    if (!Array.isArray(ccData) || !ccData.length) return
-    setConfigs(COUNTRIES.map(c => {
-      const saved = ccData.find(x => x.country_id === c.id)
+    if (!countries?.length || !ccData) return
+    setConfigs(countries.map(c => {
+      const saved = Array.isArray(ccData) ? ccData.find(x => x.country_id === c.id) : null
       return saved ? { ...saved } : { country_id: c.id, is_visible: 1, slug_override: '', meta_title_en: '', meta_title_ar: '', meta_desc_en: '', meta_desc_ar: '', sort_order: 0 }
     }))
-  }, [ccData, resetKey])
+  }, [ccData, resetKey, countries])
 
   // Fetch pricing
   const { data: pricingData } = useQuery({
@@ -1251,14 +1266,14 @@ export default function ProductForm() {
     select: r => r?.data || r || [],
   })
   useEffect(() => {
-    if (!Array.isArray(pricingData) || !pricingData.length) return
-    setPrices(COUNTRIES.map(c => {
-      const saved = pricingData.find(p => p.country_id === c.id)
+    if (!countries?.length || !pricingData) return
+    setPrices(countries.map(c => {
+      const saved = Array.isArray(pricingData) ? pricingData.find(p => p.country_id === c.id) : null
       return saved
         ? { country_id: c.id, currency_id: c.currency_id, regular_price: saved.regular_price }
         : { country_id: c.id, currency_id: c.currency_id, regular_price: '' }
     }))
-  }, [pricingData, resetKey])
+  }, [pricingData, resetKey, countries])
 
   // Fetch stock
   const { data: stockData } = useQuery({
@@ -1268,12 +1283,12 @@ export default function ProductForm() {
     select: r => r?.data || r || [],
   })
   useEffect(() => {
-    if (!Array.isArray(stockData) || !stockData.length) return
-    setStocks(COUNTRIES.map(c => {
-      const saved = stockData.find(s => s.country_id === c.id)
+    if (!countries?.length || !stockData) return
+    setStocks(countries.map(c => {
+      const saved = Array.isArray(stockData) ? stockData.find(s => s.country_id === c.id) : null
       return saved ? { country_id: c.id, quantity: saved.quantity } : { country_id: c.id, quantity: 0 }
     }))
-  }, [stockData, resetKey])
+  }, [stockData, resetKey, countries])
 
   // Fetch bundle
   const { data: bundleData } = useQuery({
@@ -1309,9 +1324,9 @@ export default function ProductForm() {
     savedRef.current = snap(
       { ...EMPTY, attributes: [] },
       { top: { ...EMPTY_NOTE }, heart: { ...EMPTY_NOTE }, base: { ...EMPTY_NOTE } },
-      COUNTRIES.map(c => ({ country_id: c.id, is_visible: 1, slug_override: '', meta_title_en: '', meta_title_ar: '', meta_desc_en: '', meta_desc_ar: '', sort_order: 0 })),
-      COUNTRIES.map(c => ({ country_id: c.id, currency_id: c.currency_id, regular_price: '' })),
-      COUNTRIES.map(c => ({ country_id: c.id, quantity: 0 })),
+      countries.map(c => ({ country_id: c.id, is_visible: 1, slug_override: '', meta_title_en: '', meta_title_ar: '', meta_desc_en: '', meta_desc_ar: '', sort_order: 0 })),
+      countries.map(c => ({ country_id: c.id, currency_id: c.currency_id, regular_price: '' })),
+      countries.map(c => ({ country_id: c.id, quantity: 0 })),
       false,
       [],
       []
@@ -1480,7 +1495,7 @@ export default function ProductForm() {
     if (!isEdit) {
       setForm({ ...EMPTY, attributes: [] })
       setNotes({ top: { ...EMPTY_NOTE }, heart: { ...EMPTY_NOTE }, base: { ...EMPTY_NOTE } })
-      setStocks(COUNTRIES.map(c => ({ country_id: c.id, quantity: 0 })))
+      setStocks((countries || []).map(c => ({ country_id: c.id, quantity: 0 })))
       savedRef.current = snap({ ...EMPTY, attributes: [] }, { top: { ...EMPTY_NOTE }, heart: { ...EMPTY_NOTE }, base: { ...EMPTY_NOTE } }, configs, prices, stocks)
     } else {
       setResetKey(k => k + 1)
@@ -1581,11 +1596,11 @@ export default function ProductForm() {
 
       {/* ── Tab content ── */}
       <div className="flex-1 overflow-y-auto px-8 py-6">
-        {tab === 'Core' && <CoreTab form={form} set={set} categories={catData} sizes={sizes} labels={labels} isEdit={isEdit} prices={prices} setPrices={setPrices} configs={configs} setConfigs={setConfigs} stocks={stocks} setStocks={setStocks} qc={qc} />}
+        {tab === 'Core' && <CoreTab form={form} set={set} categories={catData} sizes={sizes} labels={labels} isEdit={isEdit} prices={prices} setPrices={setPrices} configs={configs} setConfigs={setConfigs} stocks={stocks} setStocks={setStocks} qc={qc} countries={countries} />}
         {tab === 'Fragrance' && <FragranceTab notes={notes} setNotes={setNotes} />}
         {tab === 'Media' && <MediaTab mediaList={mediaList} setMediaList={setMediaList} productId={isEdit ? id : createdId} setPrimaryMedia={setPrimaryMedia} deleteMedia={deleteMedia} />}
-        {tab === 'SEO' && <SEOTab configs={configs} setConfigs={setConfigs} />}
-        {tab === 'Inventory' && <InventoryTab stocks={stocks} setStocks={setStocks} />}
+        {tab === 'SEO' && <SEOTab configs={configs} setConfigs={setConfigs} countries={countries} />}
+        {tab === 'Inventory' && <InventoryTab stocks={stocks} setStocks={setStocks} countries={countries} />}
         {tab === 'Bundle' && <BundleTab isBundle={isBundle} setIsBundle={setIsBundle} items={bundleItems} setItems={setBundleItems} />}
         {tab === 'Related' && <RelatedTab items={relatedItems} setItems={setRelatedItems} />}
 

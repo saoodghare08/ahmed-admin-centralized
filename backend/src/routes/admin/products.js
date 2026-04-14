@@ -103,10 +103,10 @@ async function buildProduct(productId, countryCode) {
     [productId]
   );
 
-  return { 
-    ...product, 
-    fragrance_notes: notes, 
-    price, 
+  return {
+    ...product,
+    fragrance_notes: notes,
+    price,
     media,
     stock,
     country_visibility,
@@ -124,7 +124,7 @@ router.get('/', async (req, res, next) => {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     // Define Sort
     const allowedSort = ['id', 'fgd', 'name_en', 'category_name_en', 'price'];
-    let sortBy    = allowedSort.includes(req.query.sort) ? req.query.sort : 'id';
+    let sortBy = allowedSort.includes(req.query.sort) ? req.query.sort : 'id';
     let sortOrder = req.query.order?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
     let joinClause = `
@@ -157,14 +157,12 @@ router.get('/', async (req, res, next) => {
       }
     }
 
-    let statusFilter = req.query.status === 'bin' ? 'bin' : 'active';
-    let whereClause = ` WHERE p.deleted_status = ?`;
-    params.push(statusFilter);
+    let whereClause = " WHERE 1=1";
     if (!admin) { whereClause += ` AND p.is_active = 1`; }
     if (country && !admin) { whereClause += ` AND (pc.is_visible IS NULL OR pc.is_visible = 1)`; }
-    if (category)    { whereClause += ` AND p.category_id = ?`;    params.push(category); }
+    if (category) { whereClause += ` AND p.category_id = ?`; params.push(category); }
     if (subcategory) { whereClause += ` AND p.subcategory_id = ?`; params.push(subcategory); }
-    if (featured)    { whereClause += ` AND p.is_featured = 1`; }
+    if (featured) { whereClause += ` AND p.is_featured = 1`; }
     if (search) {
       whereClause += ` AND (p.name_en LIKE ? OR p.name_ar LIKE ? OR p.fgd LIKE ?)`;
       const s = `%${search}%`;
@@ -178,7 +176,7 @@ router.get('/', async (req, res, next) => {
     // Final Query: Select ID and the sort column so DISTINCT can include it
     const selectClause = sortCol === 'p.id' ? 'DISTINCT p.id' : `DISTINCT p.id, ${sortCol}`;
     const mainQuery = `SELECT ${selectClause} FROM products p ${joinClause} ${whereClause} ORDER BY ${sortCol} ${sortOrder} LIMIT ? OFFSET ?`;
-    
+
     const [idRows] = await db.query(mainQuery, [...params, parseInt(limit), offset]);
     const ids = idRows.map(r => r.id);
 
@@ -221,12 +219,12 @@ router.post('/', async (req, res, next) => {
          category_id, subcategory_id, is_active, is_featured, tags, attributes, size_id, label_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [fgd, barcode || fgd || null, slug, name_en, name_ar, description_en, description_ar,
-       category_id, subcategory_id || null,
-       is_active, is_featured,
-       tags ? JSON.stringify(tags) : null,
-       attributes ? JSON.stringify(attributes) : null,
-       size_id || null,
-       label_id || null]
+        category_id, subcategory_id || null,
+        is_active, is_featured,
+        tags ? JSON.stringify(tags) : null,
+        attributes ? JSON.stringify(attributes) : null,
+        size_id || null,
+        label_id || null]
     );
     const productId = result.insertId;
 
@@ -236,9 +234,9 @@ router.post('/', async (req, res, next) => {
         `INSERT INTO fragrance_notes (product_id, note_type, ingredients_en, ingredients_ar, description_en, description_ar, image_url)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [productId, n.note_type,
-         Array.isArray(n.ingredients_en) ? JSON.stringify(n.ingredients_en) : '[]',
-         Array.isArray(n.ingredients_ar) ? JSON.stringify(n.ingredients_ar) : '[]',
-         n.description_en || null, n.description_ar || null, n.image_url || null]
+          Array.isArray(n.ingredients_en) ? JSON.stringify(n.ingredients_en) : '[]',
+          Array.isArray(n.ingredients_ar) ? JSON.stringify(n.ingredients_ar) : '[]',
+          n.description_en || null, n.description_ar || null, n.image_url || null]
       );
     }
 
@@ -250,8 +248,8 @@ router.post('/', async (req, res, next) => {
           meta_title_en, meta_title_ar, meta_desc_en, meta_desc_ar, sort_order)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [productId, cc.country_id, cc.is_visible ?? 1, cc.slug_override || null,
-         cc.meta_title_en || null, cc.meta_title_ar || null,
-         cc.meta_desc_en || null, cc.meta_desc_ar || null, cc.sort_order || 0]
+          cc.meta_title_en || null, cc.meta_title_ar || null,
+          cc.meta_desc_en || null, cc.meta_desc_ar || null, cc.sort_order || 0]
       );
     }
 
@@ -263,7 +261,7 @@ router.post('/', async (req, res, next) => {
         [productId, p.country_id, p.currency_id, p.regular_price]
       );
     }
-    
+
     // Stock
     const stocks = req.body.stock || [];
     for (const s of stocks) {
@@ -275,7 +273,7 @@ router.post('/', async (req, res, next) => {
     }
 
     await conn.commit();
-    
+
     await logAudit(req, 'create', 'products', productId, {
       name_en, name_ar, fgd, barcode, slug, category_id, subcategory_id
     });
@@ -307,15 +305,15 @@ router.put('/:id', async (req, res, next) => {
         size_id=?, label_id=?
        WHERE id=?`,
       [fgd, barcode || fgd || null, slug, name_en, name_ar, description_en, description_ar,
-       category_id, subcategory_id || null,
-       is_active ?? 1, is_featured ?? 0,
-       tags ? JSON.stringify(tags) : null,
-       attributes ? JSON.stringify(attributes) : null,
-       size_id || null,
-       label_id || null,
-       req.params.id]
+        category_id, subcategory_id || null,
+        is_active ?? 1, is_featured ?? 0,
+        tags ? JSON.stringify(tags) : null,
+        attributes ? JSON.stringify(attributes) : null,
+        size_id || null,
+        label_id || null,
+        req.params.id]
     );
-    
+
     await logAudit(req, 'update', 'products', req.params.id, {
       name_en, name_ar, fgd, barcode, slug, category_id, subcategory_id, is_active, is_featured
     });
@@ -336,7 +334,7 @@ router.patch('/:id/toggle', async (req, res, next) => {
          WHERE pc.product_id = ? AND co.code = ?`,
         [req.params.id, country.toUpperCase()]
       );
-      
+
       await logAudit(req, 'update', 'products', req.params.id, { action: 'toggle_country_visibility', country });
 
       res.json({ message: 'Country visibility toggled' });
@@ -344,7 +342,7 @@ router.patch('/:id/toggle', async (req, res, next) => {
       await db.query(
         `UPDATE products SET is_active = NOT is_active WHERE id = ?`, [req.params.id]
       );
-      
+
       await logAudit(req, 'update', 'products', req.params.id, { action: 'toggle_global_active' });
 
       res.json({ message: 'Global active status toggled' });
@@ -352,31 +350,41 @@ router.patch('/:id/toggle', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// DELETE /api/products/:id (Soft delete to bin)
+// DELETE /api/products/:id (Permanent delete)
 router.delete('/:id', async (req, res, next) => {
+  const conn = await db.getConnection();
   try {
-    await db.query(`UPDATE products SET deleted_status = 'bin' WHERE id = ?`, [req.params.id]);
-    await logAudit(req, 'update', 'products', req.params.id, { action: 'move_to_bin' });
-    res.json({ message: 'Product moved to recycle bin' });
-  } catch (err) { next(err); }
-});
+    await conn.beginTransaction();
 
-// DELETE /api/products/:id/permanent
-router.delete('/:id/permanent', async (req, res, next) => {
-  try {
-    await db.query(`UPDATE products SET deleted_status = 'permanent' WHERE id = ?`, [req.params.id]);
-    await logAudit(req, 'delete', 'products', req.params.id, { action: 'permanent_delete' });
-    res.json({ message: 'Product permanently deleted' });
-  } catch (err) { next(err); }
-});
+    const productId = req.params.id;
 
-// PATCH /api/products/:id/restore
-router.patch('/:id/restore', async (req, res, next) => {
-  try {
-    await db.query(`UPDATE products SET deleted_status = 'active' WHERE id = ? AND deleted_status = 'bin'`, [req.params.id]);
-    await logAudit(req, 'update', 'products', req.params.id, { action: 'restore_from_bin' });
-    res.json({ message: 'Product restored' });
-  } catch (err) { next(err); }
+    // 1. If product is part of a bundle (as a component), delete those entries.
+    // The schema was ON DELETE SET NULL, but the user wants deletion.
+    await conn.query(`DELETE FROM bundle_items WHERE product_id = ?`, [productId]);
+
+    // 2. If it's a bundle itself, ON DELETE CASCADE handles 'bundles' and 'bundle_items' mapping.
+    // 3. Campaign items are handled by ON DELETE CASCADE.
+    // 4. Other related data (prices, stock, media, fragrance_notes, related_products) 
+    // are handled by ON DELETE CASCADE in the schema.
+
+    // Note: product_sales_log is NOT ON DELETE CASCADE by default. 
+    // If there are sales, we might want to preserve them or delete them.
+    // Given the request "delete completely", we'll try to delete from sales log too if it exists.
+    await conn.query(`DELETE FROM product_sales_log WHERE product_id = ?`, [productId]);
+
+    // 5. Final delete
+    await conn.query(`DELETE FROM products WHERE id = ?`, [productId]);
+
+    await logAudit(req, 'delete', 'products', productId, { action: 'permanent_delete' });
+
+    await conn.commit();
+    res.json({ message: 'Product and all related data permanently deleted' });
+  } catch (err) {
+    await conn.rollback();
+    next(err);
+  } finally {
+    conn.release();
+  }
 });
 
 // ── FRAGRANCE NOTES ──────────────────────────────────────────
@@ -419,14 +427,14 @@ router.put('/:id/notes', async (req, res, next) => {
            description_ar = VALUES(description_ar),
            image_url = VALUES(image_url)`,
         [req.params.id, n.note_type,
-         Array.isArray(n.ingredients_en) ? JSON.stringify(n.ingredients_en) : (typeof n.ingredients_en === 'string' ? n.ingredients_en : '[]'),
-         Array.isArray(n.ingredients_ar) ? JSON.stringify(n.ingredients_ar) : (typeof n.ingredients_ar === 'string' ? n.ingredients_ar : '[]'),
-         n.description_en || null, n.description_ar || null, n.image_url || null]
+        Array.isArray(n.ingredients_en) ? JSON.stringify(n.ingredients_en) : (typeof n.ingredients_en === 'string' ? n.ingredients_en : '[]'),
+        Array.isArray(n.ingredients_ar) ? JSON.stringify(n.ingredients_ar) : (typeof n.ingredients_ar === 'string' ? n.ingredients_ar : '[]'),
+        n.description_en || null, n.description_ar || null, n.image_url || null]
 
       );
     }
     await conn.commit();
-    
+
     await logAudit(req, 'update', 'products', req.params.id, { action: 'update_fragrance_notes', count: notes.length });
 
     res.json({ message: 'Notes saved' });
@@ -488,12 +496,12 @@ router.put('/:id/seo', async (req, res, next) => {
            meta_desc_ar = VALUES(meta_desc_ar),
            sort_order = VALUES(sort_order)`,
         [req.params.id, s.country_id, s.slug_override || null,
-         s.meta_title_en || null, s.meta_title_ar || null,
-         s.meta_desc_en || null, s.meta_desc_ar || null, s.sort_order || 0]
+        s.meta_title_en || null, s.meta_title_ar || null,
+        s.meta_desc_en || null, s.meta_desc_ar || null, s.sort_order || 0]
       );
     }
     await conn.commit();
-    
+
     await logAudit(req, 'update', 'products', req.params.id, { action: 'update_seo', count: seo.length });
 
     res.json({ message: 'SEO data saved' });
@@ -541,7 +549,7 @@ router.put('/:id/related', async (req, res, next) => {
   try {
     await conn.beginTransaction();
     await conn.query('DELETE FROM related_products WHERE product_id = ?', [req.params.id]);
-    
+
     const items = req.body.related_products || [];
     for (let i = 0; i < items.length; i++) {
       await conn.query(
@@ -550,7 +558,7 @@ router.put('/:id/related', async (req, res, next) => {
         [req.params.id, items[i].related_product_id, i]
       );
     }
-    
+
     await conn.commit();
     res.json({ message: 'Related products updated' });
   } catch (err) {

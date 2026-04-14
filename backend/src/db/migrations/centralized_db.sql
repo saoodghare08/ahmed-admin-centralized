@@ -1,132 +1,78 @@
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+-- SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET FOREIGN_KEY_CHECKS = 0;
+SET AUTOCOMMIT = 0;
 START TRANSACTION;
 SET time_zone = "+00:00";
-
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
 
 --
 -- Database: `centralized_db`
 --
 
 -- --------------------------------------------------------
-
---
--- Table structure for table `audit_logs`
---
-
-CREATE TABLE `audit_logs` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `user_id` int(10) UNSIGNED DEFAULT NULL,
-  `action` enum('create','update','delete','login','logout') NOT NULL,
-  `module` varchar(60) NOT NULL,
-  `target_id` varchar(100) DEFAULT NULL,
-  `details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`details`)),
-  `ip_address` varchar(45) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+-- Drop existing tables in reverse order of dependency
 -- --------------------------------------------------------
 
---
--- Table structure for table `bundles`
---
-
-CREATE TABLE `bundles` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `product_id` int(10) UNSIGNED NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `bundle_items`
---
-
-CREATE TABLE `bundle_items` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `bundle_id` int(10) UNSIGNED NOT NULL,
-  `product_id` int(10) UNSIGNED DEFAULT NULL,
-  `component_name_en` varchar(255) DEFAULT NULL,
-  `component_name_ar` varchar(255) DEFAULT NULL,
-  `component_image_url` varchar(700) DEFAULT NULL,
-  `qty` tinyint(3) UNSIGNED NOT NULL DEFAULT 1,
-  `sort_order` smallint(6) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS `product_stock`;
+DROP TABLE IF EXISTS `related_products`;
+DROP TABLE IF EXISTS `product_sales_log`;
+DROP TABLE IF EXISTS `product_prices`;
+DROP TABLE IF EXISTS `product_media`;
+DROP TABLE IF EXISTS `product_country`;
+DROP TABLE IF EXISTS `fragrance_notes`;
+DROP TABLE IF EXISTS `campaign_items`;
+DROP TABLE IF EXISTS `bundle_items`;
+DROP TABLE IF EXISTS `bundles`;
+DROP TABLE IF EXISTS `audit_logs`;
+DROP TABLE IF EXISTS `campaign_discounts`;
+DROP TABLE IF EXISTS `campaign_countries`;
+DROP TABLE IF EXISTS `category_country`;
+DROP TABLE IF EXISTS `subcategories`;
+DROP TABLE IF EXISTS `products`;
+DROP TABLE IF EXISTS `product_labels`;
+DROP TABLE IF EXISTS `product_sizes`;
+DROP TABLE IF EXISTS `campaigns`;
+DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `countries`;
+DROP TABLE IF EXISTS `currencies`;
+DROP TABLE IF EXISTS `categories`;
 
 -- --------------------------------------------------------
-
---
--- Table structure for table `campaigns`
---
-
-CREATE TABLE `campaigns` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `name_en` varchar(255) NOT NULL,
-  `name_ar` varchar(255) DEFAULT NULL,
-  `type` enum('discount','bxgy','foc') NOT NULL DEFAULT 'discount',
-  `status` enum('draft','scheduled','active','paused','expired','archived') NOT NULL DEFAULT 'draft',
-  `priority` smallint(6) NOT NULL DEFAULT 100,
-  `start_at` datetime NOT NULL,
-  `end_at` datetime NOT NULL,
-  `is_all_products` tinyint(1) NOT NULL DEFAULT 0,
-  `is_stackable` tinyint(1) NOT NULL DEFAULT 0,
-  `notes` text DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+-- Table structure for table `currencies`
 -- --------------------------------------------------------
 
---
--- Table structure for table `campaign_countries`
---
-
-CREATE TABLE `campaign_countries` (
-  `campaign_id` int(10) UNSIGNED NOT NULL,
-  `country_id` tinyint(3) UNSIGNED NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `campaign_discounts`
---
-
-CREATE TABLE `campaign_discounts` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `campaign_id` int(10) UNSIGNED NOT NULL,
-  `discount_type` enum('percentage','fixed') NOT NULL,
-  `discount_value` decimal(12,3) NOT NULL,
-  `min_price_floor` decimal(12,3) NOT NULL DEFAULT 0.000
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `currencies` (
+  `id` tinyint(3) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` char(3) NOT NULL,
+  `symbol_en` varchar(10) NOT NULL,
+  `symbol_ar` varchar(10) NOT NULL,
+  `decimal_places` tinyint(4) NOT NULL DEFAULT 2,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_currency_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=7;
 
 -- --------------------------------------------------------
-
---
--- Table structure for table `campaign_items`
---
-
-CREATE TABLE `campaign_items` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `campaign_id` int(10) UNSIGNED NOT NULL,
-  `product_id` int(10) UNSIGNED NOT NULL,
-  `discount_type` enum('percentage','fixed') DEFAULT NULL,
-  `discount_value` decimal(12,3) DEFAULT NULL,
-  `is_excluded` tinyint(1) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+-- Table structure for table `countries`
 -- --------------------------------------------------------
 
---
+CREATE TABLE `countries` (
+  `id` tinyint(3) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` char(2) NOT NULL,
+  `name_en` varchar(60) NOT NULL,
+  `name_ar` varchar(60) NOT NULL,
+  `currency_id` tinyint(3) UNSIGNED NOT NULL,
+  `domain_prefix` varchar(5) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_country_code` (`code`),
+  KEY `fk_country_currency` (`currency_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=7;
+
+-- --------------------------------------------------------
 -- Table structure for table `categories`
---
+-- --------------------------------------------------------
 
 CREATE TABLE `categories` (
-  `id` int(10) UNSIGNED NOT NULL,
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `slug` varchar(120) NOT NULL,
   `name_en` varchar(120) NOT NULL,
   `name_ar` varchar(120) NOT NULL,
@@ -145,76 +91,92 @@ CREATE TABLE `categories` (
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `deleted_status` enum('active','bin','permanent') DEFAULT 'active',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_category_slug` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=33;
 
 -- --------------------------------------------------------
+-- Table structure for table `subcategories`
+-- --------------------------------------------------------
 
---
--- Table structure for table `category_country`
---
-
-CREATE TABLE `category_country` (
+CREATE TABLE `subcategories` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `category_id` int(10) UNSIGNED NOT NULL,
-  `country_id` tinyint(3) UNSIGNED NOT NULL,
-  `is_visible` tinyint(1) NOT NULL DEFAULT 1
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `countries`
---
-
-CREATE TABLE `countries` (
-  `id` tinyint(3) UNSIGNED NOT NULL,
-  `code` char(2) NOT NULL,
-  `name_en` varchar(60) NOT NULL,
-  `name_ar` varchar(60) NOT NULL,
-  `currency_id` tinyint(3) UNSIGNED NOT NULL,
-  `domain_prefix` varchar(5) NOT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `currencies`
---
-
-CREATE TABLE `currencies` (
-  `id` tinyint(3) UNSIGNED NOT NULL,
-  `code` char(3) NOT NULL,
-  `symbol_en` varchar(10) NOT NULL,
-  `symbol_ar` varchar(10) NOT NULL,
-  `decimal_places` tinyint(4) NOT NULL DEFAULT 2
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `fragrance_notes`
---
-
-CREATE TABLE `fragrance_notes` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `product_id` int(10) UNSIGNED NOT NULL,
-  `note_type` enum('top','heart','base') NOT NULL,
-  `ingredients_en` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`ingredients_en`)),
-  `ingredients_ar` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`ingredients_ar`)),
+  `slug` varchar(120) NOT NULL,
+  `name_en` varchar(120) NOT NULL,
+  `name_ar` varchar(120) NOT NULL,
+  `image_url` varchar(700) DEFAULT NULL,
+  `meta_title_en` varchar(255) DEFAULT NULL,
+  `meta_title_ar` varchar(255) DEFAULT NULL,
+  `meta_desc_en` varchar(500) DEFAULT NULL,
+  `meta_desc_ar` varchar(500) DEFAULT NULL,
+  `mobile_image` varchar(700) DEFAULT NULL,
+  `video` varchar(700) DEFAULT NULL,
   `description_en` text DEFAULT NULL,
   `description_ar` text DEFAULT NULL,
-  `image_url` varchar(700) DEFAULT NULL
+  `sort_order` smallint(6) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `deleted_status` enum('active','bin','permanent') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_subcategory_slug` (`slug`),
+  KEY `fk_sub_category` (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=12;
+
+-- --------------------------------------------------------
+-- Table structure for table `users`
+-- --------------------------------------------------------
+
+CREATE TABLE `users` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `username` varchar(100) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `full_name` varchar(200) NOT NULL DEFAULT '',
+  `role` enum('admin','user') NOT NULL DEFAULT 'user',
+  `permissions` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`permissions`)),
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_user_username` (`username`),
+  UNIQUE KEY `uq_user_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=6;
+
+-- --------------------------------------------------------
+-- Table structure for table `product_labels`
+-- --------------------------------------------------------
+
+CREATE TABLE `product_labels` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name_en` varchar(100) NOT NULL,
+  `name_ar` varchar(100) NOT NULL,
+  `image_url` varchar(255) DEFAULT NULL,
+  `sort_order` smallint(6) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
+-- Table structure for table `product_sizes`
+-- --------------------------------------------------------
 
---
+CREATE TABLE `product_sizes` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `label_en` varchar(60) NOT NULL,
+  `label_ar` varchar(60) NOT NULL,
+  `value_ml` smallint(5) UNSIGNED DEFAULT NULL,
+  `sort_order` smallint(6) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=20;
+
+-- --------------------------------------------------------
 -- Table structure for table `products`
---
+-- --------------------------------------------------------
 
 CREATE TABLE `products` (
-  `id` int(10) UNSIGNED NOT NULL,
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `fgd` varchar(100) NOT NULL,
   `barcode` varchar(100) DEFAULT NULL,
   `slug` varchar(220) NOT NULL,
@@ -233,17 +195,163 @@ CREATE TABLE `products` (
   `size_id` int(10) UNSIGNED DEFAULT NULL,
   `label_id` int(10) UNSIGNED DEFAULT NULL,
   `media_url` varchar(255) DEFAULT NULL,
-  `deleted_status` enum('active','bin','permanent') DEFAULT 'active'
+  `deleted_status` enum('active','bin','permanent') DEFAULT 'active',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_product_fgd` (`fgd`),
+  UNIQUE KEY `uq_product_slug` (`slug`),
+  KEY `fk_product_category` (`category_id`),
+  KEY `fk_product_subcategory` (`subcategory_id`),
+  KEY `fk_product_size` (`size_id`),
+  KEY `fk_product_label` (`label_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=219;
+
+-- --------------------------------------------------------
+-- Table structure for table `audit_logs`
+-- --------------------------------------------------------
+
+CREATE TABLE `audit_logs` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) UNSIGNED DEFAULT NULL,
+  `action` enum('create','update','delete','login','logout') NOT NULL,
+  `module` varchar(60) NOT NULL,
+  `target_id` varchar(100) DEFAULT NULL,
+  `details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`details`)),
+  `ip_address` varchar(45) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_audit_user` (`user_id`),
+  KEY `idx_audit_module` (`module`),
+  KEY `idx_audit_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=165;
+
+-- --------------------------------------------------------
+-- Table structure for table `bundles`
+-- --------------------------------------------------------
+
+CREATE TABLE `bundles` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `product_id` int(10) UNSIGNED NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_bundle_product` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=2;
+
+-- --------------------------------------------------------
+-- Table structure for table `bundle_items`
+-- --------------------------------------------------------
+
+CREATE TABLE `bundle_items` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `bundle_id` int(10) UNSIGNED NOT NULL,
+  `product_id` int(10) UNSIGNED DEFAULT NULL,
+  `component_name_en` varchar(255) DEFAULT NULL,
+  `component_name_ar` varchar(255) DEFAULT NULL,
+  `component_image_url` varchar(700) DEFAULT NULL,
+  `qty` tinyint(3) UNSIGNED NOT NULL DEFAULT 1,
+  `sort_order` smallint(6) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `fk_bitem_bundle` (`bundle_id`),
+  KEY `fk_bitem_product` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=4;
+
+-- --------------------------------------------------------
+-- Table structure for table `campaigns`
+-- --------------------------------------------------------
+
+CREATE TABLE `campaigns` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name_en` varchar(255) NOT NULL,
+  `name_ar` varchar(255) DEFAULT NULL,
+  `type` enum('discount','bxgy','foc') NOT NULL DEFAULT 'discount',
+  `status` enum('draft','scheduled','active','paused','expired','archived') NOT NULL DEFAULT 'draft',
+  `priority` smallint(6) NOT NULL DEFAULT 100,
+  `start_at` datetime NOT NULL,
+  `end_at` datetime NOT NULL,
+  `is_all_products` tinyint(1) NOT NULL DEFAULT 0,
+  `is_stackable` tinyint(1) NOT NULL DEFAULT 0,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_campaign_status` (`status`),
+  KEY `idx_campaign_dates` (`start_at`,`end_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=3;
+
+-- --------------------------------------------------------
+-- Table structure for table `campaign_countries`
+-- --------------------------------------------------------
+
+CREATE TABLE `campaign_countries` (
+  `campaign_id` int(10) UNSIGNED NOT NULL,
+  `country_id` tinyint(3) UNSIGNED NOT NULL,
+  PRIMARY KEY (`campaign_id`,`country_id`),
+  KEY `fk_cc_v2_country` (`country_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
+-- Table structure for table `campaign_discounts`
+-- --------------------------------------------------------
 
---
+CREATE TABLE `campaign_discounts` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `campaign_id` int(10) UNSIGNED NOT NULL,
+  `discount_type` enum('percentage','fixed') NOT NULL,
+  `discount_value` decimal(12,3) NOT NULL,
+  `min_price_floor` decimal(12,3) NOT NULL DEFAULT 0.000,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_cd_v2_campaign` (`campaign_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=6;
+
+-- --------------------------------------------------------
+-- Table structure for table `campaign_items`
+-- --------------------------------------------------------
+
+CREATE TABLE `campaign_items` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `campaign_id` int(10) UNSIGNED NOT NULL,
+  `product_id` int(10) UNSIGNED NOT NULL,
+  `discount_type` enum('percentage','fixed') DEFAULT NULL,
+  `discount_value` decimal(12,3) DEFAULT NULL,
+  `is_excluded` tinyint(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ci_v2_campaign_product` (`campaign_id`,`product_id`),
+  KEY `fk_ci_v2_product` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=17;
+
+-- --------------------------------------------------------
+-- Table structure for table `category_country`
+-- --------------------------------------------------------
+
+CREATE TABLE `category_country` (
+  `category_id` int(10) UNSIGNED NOT NULL,
+  `country_id` tinyint(3) UNSIGNED NOT NULL,
+  `is_visible` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`category_id`,`country_id`),
+  KEY `fk_cc_country` (`country_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table structure for table `fragrance_notes`
+-- --------------------------------------------------------
+
+CREATE TABLE `fragrance_notes` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `product_id` int(10) UNSIGNED NOT NULL,
+  `note_type` enum('top','heart','base') NOT NULL,
+  `ingredients_en` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`ingredients_en`)),
+  `ingredients_ar` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`ingredients_ar`)),
+  `description_en` text DEFAULT NULL,
+  `description_ar` text DEFAULT NULL,
+  `image_url` varchar(700) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_product_note_type` (`product_id`,`note_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=632;
+
+-- --------------------------------------------------------
 -- Table structure for table `product_country`
---
+-- --------------------------------------------------------
 
 CREATE TABLE `product_country` (
-  `id` int(10) UNSIGNED NOT NULL,
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `product_id` int(10) UNSIGNED NOT NULL,
   `country_id` tinyint(3) UNSIGNED NOT NULL,
   `is_visible` tinyint(1) NOT NULL DEFAULT 1,
@@ -252,31 +360,18 @@ CREATE TABLE `product_country` (
   `meta_title_ar` varchar(255) DEFAULT NULL,
   `meta_desc_en` varchar(500) DEFAULT NULL,
   `meta_desc_ar` varchar(500) DEFAULT NULL,
-  `sort_order` smallint(6) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `sort_order` smallint(6) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_product_country` (`product_id`,`country_id`),
+  KEY `fk_pc_country` (`country_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1549;
 
 -- --------------------------------------------------------
-
---
--- Table structure for table `product_prices`
---
-
-CREATE TABLE `product_prices` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `product_id` int(10) UNSIGNED NOT NULL,
-  `country_id` tinyint(3) UNSIGNED NOT NULL,
-  `currency_id` tinyint(3) UNSIGNED NOT NULL,
-  `regular_price` decimal(12,3) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `product_media`
---
+-- --------------------------------------------------------
 
 CREATE TABLE `product_media` (
-  `id` int(10) UNSIGNED NOT NULL,
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `product_id` int(10) UNSIGNED NOT NULL,
   `size_id` int(10) UNSIGNED DEFAULT NULL,
   `url` varchar(700) NOT NULL,
@@ -285,65 +380,99 @@ CREATE TABLE `product_media` (
   `media_type` enum('image','video') NOT NULL DEFAULT 'image',
   `is_primary` tinyint(1) NOT NULL DEFAULT 0,
   `sort_order` smallint(6) NOT NULL DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `fk_media_product` (`product_id`),
+  KEY `fk_media_size` (`size_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
+-- Table structure for table `product_prices`
+-- --------------------------------------------------------
 
---
+CREATE TABLE `product_prices` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `product_id` int(10) UNSIGNED NOT NULL,
+  `country_id` tinyint(3) UNSIGNED NOT NULL,
+  `currency_id` tinyint(3) UNSIGNED NOT NULL,
+  `regular_price` decimal(12,3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_price_product_country` (`product_id`,`country_id`),
+  KEY `fk_price_country` (`country_id`),
+  KEY `fk_price_currency` (`currency_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1411;
+
+-- --------------------------------------------------------
 -- Table structure for table `product_sales_log`
---
+-- --------------------------------------------------------
 
 CREATE TABLE `product_sales_log` (
-  `id` int(10) UNSIGNED NOT NULL,
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `product_id` int(10) UNSIGNED NOT NULL,
   `country_id` tinyint(3) UNSIGNED NOT NULL,
   `qty_sold` smallint(5) UNSIGNED NOT NULL DEFAULT 1,
   `unit_price` decimal(12,3) DEFAULT NULL,
   `currency_id` tinyint(3) UNSIGNED DEFAULT NULL,
   `sold_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `order_ref` varchar(100) DEFAULT NULL
+  `order_ref` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_sales_product` (`product_id`),
+  KEY `idx_sales_country` (`country_id`),
+  KEY `idx_sales_sold_at` (`sold_at`),
+  KEY `fk_sales_currency` (`currency_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
+-- Table structure for table `product_stock`
+-- --------------------------------------------------------
 
---
---
--- Table structure for table `product_labels`
---
-
-CREATE TABLE `product_labels` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `name_en` varchar(100) NOT NULL,
-  `name_ar` varchar(100) NOT NULL,
-  `image_url` varchar(255) DEFAULT NULL,
-  `sort_order` smallint(6) NOT NULL DEFAULT 0
+CREATE TABLE `product_stock` (
+  `product_id` int(10) UNSIGNED NOT NULL,
+  `country_id` tinyint(3) UNSIGNED NOT NULL,
+  `quantity` int(11) DEFAULT 0,
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`product_id`,`country_id`),
+  KEY `idx_stock_country` (`country_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `product_labels`
---
+-- --------------------------------------------------------
+-- Table structure for table `related_products`
+-- --------------------------------------------------------
+
+CREATE TABLE `related_products` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `product_id` int(10) UNSIGNED NOT NULL,
+  `related_product_id` int(10) UNSIGNED NOT NULL,
+  `sort_order` smallint(6) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_related_product` (`product_id`,`related_product_id`),
+  KEY `idx_related_target` (`related_product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Dumping data for lookup tables
+-- --------------------------------------------------------
+
+INSERT INTO `currencies` (`id`, `code`, `symbol_en`, `symbol_ar`, `decimal_places`) VALUES
+(1, 'AED', 'AED', 'د.إ', 2),
+(2, 'SAR', 'SAR', 'ر.س', 2),
+(3, 'QAR', 'QAR', 'ر.ق', 2),
+(4, 'BHD', 'BHD', 'د.ب', 3),
+(5, 'KWD', 'KWD', 'د.ك', 3),
+(6, 'OMR', 'OMR', 'ر.ع', 3);
+
+INSERT INTO `countries` (`id`, `code`, `name_en`, `name_ar`, `currency_id`, `domain_prefix`, `is_active`) VALUES
+(1, 'AE', 'United Arab Emirates', 'الإمارات العربية المتحدة', 1, 'ae', 1),
+(2, 'SA', 'Saudi Arabia', 'المملكة العربية السعودية', 2, 'sa', 1),
+(3, 'QA', 'Qatar', 'قطر', 3, 'qa', 1),
+(4, 'BH', 'Bahrain', 'البحرين', 4, 'bh', 1),
+(5, 'KW', 'Kuwait', 'الكويت', 5, 'kw', 1),
+(6, 'OM', 'Oman', 'سلطنة عُمان', 6, 'om', 1);
 
 INSERT INTO `product_labels` (`id`, `name_en`, `name_ar`, `image_url`, `sort_order`) VALUES
 (1, 'Hot', 'حار مبيعاً', 'hot-selling-1.png', 1),
 (2, 'New', 'جديد', 'new-arrival.png', 2),
 (3, 'Sale', 'تخفيضات', 'sale.png', 3);
-
---
--- Table structure for table `product_sizes`
---
-
-CREATE TABLE `product_sizes` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `label_en` varchar(60) NOT NULL,
-  `label_ar` varchar(60) NOT NULL,
-  `value_ml` smallint(5) UNSIGNED DEFAULT NULL,
-  `sort_order` smallint(6) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `product_sizes`
---
 
 INSERT INTO `product_sizes` (`id`, `label_en`, `label_ar`, `value_ml`, `sort_order`) VALUES
 (1, '15ML', '١٥ مل', 15, 1),
@@ -356,4043 +485,75 @@ INSERT INTO `product_sizes` (`id`, `label_en`, `label_ar`, `value_ml`, `sort_ord
 (8, '200ML', '٢٠٠ مل', 200, 8);
 
 -- --------------------------------------------------------
-
---
--- Table structure for table `product_stock`
---
-
-CREATE TABLE `product_stock` (
-  `product_id` int(10) UNSIGNED NOT NULL,
-  `country_id` tinyint(3) UNSIGNED NOT NULL,
-  `quantity` int(11) DEFAULT 0,
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+-- Constraints for all tables
 -- --------------------------------------------------------
 
---
--- Table structure for table `subcategories`
---
+-- audit_logs
+ALTER TABLE `audit_logs` ADD CONSTRAINT `fk_audit_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
-CREATE TABLE `subcategories` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `category_id` int(10) UNSIGNED NOT NULL,
-  `slug` varchar(120) NOT NULL,
-  `name_en` varchar(120) NOT NULL,
-  `name_ar` varchar(120) NOT NULL,
-  `image_url` varchar(700) DEFAULT NULL,
-  `meta_title_en` varchar(255) DEFAULT NULL,
-  `meta_title_ar` varchar(255) DEFAULT NULL,
-  `meta_desc_en` varchar(500) DEFAULT NULL,
-  `meta_desc_ar` varchar(500) DEFAULT NULL,
-  `mobile_image` varchar(700) DEFAULT NULL,
-  `video` varchar(700) DEFAULT NULL,
-  `description_en` text DEFAULT NULL,
-  `description_ar` text DEFAULT NULL,
-  `sort_order` smallint(6) NOT NULL DEFAULT 0,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `deleted_status` enum('active','bin','permanent') DEFAULT 'active',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- bundles
+ALTER TABLE `bundles` ADD CONSTRAINT `fk_bundle_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `users`
---
-
-CREATE TABLE `users` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `username` varchar(100) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
-  `full_name` varchar(200) NOT NULL DEFAULT '',
-  `role` enum('admin','user') NOT NULL DEFAULT 'user',
-  `permissions` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`permissions`)),
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `bundles`
---
-
-INSERT INTO `bundles` (`id`, `product_id`) VALUES
-(1, 202);
-
-
---
--- Dumping data for table `bundle_items`
---
-
-INSERT INTO `bundle_items` (`id`, `bundle_id`, `product_id`, `component_name_en`, `component_name_ar`, `component_image_url`, `qty`, `sort_order`) VALUES
-(1, 1, 218, 'Marin', 'مارين', NULL, 1, 0),
-(2, 1, 217, 'Haam', 'هام', NULL, 3, 1),
-(3, 1, NULL, 'OIL En', 'OIL AR', NULL, 1, 2);
-
-
---
--- Dumping data for table `campaigns`
---
-
-INSERT INTO `campaigns` (`id`, `name_en`, `name_ar`, `type`, `status`, `priority`, `start_at`, `end_at`, `is_all_products`, `is_stackable`, `notes`, `created_at`, `updated_at`) VALUES
-(1, 'Test 1', '', 'discount', 'active', 100, '2026-04-03 04:46:00', '2026-04-10 04:46:00', 0, 0, '', '2026-04-03 12:47:27', '2026-04-03 13:00:21'),
-(2, 'Test 2', '', 'discount', 'active', 100, '2026-04-03 09:32:00', '2026-04-10 09:32:00', 0, 0, '', '2026-04-03 13:44:52', '2026-04-03 13:49:29');
-
-
---
--- Dumping data for table `campaign_countries`
---
-
-INSERT INTO `campaign_countries` (`campaign_id`, `country_id`) VALUES
-(1, 1),
-(1, 3),
-(2, 3),
-(2, 5);
-
-
---
--- Dumping data for table `campaign_discounts`
---
-
-INSERT INTO `campaign_discounts` (`id`, `campaign_id`, `discount_type`, `discount_value`, `min_price_floor`) VALUES
-(3, 1, 'percentage', 0.000, 0.000),
-(5, 2, 'percentage', 0.000, 0.000);
-
-
---
--- Dumping data for table `campaign_items`
---
-
-INSERT INTO `campaign_items` (`id`, `campaign_id`, `product_id`, `discount_type`, `discount_value`, `is_excluded`) VALUES
-(9, 1, 22, 'percentage', 50.000, 0),
-(10, 1, 140, 'fixed', 50.000, 0),
-(11, 1, 7, 'percentage', 30.000, 0),
-(12, 1, 35, 'percentage', 30.000, 0),
-(15, 2, 201, 'fixed', 63.000, 0),
-(16, 2, 202, 'fixed', 53.000, 0);
-
-
---
--- Dumping data for table `categories`
---
-
-INSERT INTO `categories` (`id`, `slug`, `name_en`, `name_ar`, `description_en`, `description_ar`, `image_url`, `meta_title_en`, `meta_title_ar`, `meta_desc_en`, `meta_desc_ar`, `icon_image`, `menu_image2`, `mobile_image`, `video`, `sort_order`, `is_active`, `deleted_status`, `created_at`, `updated_at`) VALUES
-(22, 'test', 'test', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, 'permanent', '2026-04-01 13:13:27', '2026-04-01 13:17:47'),
-(23, 'perfumes', 'Perfumes', 'عطور', NULL, NULL, '/gallery/Test/test.jpg', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:22'),
-(24, 'concentrated-parfum', 'Concentrated Parfum', 'العطورالزيتية', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:22'),
-(25, 'dakhoon', 'Dakhoon', 'دخون', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(26, 'gift-sets', 'Gift Sets', 'أطقم هدايا', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 3, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(27, 'collections', 'Collections', 'المجموعات', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(28, 'online-exclusive', 'Online Exclusive', 'حصرياً على الإنترنت', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 5, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(29, 'care-essentials', 'Care Essentials', 'أساسيات العناية', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 6, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(30, 'sale', 'Sale', 'تخفيضات', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 7, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(31, 'worldwide-distributions', 'Worldwide Distributions', 'توزيع عالمي', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11'),
-(32, 'extrait-de-parfum', 'Extrait De Parfum', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, 0, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:11');
-
-
---
--- Dumping data for table `countries`
---
-
-INSERT INTO `countries` (`id`, `code`, `name_en`, `name_ar`, `currency_id`, `domain_prefix`, `is_active`) VALUES
-(1, 'AE', 'United Arab Emirates', 'الإمارات العربية المتحدة', 1, 'ae', 1),
-(2, 'SA', 'Saudi Arabia', 'المملكة العربية السعودية', 2, 'sa', 1),
-(3, 'QA', 'Qatar', 'قطر', 3, 'qa', 1),
-(4, 'BH', 'Bahrain', 'البحرين', 4, 'bh', 1),
-(5, 'KW', 'Kuwait', 'الكويت', 5, 'kw', 1),
-(6, 'OM', 'Oman', 'سلطنة عُمان', 6, 'om', 1);
-
-
---
--- Dumping data for table `currencies`
---
-
-INSERT INTO `currencies` (`id`, `code`, `symbol_en`, `symbol_ar`, `decimal_places`) VALUES
-(1, 'AED', 'AED', 'د.إ', 2),
-(2, 'SAR', 'SAR', 'ر.س', 2),
-(3, 'QAR', 'QAR', 'ر.ق', 2),
-(4, 'BHD', 'BHD', 'د.ب', 3),
-(5, 'KWD', 'KWD', 'د.ك', 3),
-(6, 'OMR', 'OMR', 'ر.ع', 3);
-
-
---
--- Dumping data for table `fragrance_notes`
---
-
-INSERT INTO `fragrance_notes` (`id`, `product_id`, `note_type`, `ingredients_en`, `ingredients_ar`, `description_en`, `description_ar`, `image_url`) VALUES
-(1, 1, 'top', '[\"[]\"]', '[\"[]\"]', NULL, NULL, NULL),
-(2, 1, 'heart', '[\"[]\"]', '[\"[]\"]', NULL, NULL, NULL),
-(3, 1, 'base', '[\"[]\"]', '[\"[]\"]', NULL, NULL, NULL),
-(7, 4, 'top', '[\"[\\\"[\\\\\\\"asd\\\\\\\"]\\\"]\"]', '[\"[\\\"[\\\\\\\"dsf\\\\\\\"]\\\"]\"]', 'gdgf ', ' grdgh', NULL),
-(8, 4, 'heart', '[\"[\\\"[\\\\\\\"jkhk\\\\\\\"]\\\"]\"]', '[\"[\\\"[\\\\\\\"jkkhk\\\\\\\"]\\\"]\"]', 'khiyu', 'uyiu', NULL),
-(9, 4, 'base', '[\"[\\\"[\\\\\\\"ufdbvc\\\\\\\"]\\\"]\"]', '[\"[\\\"[\\\\\\\"cvb\\\\\\\"]\\\"]\"]', 'cvbcn', 'vbxbvbcbvc', NULL),
-(19, 5, 'top', '[\"Tropical Fruits\",\"Tangerine\",\"Rose\"]', '[\"فواكه استوائية،  يوسفي،  ورد\"]', 'A refreshing burst of tropical fruits and tangerine brightens the opening, softened by a gentle rose accent that introduces elegance from the first moment.', 'انتعاش الفواكه الاستوائية مع اليوسفي يمنح بداية مشرقة، يرافقها لمسة ورد رقيقة تضيف لمسة من الأناقة منذ اللحظة الأولى.', NULL),
-(20, 5, 'heart', '[\"Sandalwood\",\"Rose\",\"Orange Flower\"]', '[\"صندل،  ورد،  زهر البرتقال\"]', 'Sandalwood’s creamy depth blends seamlessly with rose and orange flower, forming a refined heart that balances woody warmth with delicate floral grace.', 'يذوب دفء الصندل الكريمي مع الورد وزهر البرتقال، ليصنع قلباً راقياً يجمع بين الدفء الخشبي والرقة الزهرية.', NULL),
-(21, 5, 'base', '[\"Malaysian Oud\",\"Indian Oud\",\"Vietnamese Oud\",\"Musk\",\"Ambroxan\"]', '[\"عود ماليزي،  عود هندي،  عود فيتنامي،  مسك،  أمبروكسان\"]', 'The fragrance grounds itself in the richness of Malaysian, Indian, and Vietnamese oud, enhanced by musk and ambroxan for lasting depth and sophistication.', 'ترتكز القاعدة على فخامة العود الماليزي والهندي والفيتنامي، تدعمها لمسات المسك والأمبروكسان لتمنح عمقاً وأناقة تدوم طويلاً.', NULL),
-(22, 6, 'top', '[\"Leather\",\"Orange Blossom\",\"Powdery Accords\",\"Clary Sage\"]', '[\"النوتات العليا: جلد، زهر البرتقال، نفحات بودرية، كلاري ساج\"]', 'Leather arrives immediately, softened by luminous orange blossom. Powdery accords smooth the edges, while clary sage adds airy aromatic lift—balancing texture and floral clarity for a poised opening.', 'تظهر اللمسة الجلدية مباشرة وتلينها أضواء زهر البرتقال. تصقل النفحات البودرية الحواف، ويضيف كلاري ساج ارتفاعاً عطرياً هوائياً لتوازن ملمسيّاً ووضوحاً زهرياً.', NULL),
-(23, 6, 'heart', '[\"Labdanum\",\"Caramel\",\"Cedar\",\"Lily of the Valley\",\"Red Rose\"]', '[\"النوتات الوسطى: لابدانوم، كراميل، خشب الأرز، زنبقة الوادي، ورد أحمر\"]', 'Labdanum unfolds with resinous body, sweetened by caramel. Cedar frames the structure, while lily of the valley and red rose lend petal-bright freshness for a textured, balanced center', 'يتكشف اللابدانوم بطابع راتنجي تعززه حلاوة الكراميل. يحدد الأرز البنية، وتمنح زنبقة الوادي والورد الأحمر نضارة مشرقة لقلب متوازن ومشبع بالتفاصيل.', NULL),
-(24, 6, 'base', '[\"Oakmoss\",\"Musk Accord\",\"Amber\",\"Agarwood\",\"Vetiver\",\"Vanilla\"]', '[\"النوتات الأساسية: طحلب السنديان، تناغم المسك، عنبر، عود، فيتيفر، فانيلا\"]', 'Oakmoss grounds the dry-down with earthy depth. A velvety musk accord and amber enrich the base; agarwood adds stature, while vetiver and vanilla refine the finish with clean dryness and soft sweetness', 'يرسخ طحلب السنديان الجفاف بعمقٍ أرضي. يغني تناغم المسك والعنبر القاعدة، ويمنح العود وقاراً؛ يضيف الفيتيفر جفافاً نظيفاً وتلطف الفانيلا النهاية بحلاوة ناعمة.', NULL),
-(25, 7, 'top', '[\"Bergamot\",\"Grapefruit\",\"Orange\",\"Pear\"]', '[\"النوتات العليا: برغموت، جريب فروت، برتقال، كمثرى\"]', 'Bergamot, grapefruit, and orange burst with bright freshness, rounded by pear’s juicy softness for a vivid, welcoming opening.', 'يتوهج البرغموت والجريب فروت والبرتقال بانتعاشٍ واضح، وتلينه عصيرية الكمثرى لبدايةٍ زاهية مرحِّبة.', NULL),
-(26, 7, 'heart', '[\"Sage\",\"Green Tea\",\"Black Currant\",\"Geranium\",\"White Pepper\",\"Turkish Rose\"]', '[\"النوتات الوسطى: ميرمية، شاي أخضر، كشمش أسود، جيرانيوم، فلفل أبيض، ورد تركي\"]', 'Sage and green tea bring aromatic clarity; black currant adds tart dimension, while geranium, white pepper, and Turkish rose define a nuanced floral core.', 'تمنح الميرمية والشاي الأخضر صفاءً عطرياً، ويضيف الكشمش الأسود حدةً لطيفة، فيما يرسم الجيرانيوم والفلفل الأبيض والورد التركي قلباً زهرياً متقناً.', NULL),
-(27, 7, 'base', '[\"Musk\",\"Sandalwood\",\"Amber\",\"Cambodian Oud\",\"Patchouli\",\"Cedar\"]', '[\"النوتات الأساسية: مسك، خشب الصندل، عنبر، عود كمبودي، باتشولي، أرز\"]', 'Musk and sandalwood create a smooth foundation with amber’s glow; Cambodian oud, patchouli, and cedar reinforce depth and longevity.', 'يصوغ المسك وخشب الصندل قاعدةً ناعمة يتوهج فيها العنبر، ويعزز العود الكمبودي والباتشولي والأرز عمقها وثباتها.', NULL),
-(28, 8, 'top', '[\"Black Currant Syrup\",\"Fresh Notes\",\"Pear\",\"Orange\",\"Honey\",\"Cinnamon\"]', '[\"النوتات العليا: شراب الكشمش الأسود، نفحات منعشة، كمثرى، برتقال، عسل، قرفة\"]', 'Black currant syrup brings deep fruitiness, brightened by pear and orange. Honey softens the accord, while cinnamon adds a gentle spice for warmth.', 'يمنح شراب الكشمش الأسود فاكهية عميقة، ينعشها البرتقال والكمثرى. يلين العسل المزيج، وتضيف القرفة توابل رقيقة للدفء.', NULL),
-(29, 8, 'heart', '[\"Rose\",\"Cyclamen\",\"Jasmine Sambac\",\"Freesia\",\"Orange Blossom\"]', '[\"النوتات الوسطى: ورد، سيكلامين، ياسمين سامباك، فريزيا، زهر البرتقال\"]', 'Rose and jasmine sambac shine with floral radiance, joined by freesia’s brightness and cyclamen’s freshness. Orange blossom completes the bouquet with soft elegance.', 'يتألق الورد والياسمين سامباك بألق زهري، تنضم إليهما نضارة الفريزيا والسيكلامين. ويكمل زهر البرتقال الباقة برقة ناعمة.', NULL),
-(30, 8, 'base', '[\"Ambroxan\",\"Musk\",\"Agarwood Hindi\",\"Patchouli\"]', '[\"النوتات الأساسية: أمبروكسان، مسك، عود هندي، باتشولي\"]', 'Musk and ambroxan create a velvety backdrop, enriched by patchouli’s earthy depth and the noble resonance of Hindi agarwood.', 'يصوغ المسك والأمبروكسان خلفية مخملية، يغنيها عمق الباتشولي الترابي ورنين العود الهندي الأصيل.', NULL),
-(31, 9, 'top', '[\"French Lavender\",\"Saffron\",\"Rose\",\"Citrus\",\"Oakmoss\"]', '[\"النوتات العليا: لافندر فرنسي، زعفران، ورد، حمضيات، طحلب السنديان\"]', 'French lavender and saffron spark against rose and bright citrus; oakmoss grounds the radiance with a refined green edge for balance and contrast.', 'يشتعل اللافندر الفرنسي والزعفران مع الورد والحمضيات المشرقة؛ يرسخ طحلب السنديان اللمعان بحافة خضراء راقية للتوازن والتباين.', NULL),
-(32, 9, 'heart', '[\"Jasmine\",\"Orchid\",\"Sugar\",\"Violet\",\"Incense Bakhoor\"]', '[\"النوتات الوسطى: ياسمين، أوركيد، سكر، بنفسج، بخور\"]', 'Jasmine and orchid build a plush floral core; a light sugar facet adds sheen while incense bakhoor threads gentle smoke, shaping a resonant center.', 'يصنع الياسمين والأوركيد قلباً زهيرياً مترفاً؛ تضيف لمسة سكر بريقاً خفيفاً، وتنسج خيوط بخور ناعمة مركزاً ذا رنين.', NULL),
-(33, 9, 'base', '[\"Patchouli\",\"Agarwood\",\"Ambroxan\",\"White Musk\",\"Amber Resins\"]', '[\"النوتات الأساسية: باتشولي، عود، أمبروكسان، مسك أبيض، راتنجات عنبر\"]', 'Patchouli sculpts structure; agarwood deepens the wood. Ambroxan lifts the trail, white musk smooths, and amber resins leave luminous, lasting warmth.', 'ينحت الباتشولي البنية، ويعمّق العود الخشبية. يرفع الأمبروكسان الأثر، ويصقل المسك الأبيض، وتخلّف راتنجات العنبر دفئاً مضيئاً طويلاً.', NULL),
-(34, 10, 'top', '[\"Almond Blossom\",\"Cyclamen\",\"Clementine\"]', '[\"النوتات العليا: زهر اللوز، سيكلامين، كلمنتين\"]', 'Almond blossom lends soft sweetness as cyclamen adds airy coolness; clementine lifts the opening with a bright, juicy sparkle for immediate, inviting clarity.', 'يمنح زهر اللوز حلاوة ناعمة، ويضفي السيكلامين برودة هوائية؛ ترفع كلمنتين البداية ببريق عصيري مشرق لصفاءٍ مرحِّب.', NULL),
-(35, 10, 'heart', '[\"Peony\",\"Jasmine\",\"Amaryllis\"]', '[\"النوتات الوسطى: فاوانيا، ياسمين، أمارلس\"]', 'Peony unfurls in silken swirls beside radiant jasmine; amaryllis adds sculpted floral volume, shaping a polished, modern heart.', 'تتفتح الفاوانيا بانسيابية حريرية إلى جانب ياسمين مشرق؛ تضيف الأمارلس حجماً زهيرياً مصقولاً ليكتمل قلب حديث وأنيق.', NULL),
-(36, 10, 'base', '[\"Amber\",\"Benzoin\",\"Musk\",\"Vanilla\"]', '[\"النوتات الأساسية: عنبر، بنزوين، مسك، فانيلا\"]', 'Amber warms the dry-down with golden depth; benzoin adds balsamic sweetness, while musk softens and vanilla rounds the finish in a smooth, lingering embrace', 'يدفئ العنبر الجفاف بعمقٍ ذهبي، ويمنح البنزوين حلاوة راتنجية؛ ينعّم المسك الأثر وتدوّره الفانيلا باحتضان ناعم طويل.', NULL),
-(37, 11, 'top', '[\"Orange Sicilian\",\"Rose\"]', '[\"النوتات العليا: برتقال صقلي، ورد\"]', 'Orange Sicilian brings bright citrus energy over the soft bloom of rose, creating a clean, vivid opening with clear definition.', 'يمنح البرتقال الصقلي إشراقاً حمضياً فوق تفتح الورد الناعم، لبدايةٍ واضحة ونقية.', NULL),
-(38, 11, 'heart', '[\"Sandalwood\",\"Pear\",\"Leather\"]', '[\"النوتات الوسطى: خشب الصندل، كمثرى، جلد\"]', 'Sandalwood’s smooth wood meets pear’s gentle juiciness, while leather adds structure—forming a refined, well-shaped center.', 'يلتقي نعومة خشب الصندل بعصيرية الكمثرى الرقيقة، ويضيف الجلد بنيةً رصينة لتشكيل قلبٍ مصقول ومتوازن.', NULL),
-(39, 11, 'base', '[\"Musk\",\"Amber\",\"Benzoin\",\"Oud Accords\"]', '[\"النوتات الأساسية: مسك، عنبر، بنزوين، نوتات عود\"]', 'Musk and amber lay a soft foundation; benzoin lends resinous roundness, and oud accords extend durable, woody depth.', 'يصوغ المسك والعنبر قاعدةً ناعمة، ويمنح البنزوين لمسةً راتنجية مستديرة، بينما تطيل نوتات العود عمقاً خشبياً ثابتاً.', NULL),
-(40, 12, 'top', '[\"Smoked Ginger\",\"Bergamot\",\"Black Currant\",\"Peach Jam\",\"Pear\",\"Clary Sage\"]', '[\"النوتات العليا: زنجبيل مدخن، برغموت، كشمش أسود، مربى الخوخ، كمثرى، كلاري ساج\"]', 'Smoked ginger crackles over bright bergamot; black currant, peach jam, and pear add juicy depth, while clary sage lifts the opening with aromatic poise', 'يشتعل الزنجبيل المُدخَّن فوق برغموتٍ مشرق؛ يضيف الكشمش الأسود ومربى الخوخ والكمثرى عمقاً عصيرياً، وترفع كلاري ساج البداية برصانةٍ عطرية.', NULL),
-(41, 12, 'heart', '[\"Peony\",\"Rose Bulgaria\",\"Cashmere Wood\",\"Cyclamen\",\"Lily of the Valley\",\"Patchouli\",\"Ambergris Accord\"]', '[\"النوتات الوسطى: فاوانيا، ورد بلغاري، خشب الكشمير، سيكلامين، زنبقة الوادي، باتشولي، تناغم العنبر الرمادي\"]', 'Peony and Bulgarian rose form a polished bloom. Cashmere wood cushions the florals as cyclamen and lily of the valley cool the core; patchouli and an ambergris accord refine diffusion', 'تصنع الفاوانيا والورد البلغاري تفتحاً مصقولاً. يوسّد خشب الكشمير الأزهار، ويُبرد السيكلامين وزنبقة الوادي القلب؛ ويهذّب الباتشولي وتناغم العنبر الرمادي الانتشار.', NULL),
-(42, 12, 'base', '[\"Moss\",\"Vanilla CO₂\",\"Ambroxan\",\"Patchouli\",\"White Musk\",\"Sandalwood\",\"Oud Accord\",\"Haitian Vetiver\"]', '[\"النوتات الأساسية: طحلب، فانيلا CO₂، أمبروكسان، باتشولي، مسك أبيض، خشب الصندل، تناغم العود، فيتيفر هايتي\"]', 'Moss and Haitian vetiver ground the dry-down. Vanilla CO₂ and white musk soften; sandalwood smooths as an oud accord and ambroxan extend a clean, enduring trail.', 'يثبّت الطحلب وفيتيفر هايتي الجفاف. تُنعّم فانيلا CO₂ والمسك الأبيض، ويصقل خشب الصندل، بينما يطيل تناغم العود والأمبروكسان أثراً نقياً ثابتاً.', NULL),
-(43, 13, 'top', '[\"Black Currant\",\"Sweet Orange\",\"Fruits\",\"Pink Pepper\"]', '[\"كشمش أسود، برتقال حلو، فواكه، فلفل وردي\"]', 'A luminous opening of juicy black currant and sweet orange blends with fruits and a spark of pink pepper, creating a vibrant, energetic start.', 'افتتاحية مشرقة من الكشمش الأسود والبرتقال الحلو والفواكه، تتألق مع لمسة حارة من الفلفل الوردي لتمنح بداية نابضة بالحيوية.', NULL),
-(44, 13, 'heart', '[\"Leather\",\"Damask Rose\",\"Iris\",\"Saffron\",\"Oakmoss\"]', '[\"جلد، ورد دمشقي، سوسن، زعفران، طحلب\"]', 'A luxurious heart of leather, damask rose, and iris, enriched by saffron and oakmoss, delivers floral elegance with refined strength.', 'قلب فاخر من الجلد والورد الدمشقي والسوسن، يتعزز بالزعفران والطحلب ليمنح لمسة زهرية أنيقة وقوة راقية.', NULL),
-(45, 13, 'base', '[\"Oud Accords\",\"Amber\",\"Cedar\",\"White Musk\",\"Vanilla\",\"Patchouli\",\"Vetiver\"]', '[\"نوتات عود، عنبر، أرز، مسك أبيض، فانيلا، باتشولي، فيتيفر\"]', 'The fragrance concludes with a commanding base of oud, amber, cedar, white musk, vanilla, patchouli, and vetiver, ensuring warmth and long-lasting sophistication.', 'تستقر الرائحة على قاعدة قوية من العود والعنبر والأرز والمسك الأبيض والفانيلا والباتشولي والفيتيفر، تمنح دفئاً وأناقة تدوم طويلاً.', NULL),
-(46, 14, 'top', '[\"Sweet lime\",\"Lavender\",\"Green Apple.\"]', '[\"النوتات العليا: ليم حلو، لافندر، تفاح أخضر\"]', 'Sweet lime sparkles beside lavender’s calm and crisp green apple, creating a bright, clean introduction with airy aromatic freshness.', 'يتلألأ الليم الحلو بجوار هدوء اللافندر وقرمشة التفاح الأخضر لبدايةٍ مشرقة نقية بانتعاشٍ عطري هوائي.', NULL),
-(47, 14, 'heart', '[\"Healing wood\",\"Geranium\",\"Pine\",\"Magnolia\"]', '[\"النوتات الوسطى: خشب علاجي، جيرانيوم، صنوبر، ماغنوليا\"]', 'Healing wood shapes a smooth core; geranium adds aromatic color, pine brings cool clarity, and magnolia rounds the bouquet with soft, velvety bloom.', 'يصوغ الخشب العلاجي قلباً ناعماً؛ يلوّن الجيرانيوم بنفحة عطرية، ويمنح الصنوبر وضوحاً بارداً، وتُدوِّر الماغنوليا الباقة بتفتحٍ مخملي.', NULL),
-(48, 14, 'base', '[\"Amber\",\"Musk\",\"Sandalwood\",\"Oud\",\"Patchouli.\"]', '[\"النوتات الأساسية: عنبر، مسك، خشب الصندل، عود، باتشولي\"]', 'Amber and musk form a warm foundation while sandalwood and oud add polished woodiness; patchouli anchors the finish with depth and persistence.', 'يشكّل العنبر والمسك أساساً دافئاً، ويضيف خشب الصندل والعود خشبية مصقولة؛ يثبت الباتشولي الخاتمة بعمقٍ وثبات.', NULL),
-(49, 15, 'top', '[\"Geranium\",\"Leather\"]', '[\"النوتات العليا: جيرانيوم، جلد\"]', 'Aromatic geranium meets supple leather, creating a confident, textured opening with immediate presence and poise', 'يلتقي الجيرانيوم العطري بجلدٍ مرن ليصنع بدايةً واثقة بملمسٍ واضح وحضورٍ فوري', NULL),
-(50, 15, 'heart', '[\"Cedarwood\",\"Patchouli\"]', '[\"النوتات الوسطى: خشب الأرز، باتشولي\"]', 'Cedarwood draws clean lines while patchouli adds warm depth, shaping a balanced, smoothly transitioning core.', 'يرسم خشب الأرز خطوطاً نقية ويمنح الباتشولي عمقاً دافئاً، ليصوغ قلباً متوازناً وانتقالاً سلساً.', NULL),
-(51, 15, 'base', '[\"Moss\",\"Musk\",\"Amber\",\"Sandalwood\"]', '[\"النوتات الأساسية: طحلب، مسك، عنبر، خشب الصندل\"]', 'Moss grounds the dry-down; musk and amber soften and glow as sandalwood smooths the finish with lasting elegance.', 'يرسخ الطحلب الجفاف، ويمنح المسك والعنبر نعومة وتوهجاً بينما يصقل خشب الصندل الخاتمة بأناقةٍ دائمة.', NULL),
-(52, 16, 'top', '[\"BERGAMOT\",\"SAFFRON\",\"ALDEHYDES\",\"MANDARIN SWEET\",\"PEACH\",\"PRALINE\",\"HONEY\",\"SEAWEED\"]', '[\"النوتات العليا: برغموت، زعفران، ألدهيدات، ماندارين حلو، خوخ، برالين، عسل، طحالب البحر\"]', 'Bright bergamot and saffron ride luminous aldehydes; mandarin sweet and peach add juicy color. Praline and honey soften the edges as seaweed keeps the opening airy.', 'يتألق البرغموت والزعفران مع ألدهيدات مشرقة؛ تضيف ماندارين حلو وخوخ لوناً عصيرياً. يلين البرالين والعسل الحواف، وتحافظ طحالب البحر على بدايةٍ هوائية.', NULL),
-(53, 16, 'heart', '[\"OUD\",\"ROSE OF BULGARIA\",\"ORANGE BLOSSOM\",\"VETIVER\",\"WATER LILY\",\"DAMASK ROSE\",\"FRANGIPANI FLOWER.\"]', '[\"النوتات الوسطى: عود، ورد بلغاري، زهر البرتقال، فيتيفر، زنبق الماء، ورد دمشقي، زهرة الفرانجيباني\"]', 'Oud frames Bulgarian and Damask roses with orange blossom brightness; vetiver draws clean lines while water lily and frangipani flow through the bouquet.', 'يُطوّق العود الورود البلغارية والدمشقية مع لمعان زهر البرتقال؛ يرسم الفيتيفر خطوطاً نظيفة، وينساب زنبق الماء والفرانجيباني عبر الباقة.', NULL),
-(54, 16, 'base', '[\"TONKA\",\"SUGARCANE\",\"AMBER\",\"WHITE MUSK\",\"OAKMOSS\",\"OAKMOSS\",\"WILD WOODS\",\"VANILLA\"]', '[\"النوتات الأساسية: تونكا، قصب السكر، عنبر، مسك أبيض، طحلب السنديان، طحلب السنديان، أخشاب برية، فانيلا\"]', 'Tonka and sugarcane glow over amber and white musk; oakmoss deepens the base as wild woods and vanilla shape a warm, enduring finish.', 'تتوهج التونكا وقصب السكر فوق العنبر والمسك الأبيض؛ يعمّق طحلب السنديان القاعدة، وتصوغ الأخشاب البرية والفانيلا خاتمةً دافئةً ثابتة.', NULL),
-(55, 17, 'top', '[\"Red Fruits\",\"Watermelon\",\"Lavender\",\"Sicilian Orange\"]', '[\"النوتات العليا: فواكه حمراء، بطيخ، لافندر، برتقال صقلي\"]', 'Red fruits and watermelon bring juicy vibrance; lavender adds aromatic balance while Sicilian orange sparkles with citrus clarity for a lively introduction.', 'تمنح الفواكه الحمراء والبطيخ حيويةً عصيرية، ويضيف اللافندر توازناً عطريةً فيما يلمع البرتقال الصقلي بصفاء حمضي لبداية نابضة.', NULL),
-(56, 17, 'heart', '[\"Sandalwood\",\"Ambroxan\",\"White Musk\"]', '[\"النوتات الوسطى: خشب الصندل، أمبروكسان، مسك أبيض\"]', 'Sandalwood’s smooth wood meets ambroxan’s radiant lift and white musk’s soft veil, shaping an elegant, modern heart.', 'يلتقي خشب الصندل الناعم مع إشراق الأمبروكسان وحجاب المسك الأبيض، ليصوغ قلباً حديثاً أنيقاً.', NULL),
-(57, 17, 'base', '[\"Lotus\",\"Jasmine\",\"Lily of the Valley\",\"Sea Accord\"]', '[\"النوتات الأساسية: لوتس، ياسمين، زنابق الوادي، نفحة بحرية\"]', 'Lotus, jasmine, and lily of the valley bloom with gentle freshness; sea accord enriches the base with breezy aquatic purity.', 'تتفتح أزهار اللوتس والياسمين وزنابق الوادي بنضارة رقيقة، وتثري نفحة البحر القاعدة بنقاء مائي نسيمي.', NULL),
-(58, 18, 'top', '[\"Fresh Notes\",\"Candied Fruits\",\"Pink Pepper\"]', '[\"المقدمة: نوتات منعشة، فواكه مسكّرة، فلفل وردي\"]', 'A brisk prelude of fresh notes and candied fruits, sparked by pink pepper, sets a bright, lightly sweet tone that prepares the senses for the aromatic core.', 'مقدمة نابضة بنوتات منعشة وفواكه مسكّرة تتوهج بالفلفل الوردي، تمنح بداية مشرقة لطيفة الحلاوة وتمهّد للحضور العطري في القلب.', NULL),
-(59, 18, 'heart', '[\"Oud Accords\",\"Rosemary\",\"Bakhoor Accords\"]', '[\"قلب العطر: أكوردات العود، إكليل الجبل، أكوردات البخور\"]', 'Oud accords lead with depth as rosemary adds aromatic lift, joined by bakhoor accords for a traditional signature that bridges freshness to enduring richness.', 'أكوردات العود تمنح عمقاً، يعززه إكليل الجبل بنفحات عطرية، وتتآلف مع أكوردات البخور لروح تقليدية تصل بين الانتعاش والغنى المتواصل.', NULL),
-(60, 18, 'base', '[\"White Amber\",\"Vetiver\",\"Musk\",\"Leather\"]', '[\"القاعدة: عنبر أبيض، ڤيتيڤر، مسك، جلد\"]', 'White amber anchors the dry-down beside vetiver, while musk softens and leather frames the structure, creating a lasting, composed finish.', 'العنبر الأبيض يرسّخ الجفاف إلى جانب الڤيتيڤر، ويصقل المسك الحواف، فيما يضبط الجلد البنية لختام ثابت ومتّزن.', NULL),
-(61, 19, 'top', '[\"Citrus Zest\",\"Raspberry\",\"Saffron\",\"Thyme\"]', '[\"المقدمة: زست الحمضيات، توت العليق، زعفران، زعتر\"]', 'Citrus zest and raspberry lead with energy; saffron and thyme add aromatic definition, preparing the senses for the floral core and polished woods ahead.', 'يتصدر زست الحمضيات وتوت العليق بإيقاع حيوي، ويضيف الزعفران والزعتر تحديداً عطرياً يمهّد لزهرية القلب وخشبية القاعدة المصقولة.', NULL),
-(62, 19, 'heart', '[\"Iris\",\"Violet Leaf\",\"Olibanum Jasmine\"]', '[\"قلب العطر: سوسن، ورقة البنفسج، أوليبانوم ياسمين\"]', 'Iris, violet leaf, and olibanum jasmine define the center, blending floral and green facets to guide the composition smoothly toward leather and woods.', 'يشكّل السوسن وورقة البنفسج وأوليبانوم ياسمين صميم العطر، بتوليفة زهرية خضراء تقود بسلاسة نحو الجلد والأخشاب.', NULL),
-(63, 19, 'base', '[\"Leather Accord\",\"Suede\",\"Cedar\",\"Vetiver\",\"Amber\",\"Woody Notes\"]', '[\"القاعدة: أكورد الجلد، شمواه، أرز، ڤيتيڤر، عنبر، نوتات خشبية\"]', 'Leather accord and suede establish the signature, supported by cedar and vetiver; amber and woody notes complete an enduring, well-structured dry-down.', 'يرسّخ أكورد الجلد والشمواه الطابع الأساس، يدعمه الأرز والڤيتيڤر؛ وتُكمل نوتات العنبر والخشب جفافاً متماسكاً وطويل الأمد.', NULL),
-(64, 20, 'top', '[\"Rose\",\"Jasmine\"]', '[\"المقدمة: ورد، ياسمين\"]', 'A bright floral entry where rose and jasmine unfold immediately, setting a clear tone that prepares the composition for the softer heart to follow.', 'مقدمة زهرية مشرقة يتفتح فيها الورد والياسمين فوراً، ترسم نبرة واضحة تهيّئ انتقال العطر نحو قلب أكثر نعومة.', NULL),
-(65, 20, 'heart', '[\"Lily of the Valley\",\"Violet\"]', '[\"قلب العطر: زنبق الوادي، بنفسج\"]', 'Lily of the valley and violet form the center, smoothing the floral profile and guiding the scent toward its structured, woody base.', 'زنبق الوادي والبنفسج يشكّلان المركز، ينعّمان الشخصية الزهرية ويقودان العطر باتجاه قاعدة خشبية متماسكة.', NULL),
-(66, 20, 'base', '[\"Sandalwood\",\"Cedarwood\",\"Vetiver\"]', '[\"القاعدة: خشب الصندل، خشب الأرز، ڤيتيڤر\"]', 'Sandalwood and cedarwood provide body and shape, while vetiver traces the outline of the dry-down, leaving a clean, composed finish.', 'يمنح خشب الصندل وخشب الأرز البنية والتماسك، ويرسم الڤيتيڤر ملامح الجفاف لختام نظيف ومتوازن.', NULL),
-(67, 21, 'top', '[\"Sweet Citrus Brilliance: Lime\",\"Orange\"]', '[\"المقدمة: بريق حمضيات حلوة: ليمون، برتقال\"]', 'Sweet citrus brilliance from lime and orange forms a lively opening, setting a clear, zesty frame that prepares the palette for the tropical fruit to follow.', 'بريق حمضي حلو من الليمون والبرتقال يقدّم افتتاحاً نابضاً، يرسم إطاراً واضحاً منعشاً يمهّد لمرحلة الفواكه الاستوائية التالية.', NULL),
-(68, 21, 'heart', '[\"Tropical Fruity Bliss: Mango\",\"Pineapple\",\"Mixed Exotic Fruits\"]', '[\"قلب العطر: بهجة فواكه استوائية: مانجو، أناناس، فواكه غريبة مختلطة\"]', 'Mango and pineapple lead a tropical fruity bliss, joined by mixed exotic fruits to sustain a juicy momentum that bridges citrus to the warm base.', 'يتصدّر المانجو والأناناس بهجة فواكه استوائية، وتدعمها فواكه غريبة مختلطة لتحافظ على إيقاع غني يربط الحمضيات بقاعدة العطر الدافئة.', NULL),
-(69, 21, 'base', '[\"Warm &amp; Comforting Depth: Amber\",\"Amber Resin\",\"Musk\",\"Vanilla\"]', '[\"القاعدة: عمق دافئ ومريح: عنبر، راتنج العنبر، مسك، فانيلا\"]', 'Warm and comforting depth arises as amber and amber resin meet soft musk; vanilla smooths the edges, leaving a composed, gently sweet dry-down.', 'يتجلّى العمق الدافئ والمريح حين يلتقي العنبر وراتنج العنبر بمسك ناعم؛ تصقل الفانيلا الحواف لتجف نفحات العطر بحلاوة هادئة ومتزنة.', NULL),
-(70, 22, 'top', '[\"Bergamot\",\"Pink Pepper\",\"Elemi\",\"Nutmeg\",\"Tangerine\",\"Oud\",\"Honey\"]', '[\"المقدمة: برغموت، فلفل وردي، إليمي، جوزة الطيب، يوسفي، عود، عسل\"]', 'A vibrant opening of bergamot, pink pepper, and tangerine, heightened by elemi and nutmeg, deepened with oud and honey for a striking first impression.', 'افتتاح نابض بالبرغموت والفلفل الوردي واليوسفي، تعزّزه لمسات الإليمي وجوزة الطيب، ويثريه العود والعسل لانطباع أوّل قوي.', NULL),
-(71, 22, 'heart', '[\"Patchouli\",\"Aromatic Accords\",\"Vetiver\",\"Cashmere Wood\",\"Cinnamon\",\"Rose\",\"Saffron\",\"Jasmine\",\"Orange Blossom\"]', '[\"قلب العطر: باتشولي، أكوردات عطرية، ڤيتيڤر، خشب الكشمير، قرفة، ورد، زعفران، ياسمين، زهر البرتقال\"]', 'Patchouli, vetiver, and cashmere wood form a textured base for cinnamon, rose, saffron, jasmine, and orange blossom, blending spice, woods, and florals seamlessly.', 'باتشولي وڤيتيڤر وخشب الكشمير يشكّلون أساساً متماسكاً يتناغم مع القرفة والورد والزعفران والياسمين وزهر البرتقال، بدمج متقن للتوابل والأخشاب والزهور.', NULL),
-(72, 22, 'base', '[\"Musk\",\"Amber\",\"Raspberry\",\"Saffron\",\"Oakmoss\",\"Powdery\",\"Ambrette Seeds\",\"Leather\",\"Sandalwood\",\"Violet\",\"Agarwood\",\"Ambroxan\"]', '[\"القاعدة: مسك، عنبر، توت، زعفران، طحلب البلوط، بودري، بذور الأمبريت، جلد، خشب الصندل، بنفسج، عود، أمبروكسان\"]', 'Musk and amber embrace raspberry, oakmoss, and ambrette seeds; leather, sandalwood, violet, agarwood, and ambroxan define a deep, enduring signature.', 'يمتزج المسك والعنبر مع التوت وطحلب البلوط وبذور الأمبريت؛ فيما يرسّخ الجلد وخشب الصندل والبنفسج والعود والأمبروكسان بصمة عميقة طويلة الأمد.', NULL),
-(73, 23, 'top', '[\"Citrus\",\"Flower\"]', '[\"المقدمة: حمضيات، زهور\"]', 'Sparkling citrus meets a delicate floral lift, opening the scent with clarity, freshness, and a luminous first impression.', 'تلتقي حمضيات متألقة بلمسة زهرية رقيقة لتمنح بداية مشرقة ونقية بطابع منعش وواضح.', NULL),
-(74, 23, 'heart', '[\"Roses\",\"Jasmine\"]', '[\"القلب: ورد، ياسمين\"]', 'A romantic duet of rose and jasmine unfolds with soft elegance, adding a silky bloom at the center', 'يتفتح ثنائي الورد والياسمين بأناقة ناعمة ليمنح العطر توردًا حريريًا في القلب.', NULL),
-(75, 23, 'base', '[\"Musk\",\"Amber\"]', '[\"القاعدة: مسك، عنبر\"]', 'Silky musk and warm amber create a smooth, comforting trail that lingers with understated sophistication', 'يمزج المسك الحريري مع العنبر الدافئ ليترك أثراً ناعماً ومريحاً بلمسة راقية باقية.', NULL),
-(76, 24, 'top', '[\"Pineapple\",\"Apple\",\"Citrus\"]', '[\"المقدمة: أناناس، تفاح، حمضيات\"]', 'Juicy pineapple and crisp apple sparkle with zesty citrus for a bright, inviting opening', 'يسطع الأناناس العصير مع التفاح المقرمش ونفحات الحمضيات لإفتتاحية مشرقة وجذّابة.', NULL),
-(77, 24, 'heart', '[\"Jasmine\",\"Rose Damas\",\"Red Fruits\"]', '[\"القلب: ياسمين، ورد دمشقي، فواكه حمراء\"]', 'A romantic bouquet of jasmine and Damask rose, sweetened by red fruits, blooms with graceful floral depth', 'باقة رومانسية من الياسمين والورد الدمشقي تتعزّز بالفواكه الحمراء لتمنح عمقاً زهيرياً أنيقاً.', NULL),
-(78, 24, 'base', '[\"Musk\",\"Sandalwood\",\"Vanilla\",\"Ambroxan.\"]', '[\"القاعدة: مسك، خشب الصندل، فانيلا، أمبروكسان\"]', 'Silky musk and creamy sandalwood melt into comforting vanilla, polished with an airy ambroxan trail for lasting elegance', 'يمتزج المسك الحريري مع خشب الصندل الكريمي على دفء الفانيلا، وتوقّع هوائي من أمبروكسان لرفاهية تدوم.', NULL),
-(79, 25, 'top', '[\"Marine Salt\",\"Melon\"]', '[\"المقدمة: ملح البحر، شمام\"]', 'A bracing marine-salt sparkle meets juicy melon for a crisp, sun-lit opening that feels clean, modern, and immediately refreshing.', 'بريقٌ بحريٌّ مالح يلتقي بعصيرية الشمام لافتتاحية نظيفة ومشرقة تمنح انتعاشاً معاصراً من اللحظة الأولى.', NULL),
-(80, 25, 'heart', '[\"Musk\",\"Sandalwood\"]', '[\"القلب: مسك، خشب الصندل\"]', 'A soft, skin-like musk melts into creamy sandalwood, shaping a serene, comforting heart with polished woody warmth.', 'مسكٌ ناعم ينساب في دفء خشب الصندل الكريمي ليكوّن قلباً هادئاً مريحاً بلمسة خشبية مصقولة.', NULL),
-(81, 25, 'base', '[\"Fruity\",\"Amber Resins\"]', '[\"القاعدة: فواكه، راتنجات العنبر\"]', 'Subtle fruity tones entwine with amber resins for a smooth, glowing dry-down that lingers with understated elegance.', 'نفحاتٌ فاكهية دقيقة تمتزج براتنجات العنبر لتجفيفٍ ناعمٍ دافئ يظلّ بلمسة راقية خفية.', NULL),
-(82, 26, 'top', '[\"Mandarin\",\"Cypress\"]', '[\"المقدمة: الماندرين، السرو.\"]', 'Sparkling mandarin cuts through fresh, pine-leaning cypress for a crisp, confident lift that readies the senses for richness', 'يقدّم الماندرين المتلألئ مع السرو الصنوبري انتعاشاً ووضوحاً يهيّئ الحواس لعمق المركّب.', NULL),
-(83, 26, 'heart', '[\"Caramel\",\"Labdanum\",\"Jasmine\"]', '[\"القلب: الكراميل، اللابدانوم، الياسمين.\"]', 'A plush caramel veil meets resinous labdanum and luminous jasmine, forming a warm ambered heart with soft floral radiance.', 'حلاوة الكراميل تحتضن كثافة اللابدانوم مع إشراقة الياسمين، لتصنع قلباً دافئاً عنبرياً بلمسة زهرية ناعمة', NULL),
-(84, 26, 'base', '[\"Vetiver\",\"Musk\",\"Cedarwood\",\"Amber\",\"Oud Accords\"]', '[\"القاعدة: الفيتيفر، المسك، خشب الأرز، العنبر، أكوردات العود.\"]', 'Earthy vetiver and smooth musk anchor noble cedarwood and glowing amber, while oud accords unfurl a regal, room-filling trail.', 'يرسّخ الفيتيفر الترابي والمسك الحريري قاعدة من خشب الأرز والعنبر المتوهّج، وتفتح أكوردات العود أثراً ملكياً يملأ الأجواء.', NULL),
-(85, 27, 'top', '[\"Indian Oud Notes\"]', '[\"المقدمة: نغمات عود هندي.\"]', 'A distinctive Indian oud signature rises first—resinous, noble, and immediately captivating—setting a confident tone for the sweetness to come.', 'تتقدّم نفحات العود الهندي بطابعها الآسر والنفيس لتعلن حضور العطر بثقة وتتهيّأ لدفء الحلاوة في المراحل التالية.', NULL),
-(86, 27, 'heart', '[\"Caramel\",\"Labdanum\",\"Jasmine\"]', '[\"القلب: كراميل، لابدانوم، ياسمين.\"]', 'Silky caramel and ambered labdanum form a plush core, brightened by jasmine’s gentle lift for a refined, smoothly gourmand heart.', 'ينسج الكراميل واللابدانوم قلباً مخملياً دافئاً، تضيئه لمسة ياسمين رقيقة تمنح توازناً جميلاً للحلاوة.', NULL),
-(87, 27, 'base', '[\"Amber\",\"Cedar\",\"Vetiver\"]', '[\"القاعدة: عنبر، أرز، فيتيفر.\"]', 'Amber’s glow meets polished cedar and earthy vetiver, grounding the composition in a steady, elegant trail with lasting presence', 'يتوهّج العنبر فوق خشب الأرز المصقول ونفحات الفيتيفر الترابية، لقاعدة راسخة وأثرٍ أنيق طويل البقاء.', NULL),
-(88, 28, 'top', '[\"Lively and Indulgent: Boozy Nuance\",\"Red Fruits\",\"Mandarin\",\"Bergamot\"]', '[\"لمسة كحولية عطرية، فواكه حمراء، ماندرين، برغموت\"]', '<p>A playful burst of mandarin and bergamot brightens juicy red fruits, brushed with a boozy nuance that feels indulgent yet airy.</p>', '<p>دفقة مرحة من الماندرين والبرغموت تضيء الفواكه الحمراء العصيرية، وتلمسها نفحة كحولية عطرية تمنح ترفاً خفيفاً ومتوازناً</p>', NULL),
-(89, 28, 'heart', '[\"Deep and Woody: Cedar Wood\",\"Patchouli\"]', '[\"خشب الأرز، باتشولي\"]', '<p>Cedar’s clean grain meets patchouli’s depth, shaping a confident woody core that bridges brightness to warmth.</p>', '<p>حَبْكٌ متقن بين نقاء خشب الأرز وعمق الباتشولي، ليصوغ قلباً خشبياً واثقاً يصل البدايات المشرقة بالدفء الآتي.</p>', NULL),
-(90, 28, 'base', '[\"Deep and Woody: Cedar Wood\",\"Patchouli\"]', '[\"مسك، بنزوين، فانيلا، أكورد بخور\"]', '<p>Musk and resinous benzoin melt into soft vanilla, while a traditional bakhoor accord leaves a graceful, room-enveloping aura.</p>', '<p>يذوب المسك مع بنزوين راتنجي في نعومة الفانيلا، وتمنح أكوردات البخور هالة وادعة تعطر الأجواء بإرثٍ شرقي أنيق.</p>', NULL),
-(91, 29, 'top', '[\"Hyacinth\",\"Lavender\",\"Fruits\",\"apple\",\"pineapple.\"]', '[\"المقدمة: هياسينث، خزامى، فواكه متنوعة، تفاح، أناناس\"]', 'Dewy hyacinth and calming lavender meet crisp apple and sunlit pineapple, delivering a bright, modern freshness with soft floral lift', 'هياسينث ندي وخزامى مهدّئ يلتقيان بتفاح منعش وأناناس مشرق، لانتعاش عصري مضيء يرتفع بلمسة زهرية رقيقة.', NULL),
-(92, 29, 'heart', '[\"Iris\",\"Jasmine\",\"Pink Pepper\"]', '[\"القلب: سوسن، ياسمين، فلفل وردي\"]', 'Velvety iris and gentle jasmine bloom with a subtle pink-pepper sparkle, shaping a refined, elegant heart that bridges freshness to depth.', 'سوسن مخملي وياسمين ناعم يزهران مع لمعة فلفل وردي خفيفة، ليشكّلا قلباً راقياً يصل الانتعاش بالعمق.', NULL),
-(93, 29, 'base', '[\"Vetiver\",\"Ambroxan\",\"Oud\",\"Musk\"]', '[\"القاعدة: فيتيفر، أمبروكسان، عود، مسك\"]', 'Earthy vetiver and resonant oud provide backbone as ambroxan’s clean amber glow and soft musk leave a polished, comforting trail.', 'فيتيفر ترابي وعود عميق يمنحان ركازة، فيما يضفي أمبروكسان وهجاً عنبرياً نظيفاً وتكمّل لمسة المسك ختاماً مصقولاً مريحاً.', NULL),
-(94, 30, 'top', '[\"Turkish Rose\",\"Lavender\",\"Citruses\",\"Peony\"]', '[\"ورد تركي، لافندر، حمضيات، فاوانيا\"]', 'Turkish rose, lavender, citruses, and peony create a bright floral–citrus opening full of elegance', 'ورد تركي ولافندر مع الحمضيات والفاوانيا يمنحون افتتاحية مشرقة زهرية–حمضية أنيقة.', NULL),
-(95, 30, 'heart', '[\"Rose\",\"Sandalwood\",\"White Flowers\",\"Frankincense (Olibanum)\"]', '[\"ورد، خشب الصندل، زهور بيضاء، بخور (لبان)\"]', 'A velvety rose heart enriched with sandalwood, white florals, and incense adds warmth and mystique.', 'قلب مخملي من الورد مدعّم بخشب الصندل والزهور البيضاء والبخور يمنح دفئاً وغموضاً.', NULL),
-(96, 30, 'base', '[\"Oud Accord\",\"Guaiac Wood\",\"Oakmoss\",\"Musk\",\"Ambroxan\"]', '[\"نوتات العود، خشب الغواياك، طحالب السنديان، مسك، أمبروكسان\"]', 'Oud, guaiac wood, oakmoss, musk, and ambroxan leave a smoky–woody signature of refined depth.', 'نوتات العود وخشب الغواياك وطحالب السنديان والمسك والأمبروكسان تترك أثراً خشبياً–دخانياً عميقاً راقياً', NULL),
-(97, 31, 'top', '[\"Cardamom\",\"Peony\"]', '[\"المقدمة: الهيل، الفاوانيا\"]', 'Cool, aromatic cardamom lifts the silky bloom of peony, creating a vibrant opening that is fresh, airy, and quietly luxurious.', 'يضيء الهيل العطري البارد رهافة الفاوانيا، لافتتاحية نابضة منعشة وهوائية بطابع فاخر هادئ.', NULL),
-(98, 31, 'heart', '[\"Rose\",\"Laos Oud\",\"Cambodian Oud\"]', '[\"القلب: الورد، عود لاوسي، عود كمبودي\"]', 'A velvety rose heart is deepened by Laos oud and Cambodian oud, blending floral grace with dignified oud richness.', 'قلب وردي مخملي يتعمّق عبر عود لاوسي وعود كمبودي، في تزاوجٍ بين رقة الزهر وثراء العود الوقور.', NULL),
-(99, 31, 'base', '[\"Tolu Balsam\",\"Amber\",\"Musk\",\"Indian Oud\"]', '[\"القاعدة: بلسم تولو، عنبر، مسك، عود هندي\"]', 'Resinous tolu balsam and warm amber melt into soft musk, while Indian oud adds noble depth for a serene, lingering trail.', 'يمتزج بلسم تولو الراتنجي مع العنبر الدافئ والمسك الناعم، ويمنح العود الهندي عمقاً نبيلاً لأثرٍ هادئ طويل البقاء.', NULL),
-(100, 32, 'top', '[\"Fruity Notes\",\"Pear\",\"Pink Pepper\"]', '[\"المقدمة: نغمات فاكهية، إجاص، فلفل وردي\"]', 'Juicy pear and bright fruity tones sparkle with a gentle pink-pepper tingle, setting an inviting, modern lift.', 'يلمع الإجاص وسط نغمات فاكهية مشرقة مع وخزة فلفل وردي لطيفة، لافتتاحية معاصرة مرحِّبة.', NULL),
-(101, 32, 'heart', '[\"Tuberose\",\"Jasmine\",\"Ylang-Ylang\",\"Agarwood\"]', '[\"القلب: توبروز، ياسمين، إيلنغ-إيلنغ، عود\"]', 'A voluptuous white-floral trio—tuberose, jasmine, ylang-ylang—wraps around noble agarwood, fusing elegance with a refined oud character.', 'ثلاثية زهرية بيضاء فاخرة من توبروز وياسمين وإيلنغ-إيلنغ تحتضن العود النبيل، في تزاوجٍ بين الرقي والبصمة العودية الراقية.', NULL),
-(102, 32, 'base', '[\"Amber\",\"Musk\",\"Patchouli\"]', '[\"القاعدة: عنبر، مسك، باتشولي\"]', 'Warm amber and soft musk smooth the edges as patchouli adds graceful depth for a polished, lingering finish', 'عنبر دافئ ومسك ناعم يصقلان الملامح فيما يضفي الباتشولي عمقاً رشيقاً لختامٍ أنيق طويل الأثر.', NULL),
-(103, 33, 'top', '[\"Indian Oud\"]', '[\"المقدمة: عود هندي\"]', '<p>Noble Indian oud rises first—pure, assured, and resonant—setting the tone for a refined, single-minded oud journey.</p>', '<p>يتقدّم العود الهندي أولاً بنبلٍ وثباتٍ ورنّة واضحة، ليضع ملامح رحلة عودية راقية ومركّزة.</p>', NULL),
-(104, 33, 'heart', '[\"Cambodi Blend\"]', '[\"القلب: مزيج كمبودي\"]', '<p>The Cambodi blend deepens the profile with rounded warmth and complexity, bridging the opening to a serene, enduring finish.</p>', '<p>يثري المزيج الكمبودي الطابع بعمقٍ ودفءٍ متوازن، رابطاً البداية بخاتمة هادئة طويلة البقاء.</p>', NULL),
-(105, 33, 'base', '[\"Sweet Indian Oud\"]', '[\"القاعدة: عود هندي حلو\"]', '<p>A smooth veil of sweet Indian oud settles on the skin—soft, polished, and memorably comforting for an elegant, lasting trail.</p>', '<p>تستقر طبقة ناعمة من العود الهندي الحلو على البشرة—مصقولة ودافئة ومريحة، تاركة أثراً أنيقاً يدوم.</p>', NULL),
-(106, 34, 'top', '[\"Aldehydes\",\"Rose\",\"Powdery Notes.\"]', '[\"المقدمة: ألديهيدات، ورد، نغمات بودرية\"]', 'Sparkling aldehydes lift a tender rose wrapped in a soft powdery veil, setting a polished and luminous first impression.', 'ترفع الألديهيدات المتلألئة الورد برقة داخل حجاب بودري ناعم، لتمنح انطباعاً أولياً مصقولاً ومشرقاً.', NULL),
-(107, 34, 'heart', '[\"Dry Woods\",\"Patchouli\",\"Geranium\",\"Orange Blossom\",\"Roses\"]', '[\"القلب: أخشاب جافة، باتشولي، جيرانيوم، زهر البرتقال، ورود\"]', 'Dry woods and patchouli shape a refined backbone as geranium, orange blossom, and roses add floral texture and poised depth.', 'تصوغ الأخشاب الجافة مع الباتشولي عموداً عطرياً راقياً، وتمنح الجيرانيوم وزهر البرتقال والورود طبقات زهرية متوازنة وعمقاً واثقاً.', NULL),
-(108, 34, 'base', '[\"Musk Accord\",\"Sandalwood\",\"Dry Woods.\"]', '[\"القاعدة: أكورد المسك، خشب الصندل، أخشاب جافة\"]', 'A smooth musk accord and creamy sandalwood settle over dry woods, leaving a soft, elegant trail with quiet warmth.', 'يستقر أكورد المسك الناعم وخشب الصندل فوق أخشاب جافة، ليخلّفا أثراً ناعماً أنيقاً بدفء هادئ.', NULL),
-(109, 35, 'top', '[\"Sicilian Orange\",\"Jasmine\",\"Lily\",\"apple\"]', '[\"المقدمة: برتقال صقلي، ياسمين، زنبق، تفاح\"]', 'Radiant Sicilian orange lifts a soft jasmine–lily bouquet as crisp apple adds a playful bite for a bright, polished opening.', 'يرفع البرتقال الصقلي المتلألئ باقة ياسمين–زنبق ناعمة، فيما يضيف التفاح قرمشة مرِحة لافتتاحية مشرقة مصقولة.', NULL),
-(110, 35, 'heart', '[\"Powdery Accord\",\"Vanilla Bean\",\"Sea Notes\"]', '[\"القلب: أكورد بودري، فانيلا (حبة فانيلا)، نفحات بحرية\"]', 'A velvety powdery veil and true vanilla bean meet airy sea notes, blending comfort with a clean, breezy freshness.', 'حجاب بودري مخملي مع حبة فانيلا أصيلة يلتقيان بنفحات بحرية هوائية، في تمازجٍ بين الدفء والانتعاش النقي.', NULL),
-(111, 35, 'base', '[\"Musk\",\"Cashmeran\",\"Sandalwood\",\"Ambroxan\"]', '[\"القاعدة: مسك، كاشميرن، خشب الصندل، أمبروكسان\"]', 'Silky musk and plush cashmeran melt into creamy sandalwood, while ambroxan radiates a modern, lasting glow.', 'يذوب المسك الحريري والكاشميرن الوثير في خشب صندل كريمي، ويمنح الأمبروكسان وهجاً حديثاً طويل البقاء.', NULL),
-(112, 36, 'top', '[\"Bergamot\",\"Rose\",\"Juniper Berries\",\"Bitter Orange\",\"Rosemary\",\"Black Currant\"]', '[\"المقدمة: برغموت، ورد، توت العرعر، برتقال مر، إكليل الجبل، كشمش أسود\"]', '<p>Zesty bergamot and bitter orange brighten rose, while juniper berries and rosemary add crisp aromatic lift; black currant gives a tart, modern edge.</p>', '<p>يضيء البرغموت والبرتقال المر الورد، وتضيف توت العرعر وإكليل الجبل انتعاشاً عطرِيّاً واضحاً، فيما يمنح الكشمش الأسود حِدّة عصرية منعشة.</p>', NULL),
-(113, 36, 'heart', '[\"Lavender\",\"Eucalyptus\",\"Cedarwood\",\"Artemisia\",\"Violet\",\"Sage\",\"Chamomile\",\"Jasmine\",\"Nutmeg\",\"Pepper\"]', '[\"القلب: خزامى، أوكالبتوس، خشب الأرز، شيح، بنفسج، مريمية، بابونج، ياسمين، جوزة الطيب، فلفل\"]', '<p>An intricate aromatic core where lavender and eucalyptus meet cedarwood, artemisia, violet, sage, chamomile, and jasmine, animated by nutmeg and pepper.</p>', '<p>: قلب عطري مُحاك بإتقان يجمع الخزامى والأوكالبتوس مع خشب الأرز والشيح والبنفسج والمريمية والبابونج والياسمين، تنشّطه جوزة الطيب والفلفل.</p>', NULL),
-(114, 36, 'base', '[\"Amber\",\"Tobacco\",\"Sandalwood\",\"Patchouli\",\"Tonka Bean\",\"White Musk\",\"Vetiver\"]', '[\"القاعدة: عنبر، تبغ، خشب الصندل، باتشولي، حبوب التونكا، مسك أبيض، فيتيفر\"]', '<p>Amber and nuanced tobacco melt into creamy sandalwood and earthy patchouli, rounded by tonka bean, white musk, and grounded vetiver</p>', '<p>يذوب العنبر مع التبغ المتأنّق في خشب الصندل الكريمي والباتشولي الترابي، وتكملها التونكا والمسك الأبيض والفيتيفر الراسخ لختامٍ متّزن.</p>', NULL),
-(115, 37, 'top', '[\"Black Currant\",\"Pink Pepper\",\"Bergamot\"]', '[\"المقدمة: كشمش أسود، فلفل وردي، برغموت\"]', 'Tart black currant rushes forward as bright bergamot sparkles; pink pepper adds a soft, modern tingle for a fresh, stylish lift.', 'يندفع الكشمش الأسود بحموضته الشهية مع لمعان البرغموت، وتمنح اللمسة الوردية من الفلفل وخزة عصرية لانتعاش أنيق.', NULL),
-(116, 37, 'heart', '[\"Jasmine\"]', '[\"القلب: ياسمين\"]', 'A luminous jasmine heart—petal-soft yet radiant—bridges the lively opening to a graceful, comforting finish.', 'قلب الياسمين المضيء—ناعم كالبتلات لكن متألّق—يصل الافتتاح النابض بخاتمة هادئة مريحة.', NULL),
-(117, 37, 'base', '[\"Vanilla\",\"Cashmeran\",\"Guaiac Wood\"]', '[\"القاعدة: فانيلا، كاشميرن، خشب غواياك\"]', 'Silky vanilla wraps plush cashmeran over smooth guaiac wood, leaving a serene, polished trail with gentle warmth', 'تحتضن الفانيلا الحريرية الكاشميرن الوثير فوق خشب غواياك الأملس، لتخلف أثراً هادئاً مصقولاً بدفء رقيق.', NULL),
-(118, 38, 'top', '[\"Black Currant\",\"Cassia\",\"Grapes\",\"Red Berries\",\"Indian oud\",\"leather.\"]', '[\"النفحات العليا: الكشمش الأسود، الكاسيا، العنب، التوت الأحمر، العود الهندي، الجلد\"]', 'Juicy fruits entwined with Indian oud and leather create a bold, intriguing opening.', 'فواكه غنية تتمازج مع العود الهندي والجلد لتمنح بداية قوية ومثيرة.', NULL),
-(119, 38, 'heart', '[\"Peony\",\"Violet\",\"Lily of the Valley\",\"Jasmine\",\"rose\",\"saffron.\"]', '[\"قلب العطر: الفاوانيا، البنفسج، زنبق الوادي، الياسمين، الورد، الزعفران\"]', 'A floral heart of peony, jasmine, rose, and violet, lifted by a delicate touch of saffron.', 'قلب زهري يزهو بالفوانيا والياسمين والورد والبنفسج، تتعانقه لمسة زعفران رقيقة.', NULL),
-(120, 38, 'base', '[\"Agarwood\",\"Musk\",\"amber\"]', '[\"| قاعدة العطر: العود، المسك، العنبر\"]', 'A deep foundation of agarwood, musk, and amber, leaving a majestic and sensual trail.', 'قاعدة عميقة من العود والمسك والعنبر، تمنح أثراً ملكياً آسراً.', NULL),
-(121, 39, 'top', '[\"Bergamot\",\"Clary Sage\"]', '[\"النفحات العليا: البرغموت، الميرمية\"]', 'Sparkling bergamot and aromatic clary sage awaken the senses with crisp freshness.', 'برغموت متألق وميرمية عطرية ينعشان الحواس بانتعاش نقي.', NULL),
-(122, 39, 'heart', '[\"Rose\",\"Jasmine\",\"Patchouli\"]', '[\"قلب العطر: الورد، الياسمين، الباتشولي\"]', 'A romantic floral heart of rose and jasmine, enriched with earthy patchouli.', 'قلب زهري رومانسي من الورد والياسمين، يعززه عمق الباتشولي الترابي.', NULL),
-(123, 39, 'base', '[\"Vanilla\",\"Tonka Beans\",\"Ambergris\"]', '[\"قاعدة العطر: الفانيلا، حبوب التونكا، العنبر الرمادي\"]', 'Creamy vanilla, tonka beans, and ambergris create a sensual and enduring trail.', 'فانيلا كريمية مع حبوب التونكا والعنبر الرمادي تمنح أثراً حسياً يدوم طويلاً.', NULL),
-(124, 40, 'top', '[\"Peach\",\"Apple Blossom\",\"Lavender\",\"Saffron\"]', '[\"النفحات العليا: الخوخ، زهر التفاح، الخزامى، الزعفران\"]', 'Fresh and elegant, peach and apple blossom blend with lavender and saffron for a radiant start.', 'انتعاش أنيق من الخوخ وزهر التفاح يتناغم مع الخزامى والزعفران ليمنح بداية مشرقة.', NULL),
-(125, 40, 'heart', '[\"Pineapple Blossom\",\"Cedarwood\",\"Agarwood\"]', '[\"قلب العطر: زهر الأناناس، خشب الأرز، العود\"]', 'A sophisticated woody-floral heart of pineapple blossom, cedarwood, and agarwood.', 'قلب زهري خشبي راقٍ يجمع بين زهر الأناناس وخشب الأرز والعود.', NULL),
-(126, 40, 'base', '[\"Musk\",\"Wild Rose\",\"Patchouli\",\"Amber\",\"Vanilla Beans\",\"Mossy Notes\"]', '[\"قاعدة العطر: المسك، الورد البري، الباتشولي، العنبر، الفانيلا، النوتات الطحلبية\"]', 'Musk, wild rose, amber, and vanilla create a sensual warmth, softened by patchouli and moss.', 'مسك وورد بري وعنبر وفانيلا تمنح دفئاً حسياً يتوازن مع الباتشولي والنفحات الطحلبية', NULL),
-(127, 41, 'top', '[\"Mandarin\",\"Bergamot\",\"Pineapple\",\"Apple\"]', '[\"النفحات العليا: الماندرين، البرغموت، الأناناس، التفاح\"]', 'Bright mandarin and bergamot meet pineapple and apple for a fruity, sparkling opening.', 'انتعاش الماندرين والبرغموت يلتقي مع الأناناس والتفاح لبداية فاكهية متألقة.', NULL),
-(128, 41, 'heart', '[\"Orange Blossom\",\"Rose Accords\"]', '[\"قلب العطر: زهر البرتقال، نغمات الور\"]', 'A refined floral heart of orange blossom and rose accords, timelessly elegant', 'قلب زهري راقٍ من زهر البرتقال ونغمات الورد يفيض بأناقة خالدة.', NULL),
-(129, 41, 'base', '[\"Amber\",\"Sandalwood\",\"Vanilla\",\"Musk\",\"Oud Accords\"]', '[\"قاعدة العطر: العنبر، خشب الصندل، الفانيلا، المسك، العود\"]', 'Amber, sandalwood, vanilla, musk, and oud create a silky, sensual signature.', 'عنبر وخشب الصندل وفانيلا ومسك ولمسات عود تصوغ توقيعاً حريرياً آسراً.', NULL),
-(130, 42, 'top', '[\"Cypriol\",\"Saffron\",\"Incense\",\"Mandarin.\"]', '[\"النفحات العليا: السبرول، الزعفران، البخور، اليوسفي\"]', 'Mandarin freshness brightened with saffron, incense, and cypriol for a smoky-spicy start.', 'انتعاش اليوسفي يتألق مع الزعفران والبخور والسبرول لبداية حارة مدخنة.', NULL),
-(131, 42, 'heart', '[\"Rose\",\"Amber\",\"Patchouli\",\"Cashmere Wood\",\"Caramel\"]', '[\"قلب العطر: الورد، العنبر، الباتشولي، خشب الكشمير، الكراميل\"]', 'A sensual bouquet of rose and amber enriched with patchouli, cashmere wood, and caramel.', 'باقة عاطفية من الورد والعنبر، يعمقها الباتشولي وخشب الكشمير ولمسة الكراميل.', NULL),
-(132, 42, 'base', '[\"Oud Accord\",\"Musk\",\"Oak Moss\",\"Vetiver\",\"Leather\"]', '[\"قاعدة العطر: العود، المسك، الطحالب، الفيتيفر، الجلد\"]', 'Intense oud, musk, oak moss, vetiver, and leather create a powerful, elegant finish.', 'عود مكثف مع مسك وطحالب وفيتيفر وجلد يمنح نهاية قوية راقية.', NULL),
-(133, 43, 'top', '[\"Turkish Rose\",\"Lavender\",\"Citruses\",\"Peony\"]', '[\"ورد تركي، لافندر، حمضيات، فاوانيا\"]', 'Turkish rose, lavender, citruses, and peony create a bright floral–citrus opening full of elegance', 'ورد تركي ولافندر مع الحمضيات والفاوانيا يمنحون افتتاحية مشرقة زهرية–حمضية أنيقة.', NULL),
-(134, 43, 'heart', '[\"Rose\",\"Sandalwood\",\"White Flowers\",\"Frankincense (Olibanum)\"]', '[\"ورد، خشب الصندل، زهور بيضاء، بخور (لبان)\"]', 'A velvety rose heart enriched with sandalwood, white florals, and incense adds warmth and mystique.', 'قلب مخملي من الورد مدعّم بخشب الصندل والزهور البيضاء والبخور يمنح دفئاً وغموضاً.', NULL),
-(135, 43, 'base', '[\"Oud Accord\",\"Guaiac Wood\",\"Oakmoss\",\"Musk\",\"Ambroxan\"]', '[\"نوتات العود، خشب الغواياك، طحالب السنديان، مسك، أمبروكسان\"]', 'Oud, guaiac wood, oakmoss, musk, and ambroxan leave a smoky–woody signature of refined depth.', 'نوتات العود وخشب الغواياك وطحالب السنديان والمسك والأمبروكسان تترك أثراً خشبياً–دخانياً عميقاً راقياً', NULL),
-(136, 44, 'top', '[\"Red Fruits\",\"Pear\",\"Pear\",\"Melon\"]', '[\"النفحات العليا: التوت الأحمر، الإجاص، البطيخ\"]', 'A juicy burst of red fruits, pear, and melon brings freshness and playful charm.', 'انفجار عصيري من التوت الأحمر والإجاص والبطيخ يمنح انتعاشاً وبهجة مرحة.', NULL),
-(137, 44, 'heart', '[\"Rose\",\"Freesia\",\"Magnolia\",\"hedione.\"]', '[\"قلب العطر: الورد، الفريزيا، الماغنوليا، الهيديون\"]', 'Rose, freesia, and magnolia bloom with soft elegance, brightened by airy hedione.', 'الوردة والفريزيا والماغنوليا تتفتح برقة أنيقة، تضيئها لمسة هيديون مشرقة.', NULL),
-(138, 44, 'base', '[\"Ambroxan\",\"White Musk\",\"Patchouli\",\"sandalwood.\"]', '[\"قاعدة العطر: الأمبروكسان، المسك الأبيض، الباتشولي، خشب الصندل\"]', 'Ambroxan, white musk, patchouli, and sandalwood create a smooth and lasting signature.', 'أمبروكسان ومسك أبيض وباتشولي وخشب الصندل يصوغون توقيعاً ناعماً يدوم طويلاً', NULL),
-(139, 45, 'top', '[\"Sweet Citrus Brilliance: Lime\",\"Orange\"]', '[\"المقدمة: بريق حمضيات حلوة: ليمون، برتقال\"]', 'Sweet citrus brilliance from lime and orange forms a lively opening, setting a clear, zesty frame that prepares the palette for the tropical fruit to follow.', 'بريق حمضي حلو من الليمون والبرتقال يقدّم افتتاحاً نابضاً، يرسم إطاراً واضحاً منعشاً يمهّد لمرحلة الفواكه الاستوائية التالية.', NULL),
-(140, 45, 'heart', '[\"Tropical Fruity Bliss: Mango\",\"Pineapple\",\"Mixed Exotic Fruits\"]', '[\"قلب العطر: بهجة فواكه استوائية: مانجو، أناناس، فواكه غريبة مختلطة\"]', 'Mango and pineapple lead a tropical fruity bliss, joined by mixed exotic fruits to sustain a juicy momentum that bridges citrus to the warm base.', 'يتصدّر المانجو والأناناس بهجة فواكه استوائية، وتدعمها فواكه غريبة مختلطة لتحافظ على إيقاع غني يربط الحمضيات بقاعدة العطر الدافئة.', NULL),
-(141, 45, 'base', '[\"Warm &amp; Comforting Depth: Amber\",\"Amber Resin\",\"Musk\",\"Vanilla\"]', '[\"القاعدة: عمق دافئ ومريح: عنبر، راتنج العنبر، مسك، فانيلا\"]', 'Warm and comforting depth arises as amber and amber resin meet soft musk; vanilla smooths the edges, leaving a composed, gently sweet dry-down.', 'يتجلّى العمق الدافئ والمريح حين يلتقي العنبر وراتنج العنبر بمسك ناعم؛ تصقل الفانيلا الحواف لتجف نفحات العطر بحلاوة هادئة ومتزنة.', NULL),
-(142, 46, 'top', '[\"Sweet lime\",\"Lavender\",\"Green Apple.\"]', '[\"النوتات العليا: ليم حلو، لافندر، تفاح أخضر\"]', 'Sweet lime sparkles beside lavender’s calm and crisp green apple, creating a bright, clean introduction with airy aromatic freshness.', 'يتلألأ الليم الحلو بجوار هدوء اللافندر وقرمشة التفاح الأخضر لبدايةٍ مشرقة نقية بانتعاشٍ عطري هوائي.', NULL),
-(143, 46, 'heart', '[\"Healing wood\",\"Geranium\",\"Pine\",\"Magnolia\"]', '[\"النوتات الوسطى: خشب علاجي، جيرانيوم، صنوبر، ماغنوليا\"]', 'Healing wood shapes a smooth core; geranium adds aromatic color, pine brings cool clarity, and magnolia rounds the bouquet with soft, velvety bloom.', 'يصوغ الخشب العلاجي قلباً ناعماً؛ يلوّن الجيرانيوم بنفحة عطرية، ويمنح الصنوبر وضوحاً بارداً، وتُدوِّر الماغنوليا الباقة بتفتحٍ مخملي.', NULL),
-(144, 46, 'base', '[\"Amber\",\"Musk\",\"Sandalwood\",\"Oud\",\"Patchouli.\"]', '[\"النوتات الأساسية: عنبر، مسك، خشب الصندل، عود، باتشولي\"]', 'Amber and musk form a warm foundation while sandalwood and oud add polished woodiness; patchouli anchors the finish with depth and persistence.', 'يشكّل العنبر والمسك أساساً دافئاً، ويضيف خشب الصندل والعود خشبية مصقولة؛ يثبت الباتشولي الخاتمة بعمقٍ وثبات.', NULL),
-(145, 47, 'top', '[\"Bergamot\",\"Pink Pepper\",\"Elemi\",\"Nutmeg\",\"Tangerine\",\"Oud\",\"Honey\"]', '[\"المقدمة: برغموت، فلفل وردي، إليمي، جوزة الطيب، يوسفي، عود، عسل\"]', 'A vibrant opening of bergamot, pink pepper, and tangerine, heightened by elemi and nutmeg, deepened with oud and honey for a striking first impression.', 'افتتاح نابض بالبرغموت والفلفل الوردي واليوسفي، تعزّزه لمسات الإليمي وجوزة الطيب، ويثريه العود والعسل لانطباع أوّل قوي.', NULL),
-(146, 47, 'heart', '[\"Patchouli\",\"Aromatic Accords\",\"Vetiver\",\"Cashmere Wood\",\"Cinnamon\",\"Rose\",\"Saffron\",\"Jasmine\",\"Orange Blossom\"]', '[\"قلب العطر: باتشولي، أكوردات عطرية، ڤيتيڤر، خشب الكشمير، قرفة، ورد، زعفران، ياسمين، زهر البرتقال\"]', 'Patchouli, vetiver, and cashmere wood form a textured base for cinnamon, rose, saffron, jasmine, and orange blossom, blending spice, woods, and florals seamlessly.', 'باتشولي وڤيتيڤر وخشب الكشمير يشكّلون أساساً متماسكاً يتناغم مع القرفة والورد والزعفران والياسمين وزهر البرتقال، بدمج متقن للتوابل والأخشاب والزهور.', NULL);
-INSERT INTO `fragrance_notes` (`id`, `product_id`, `note_type`, `ingredients_en`, `ingredients_ar`, `description_en`, `description_ar`, `image_url`) VALUES
-(147, 47, 'base', '[\"Musk\",\"Amber\",\"Raspberry\",\"Saffron\",\"Oakmoss\",\"Powdery\",\"Ambrette Seeds\",\"Leather\",\"Sandalwood\",\"Violet\",\"Agarwood\",\"Ambroxan\"]', '[\"القاعدة: مسك، عنبر، توت، زعفران، طحلب البلوط، بودري، بذور الأمبريت، جلد، خشب الصندل، بنفسج، عود، أمبروكسان\"]', 'Musk and amber embrace raspberry, oakmoss, and ambrette seeds; leather, sandalwood, violet, agarwood, and ambroxan define a deep, enduring signature.', 'يمتزج المسك والعنبر مع التوت وطحلب البلوط وبذور الأمبريت؛ فيما يرسّخ الجلد وخشب الصندل والبنفسج والعود والأمبروكسان بصمة عميقة طويلة الأمد.', NULL),
-(148, 48, 'top', '[\"Sicilian Orange\",\"Jasmine\",\"Lily\",\"apple\"]', '[\"المقدمة: برتقال صقلي، ياسمين، زنبق، تفاح\"]', 'Radiant Sicilian orange lifts a soft jasmine–lily bouquet as crisp apple adds a playful bite for a bright, polished opening.', 'يرفع البرتقال الصقلي المتلألئ باقة ياسمين–زنبق ناعمة، فيما يضيف التفاح قرمشة مرِحة لافتتاحية مشرقة مصقولة.', NULL),
-(149, 48, 'heart', '[\"Powdery Accord\",\"Vanilla Bean\",\"Sea Notes\"]', '[\"القلب: أكورد بودري، فانيلا (حبة فانيلا)، نفحات بحرية\"]', 'A velvety powdery veil and true vanilla bean meet airy sea notes, blending comfort with a clean, breezy freshness.', 'حجاب بودري مخملي مع حبة فانيلا أصيلة يلتقيان بنفحات بحرية هوائية، في تمازجٍ بين الدفء والانتعاش النقي.', NULL),
-(150, 48, 'base', '[\"Musk\",\"Cashmeran\",\"Sandalwood\",\"Ambroxan\"]', '[\"القاعدة: مسك، كاشميرن، خشب الصندل، أمبروكسان\"]', 'Silky musk and plush cashmeran melt into creamy sandalwood, while ambroxan radiates a modern, lasting glow.', 'يذوب المسك الحريري والكاشميرن الوثير في خشب صندل كريمي، ويمنح الأمبروكسان وهجاً حديثاً طويل البقاء.', NULL),
-(151, 49, 'top', '[\"Turkish Rose\",\"Lavender\",\"Citruses\",\"Peony\"]', '[\"ورد تركي، لافندر، حمضيات، فاوانيا\"]', 'Turkish rose, lavender, citruses, and peony create a bright floral–citrus opening full of elegance', 'ورد تركي ولافندر مع الحمضيات والفاوانيا يمنحون افتتاحية مشرقة زهرية–حمضية أنيقة.', NULL),
-(152, 49, 'heart', '[\"Rose\",\"Sandalwood\",\"White Flowers\",\"Frankincense (Olibanum)\"]', '[\"ورد، خشب الصندل، زهور بيضاء، بخور (لبان)\"]', 'A velvety rose heart enriched with sandalwood, white florals, and incense adds warmth and mystique.', 'قلب مخملي من الورد مدعّم بخشب الصندل والزهور البيضاء والبخور يمنح دفئاً وغموضاً.', NULL),
-(153, 49, 'base', '[\"Oud Accord\",\"Guaiac Wood\",\"Oakmoss\",\"Musk\",\"Ambroxan\"]', '[\"نوتات العود، خشب الغواياك، طحالب السنديان، مسك، أمبروكسان\"]', 'Oud, guaiac wood, oakmoss, musk, and ambroxan leave a smoky–woody signature of refined depth.', 'نوتات العود وخشب الغواياك وطحالب السنديان والمسك والأمبروكسان تترك أثراً خشبياً–دخانياً عميقاً راقياً', NULL),
-(154, 50, 'top', '[\"Bergamot\",\"Grapefruit\",\"Orange\",\"Pear\"]', '[\"النوتات العليا: برغموت، جريب فروت، برتقال، كمثرى\"]', 'Bergamot, grapefruit, and orange burst with bright freshness, rounded by pear’s juicy softness for a vivid, welcoming opening.', 'يتوهج البرغموت والجريب فروت والبرتقال بانتعاشٍ واضح، وتلينه عصيرية الكمثرى لبدايةٍ زاهية مرحِّبة.', NULL),
-(155, 50, 'heart', '[\"Sage\",\"Green Tea\",\"Black Currant\",\"Geranium\",\"White Pepper\",\"Turkish Rose\"]', '[\"النوتات الوسطى: ميرمية، شاي أخضر، كشمش أسود، جيرانيوم، فلفل أبيض، ورد تركي\"]', 'Sage and green tea bring aromatic clarity; black currant adds tart dimension, while geranium, white pepper, and Turkish rose define a nuanced floral core.', 'تمنح الميرمية والشاي الأخضر صفاءً عطرياً، ويضيف الكشمش الأسود حدةً لطيفة، فيما يرسم الجيرانيوم والفلفل الأبيض والورد التركي قلباً زهرياً متقناً.', NULL),
-(156, 50, 'base', '[\"Musk\",\"Sandalwood\",\"Amber\",\"Cambodian Oud\",\"Patchouli\",\"Cedar\"]', '[\"النوتات الأساسية: مسك، خشب الصندل، عنبر، عود كمبودي، باتشولي، أرز\"]', 'Musk and sandalwood create a smooth foundation with amber’s glow; Cambodian oud, patchouli, and cedar reinforce depth and longevity.', 'يصوغ المسك وخشب الصندل قاعدةً ناعمة يتوهج فيها العنبر، ويعزز العود الكمبودي والباتشولي والأرز عمقها وثباتها.', NULL),
-(157, 51, 'top', '[\"Black Currant\",\"Cassia\",\"Grapes\",\"Red Berries\",\"Indian oud\",\"leather.\"]', '[\"النفحات العليا: الكشمش الأسود، الكاسيا، العنب، التوت الأحمر، العود الهندي، الجلد\"]', 'Juicy fruits entwined with Indian oud and leather create a bold, intriguing opening.', 'فواكه غنية تتمازج مع العود الهندي والجلد لتمنح بداية قوية ومثيرة.', NULL),
-(158, 51, 'heart', '[\"Peony\",\"Violet\",\"Lily of the Valley\",\"Jasmine\",\"rose\",\"saffron.\"]', '[\"قلب العطر: الفاوانيا، البنفسج، زنبق الوادي، الياسمين، الورد، الزعفران\"]', 'A floral heart of peony, jasmine, rose, and violet, lifted by a delicate touch of saffron.', 'قلب زهري يزهو بالفوانيا والياسمين والورد والبنفسج، تتعانقه لمسة زعفران رقيقة.', NULL),
-(159, 51, 'base', '[\"Agarwood\",\"Musk\",\"amber\"]', '[\"| قاعدة العطر: العود، المسك، العنبر\"]', 'A deep foundation of agarwood, musk, and amber, leaving a majestic and sensual trail.', 'قاعدة عميقة من العود والمسك والعنبر، تمنح أثراً ملكياً آسراً.', NULL),
-(160, 52, 'top', '[\"Red Fruits\",\"Pear\",\"Pear\",\"Melon\"]', '[\"النفحات العليا: التوت الأحمر، الإجاص، البطيخ\"]', 'A juicy burst of red fruits, pear, and melon brings freshness and playful charm.', 'انفجار عصيري من التوت الأحمر والإجاص والبطيخ يمنح انتعاشاً وبهجة مرحة.', NULL),
-(161, 52, 'heart', '[\"Rose\",\"Freesia\",\"Magnolia\",\"hedione.\"]', '[\"قلب العطر: الورد، الفريزيا، الماغنوليا، الهيديون\"]', 'Rose, freesia, and magnolia bloom with soft elegance, brightened by airy hedione.', 'الوردة والفريزيا والماغنوليا تتفتح برقة أنيقة، تضيئها لمسة هيديون مشرقة.', NULL),
-(162, 52, 'base', '[\"Ambroxan\",\"White Musk\",\"Patchouli\",\"sandalwood.\"]', '[\"قاعدة العطر: الأمبروكسان، المسك الأبيض، الباتشولي، خشب الصندل\"]', 'Ambroxan, white musk, patchouli, and sandalwood create a smooth and lasting signature.', 'أمبروكسان ومسك أبيض وباتشولي وخشب الصندل يصوغون توقيعاً ناعماً يدوم طويلاً', NULL),
-(163, 53, 'top', '[\"Sweet Indian Oud Accord\"]', '[\"النفحات العليا: تناغم العود الهندي الحلو\"]', '<p>A sweet Indian oud accord opens with warmth and luminous depth.</p>', '<p>تناغم العود الهندي الحلو يفتتح العطر بدفء وعمق مشرق.</p>', NULL),
-(164, 53, 'heart', '[\"Indian Oud\"]', '[\"قلب العطر: العود الهندي\"]', '<p>At the heart, Indian oud reveals its earthy, leathery richness.</p>', '<p>في القلب يتجلى العود الهندي بثرائه الترابي الجلدي.</p>', NULL),
-(165, 53, 'base', '[\"Cambodian Oud\"]', '[\"قاعدة العطر: العود الكمبودي\"]', '<p>Cambodian oud completes the journey with resinous warmth and lasting elegance</p>', '<p>العود الكمبودي يختتم الرحلة بغنى راتنجي ودفء وأناقة باقية.</p>', NULL),
-(166, 54, 'top', '[\"Indian Super Oud Oil\"]', '[\"النفحات العليا: زيت العود الهندي الفاخر\"]', '<p>Indian Super Oud oil opens with bold richness and commanding presence.</p>', '<p>زيت العود الهندي الفاخر يفتتح العطر بغنى جريء وحضور مهيب.</p>', NULL),
-(167, 54, 'heart', '[\"Sweet Earthy Indian Oud Notes\"]', '[\"قلب العطر: نغمات العود الهندي الترابية الحلوة\"]', '<p>Sweet, earthy Indian oud notes add warmth and balance at the core.</p>', '<p>نغمات العود الهندي الترابية الحلوة تضيف دفئاً وتوازناً في القلب.</p>', NULL),
-(168, 54, 'base', '[\"Indian Oud Notes\"]', '[\"قاعدة العطر: نفحات العود الهندي\"]', '<p>The base rests on deep, leathery Indian oud—majestic and enduring.</p>', '<p>القاعدة تستقر على عود هندي عميق جلدي، مهيب وباقٍ.</p>', NULL),
-(169, 55, 'top', '[\"Indian Oud\"]', '[\"النفحات العليا: العود الهندي\"]', '<p>Indian oud opens with earthy, leathery depth and dignified richness.</p>', '<p>يفتتح العطر بالعود الهندي بعمقه الترابي الجلدي وغناه المهيب.</p>', NULL),
-(170, 55, 'heart', '[\"Cambodi Blend\"]', '[\"قلب العطر: المزيج الكمبودي\"]', '<p>A Cambodian blend adds warmth, resinous texture, and heritage sophistication.</p>', '<p>مزيج كمبودي يمنح دفئاً وطبقات راتنجية تعكس الفخامة التراثية.</p>', NULL),
-(171, 55, 'base', '[\"Sweet Indian Oud\"]', '[\"قاعدة العطر: العود الهندي الحلو\"]', '<p>Sweet Indian oud crowns the journey with comforting elegance and lasting allure.</p>', '<p>العود الهندي الحلو يتوج الرحلة بأناقة مريحة وجاذبية باقية</p>', NULL),
-(172, 56, 'top', '[\"Kalakasi Oud – smooth\",\"woody\",\"slightly sweet with leathery undertones\"]', '[\"عود كالاكاسي - ناعم، خشبي، حلو قليلاً مع نفحات جلدية\"]', '<p>Opens with a smooth woody sweetness, refined and gentle.<br>Evolves into balanced warmth with subtle oud character.<br>Leathery undertones crown the dry down with noble depth.</p>', '<p>يفتتح بخشبية ناعمة متألقة بحلاوة رقيقة راقية.<br>يتطور إلى دفء متوازن مع شخصية عودية متألقة.<br>إيحاءات جلدية تتوج القاعدة بعمق نبيل وهيبة.</p>', NULL),
-(173, 57, 'top', '[\"Lily of the Valley\",\"Fresh Notes\"]', '[\"النفحات العليا: زنبق الوادي، نفحات منعشة\"]', 'Fresh lily of the valley and airy notes set a bright, clean opening.', 'زنبق الوادي مع نفحات منعشة يمنحان بداية مشرقة نقية.', NULL),
-(174, 57, 'heart', '[\"Vanilla\"]', '[\"قلب العطر: الفانيلا\"]', 'Vanilla lends sweetness and warmth at the heart, soft yet indulgent.', 'الفانيلا تضيف حلاوة ودفئاً في القلب بنعومة مترفة.', NULL),
-(175, 57, 'base', '[\"Amber\",\"Powder Notes\",\"Musk Notes\"]', '[\"قاعدة العطر: العنبر، النغمات البودَرية، نفحات المسك\"]', 'Amber, powder, and musk create a silky, comforting dry down.', 'عنبر ونغمات بودَرية ومسك يمنحون لمسة حريرية مريحة في الختام.', NULL),
-(176, 58, 'top', '[\"Bergamot\",\"Grapefruit\",\"Orange\",\"Pear\"]', '[\"النوتات العليا: برغموت، جريب فروت، برتقال، كمثرى\"]', 'Bergamot, grapefruit, and orange burst with bright freshness, rounded by pear’s juicy softness for a vivid, welcoming opening.', 'يتوهج البرغموت والجريب فروت والبرتقال بانتعاشٍ واضح، وتلينه عصيرية الكمثرى لبدايةٍ زاهية مرحِّبة.', NULL),
-(177, 58, 'heart', '[\"Sage\",\"Green Tea\",\"Black Currant\",\"Geranium\",\"White Pepper\",\"Turkish Rose\"]', '[\"النوتات الوسطى: ميرمية، شاي أخضر، كشمش أسود، جيرانيوم، فلفل أبيض، ورد تركي\"]', 'Sage and green tea bring aromatic clarity; black currant adds tart dimension, while geranium, white pepper, and Turkish rose define a nuanced floral core.', 'تمنح الميرمية والشاي الأخضر صفاءً عطرياً، ويضيف الكشمش الأسود حدةً لطيفة، فيما يرسم الجيرانيوم والفلفل الأبيض والورد التركي قلباً زهرياً متقناً.', NULL),
-(178, 58, 'base', '[\"Musk\",\"Sandalwood\",\"Amber\",\"Cambodian Oud\",\"Patchouli\",\"Cedar\"]', '[\"النوتات الأساسية: مسك، خشب الصندل، عنبر، عود كمبودي، باتشولي، أرز\"]', 'Musk and sandalwood create a smooth foundation with amber’s glow; Cambodian oud, patchouli, and cedar reinforce depth and longevity.', 'يصوغ المسك وخشب الصندل قاعدةً ناعمة يتوهج فيها العنبر، ويعزز العود الكمبودي والباتشولي والأرز عمقها وثباتها.', NULL),
-(179, 59, 'top', '[\"Black Pepper\",\"Saffron\",\"Peppermint\",\"Camomile\",\"Ginger\",\"Saffron\"]', '[\"النفحات العليا: الفلفل الأسود، الزعفران، النعناع البري، البابونج، الزنجبيل\"]', 'Spicy and fresh—black pepper, saffron, peppermint, and ginger awaken the senses', 'حارة ومنعشة—فلفل أسود وزعفران ونعناع بري وزنجبيل يوقظون الحواس.', NULL),
-(180, 59, 'heart', '[\"Rose\",\"Tolu Balm\",\"Jasmine\",\"Geranium\",\"Litchi\"]', '[\"قلب العطر: الورد، بلسم التولو، الياسمين، الجرانيوم، الليتشي\"]', 'A floral bouquet of rose, jasmine, and geranium, sweetened with litchi and enriched with tolu balm', 'باقة زهرية من الورد والياسمين والجرانيوم، محلاة بالليتشي وغنية ببلسم التولو.', NULL),
-(181, 59, 'base', '[\"White Musk\",\"Amber\",\"Cedar\",\"Sandalwood\",\"Cashmere Wood\"]', '[\"قاعدة العطر: المسك الأبيض، العنبر، الأرز، خشب الصندل، خشب الكشمير\"]', 'White musk, amber, and soft woods create an elegant, velvety dry down', 'مسك أبيض وعنبر وأخشاب ناعمة تصوغ لمسة نهائية مخملية أنيقة.', NULL),
-(182, 60, 'top', '[\"Vanilla\",\"Bergamot\",\"Saffron\",\"Peach\"]', '[\"النفحات العليا: الفانيلا، البرغموت، الزعفران، الخوخ\"]', 'Vanilla and bergamot meet saffron and peach for a sweet, spicy, and radiant opening.', 'فانيلا وبرغموت يلتقيان مع الزعفران والخوخ لبداية مشرقة حلوة وحارة.', NULL),
-(183, 60, 'heart', '[\"Cedarwood\",\"Violet\",\"Jasmine\"]', '[\"قلب العطر: خشب الأرز، البنفسج، الياسمين\"]', 'A floral-woody heart of cedarwood, violet, and jasmine adds elegance and depth.', 'قلب زهري خشبي من خشب الأرز والبنفسج والياسمين يضفي أناقة وعمقاً.', NULL),
-(184, 60, 'base', '[\"White Musk\",\"Amber\",\"Woods\",\"Agarwood\",\"Patchouli\",\"Sandalwood\"]', '[\"قاعدة العطر: المسك الأبيض، العنبر، الأخشاب، العود، الباتشولي، خشب الصندل\"]', 'Musk, amber, sandalwood, patchouli, and oud create a rich, sensual signature.', 'مسك وعنبر وخشب الصندل والباتشولي والعود يصوغون توقيعاً غنياً وحسياً.', NULL),
-(185, 61, 'top', '[\"Aldehydes\",\"Rose\",\"Powdery Notes.\"]', '[\"المقدمة: ألديهيدات، ورد، نغمات بودرية\"]', 'Sparkling aldehydes lift a tender rose wrapped in a soft powdery veil, setting a polished and luminous first impression.', 'ترفع الألديهيدات المتلألئة الورد برقة داخل حجاب بودري ناعم، لتمنح انطباعاً أولياً مصقولاً ومشرقاً.', NULL),
-(186, 61, 'heart', '[\"Dry Woods\",\"Patchouli\",\"Geranium\",\"Orange Blossom\",\"Roses\"]', '[\"القلب: أخشاب جافة، باتشولي، جيرانيوم، زهر البرتقال، ورود\"]', 'Dry woods and patchouli shape a refined backbone as geranium, orange blossom, and roses add floral texture and poised depth.', 'تصوغ الأخشاب الجافة مع الباتشولي عموداً عطرياً راقياً، وتمنح الجيرانيوم وزهر البرتقال والورود طبقات زهرية متوازنة وعمقاً واثقاً.', NULL),
-(187, 61, 'base', '[\"Musk Accord\",\"Sandalwood\",\"Dry Woods.\"]', '[\"القاعدة: أكورد المسك، خشب الصندل، أخشاب جافة\"]', 'A smooth musk accord and creamy sandalwood settle over dry woods, leaving a soft, elegant trail with quiet warmth.', 'يستقر أكورد المسك الناعم وخشب الصندل فوق أخشاب جافة، ليخلّفا أثراً ناعماً أنيقاً بدفء هادئ.', NULL),
-(188, 62, 'top', '[\"Bergamot\",\"Apple\",\"Pink Peppercorn\",\"Animalic Notes\"]', '[\"النفحات العليا: البرغموت، التفاح، الفلفل الوردي، النفحات الحيوانية\"]', 'Bergamot, apple, and pink peppercorn sparkle with freshness, enriched by animalic allure.', 'برغموت وتفاح وفلفل وردي يتألقون بالانتعاش، تعززهم لمسات حيوانية آسرة.', NULL),
-(189, 62, 'heart', '[\"Rose\",\"Strawberry\",\"Magnolia\",\"Musk Tones\"]', '[\"قلب العطر: الورد، الفراولة، الماغنوليا، النغمات المسكية\"]', 'A floral-fruity heart of rose, magnolia, and strawberry, softened with musk tones.', 'قلب زهري فاكهي من الورد والماغنوليا والفراولة، يزداد نعومة بالنغمات المسكية.', NULL),
-(190, 62, 'base', '[\"White Musk\",\"Dry Woods\",\"Amber\",\"Moss\",\"Cedarwood\"]', '[\"قاعدة العطر: المسك الأبيض، الأخشاب الجافة، العنبر، الطحالب، خشب الأرز\"]', 'White musk, amber, moss, and woods create a refined, sensual dry down', 'مسك أبيض وعنبر وطحالب وأخشاب يصوغون ختاماً راقياً حسياً.', NULL),
-(191, 63, 'top', '[\"Orange Blossom\",\"Honey\"]', '[\"النفحات العليا: زهر البرتقال، العسل\"]', '<p>Orange blossom with golden honey creates a luminous, sweet opening.</p>', '<p>زهر البرتقال مع العسل الذهبي يصوغان بداية مشرقة حلوة.</p>', NULL),
-(192, 63, 'heart', '[\"Black Musk Accord\"]', '[\"قلب العطر: تناغم المسك الأسود\"]', '<p>A bold black musk accord envelops the heart with mystery and sensuality.</p>', '<p>تناغم المسك الأسود الجريء يغمر القلب بالغموض والحسية.</p>', NULL),
-(193, 63, 'base', '[\"Amber\",\"Musk\",\"Agarwood Cambodi & Hindi\"]', '[\"قاعدة العطر: العنبر، المسك، العود الكمبودي والهندي\"]', '<p>Amber, musk, and Cambodian &amp; Hindi oud leave a majestic oriental trail.</p>', '<p>عنبر ومسك وعود كمبودي وهندي يصيغون أثراً شرقياً مهيباً.</p>', NULL),
-(194, 64, 'top', '[\"Saffron\",\"Ylang-Ylang\",\"Bergamot\"]', '[\"النفحات العليا: زهر البرتقال، العسل\"]', '<p>Orange blossom and honey create a luminous, golden sweetness.</p>', '<p>زهر البرتقال مع العسل يصوغان حلاوة ذهبية متألقة.</p>', NULL),
-(195, 64, 'heart', '[\"Gurjum\",\"Orris Root\",\"Cedar\"]', '[\"| قلب العطر: تناغم المسك الأسود\"]', '<p>Black musk accord adds bold sensuality and depth at the heart.</p>', '<p>تناغم المسك الأسود يمنح القلب جرأة وعمقاً حسياً.</p>', NULL),
-(196, 64, 'base', '[\"Amber\",\"Sandalwood\",\"Musk\"]', '[\"قاعدة العطر: العنبر، المسك، العود الكمبودي والهندي\"]', '<p>Amber, musk, and noble oud form a regal and spiritual signature.</p>', '<p>عنبر ومسك مع عود كمبودي وهندي يشكلون توقيعاً مهيباً روحانياً.</p>', NULL),
-(197, 65, 'top', '[\"Bergamot\",\"Orange\",\"Sage\",\"Apple\",\"Star Anise\"]', '[\"النفحات العليا: البرغموت، البرتقال، المريمية، التفاح، اليانسون النجمي\"]', 'Bergamot, orange, apple, sage, and star anise bring citrusy freshness with a spicy twist.', 'برغموت وبرتقال وتفاح مع المريمية واليانسون النجمي يمنحون انتعاشاً حمضياً متبلاً.', NULL),
-(198, 65, 'heart', '[\"Oud\",\"Patchouli\",\"Ylang-Ylang\",\"Rose\",\"Vetiver\",\"Violet\"]', '[\"قلب العطر: العود، الباتشولي، الإيلنغ-إيلنغ، الورد، الفيتيفر، البنفسج\"]', 'Oud and patchouli entwine with florals and vetiver for a luxurious woody-floral heart.', 'عود وباتشولي يتناغمان مع الزهور والفيتيفر ليمنحا قلباً زهرياً خشبياً فاخراً.', NULL),
-(199, 65, 'base', '[\"Tonka Bean\",\"Amber\",\"Leather\",\"Benzoin\",\"Chocolate\"]', '[\"قاعدة العطر: التونكا، العنبر، الجلد، البنزوين، الشوكولاتة\"]', 'Tonka, amber, leather, benzoin, and chocolate create a deep, gourmand finish.', 'تونكا وعنبر وجلد وبنزوين وشوكولاتة يصوغون ختاماً غورماندياً عميقاً.', NULL),
-(200, 66, 'top', '[\"Bergamot\",\"Peppermint\",\"Artemisia\"]', '[\"النفحات العليا: البرغموت، النعناع، الأرتميسيا\"]', 'Bergamot, peppermint, and artemisia bring citrusy-green freshness with aromatic clarity.', 'برغموت ونعناع وأرتميسيا يمنحون انتعاشاً حمضياً أخضر بلمسة عطرية نقية.', NULL),
-(201, 66, 'heart', '[\"Geranium\",\"Ylang-Ylang\",\"Aldehydic Notes\"]', '[\"قلب العطر: الجيرانيوم، الإيلنغ-إيلنغ، النفحات الألدهيدية\"]', 'Geranium and ylang-ylang bloom with aldehydic radiance for elegant floral depth.', 'الجيرانيوم والإيلنغ-إيلنغ يتألقان مع إشراقة ألدهيدية تمنح عمقاً زهرية أنيقاً.', NULL),
-(202, 66, 'base', '[\"Patchouli\",\"Oakmoss\",\"Labdanum\",\"Incense\"]', '[\"قاعدة العطر: الباتشولي، الطحالب، اللابدانوم، البخور\"]', 'Patchouli, oakmoss, labdanum, and incense create a timeless, spiritual finish.', 'باتشولي وطحالب ولبدانوم وبخور يصوغون ختاماً خالداً روحانياً.', NULL),
-(203, 67, 'top', '[\"Cypriol\",\"Labdanum\",\"Cardamom\"]', '[\"النفحات العليا: السبرول، اللابدانوم، الهيل\"]', '<p>Smoky cypriol with labdanum and cardamom creates a spicy, resinous opening.</p>', '<p>سبرول مدخن مع لابدانوم وهيل يصوغون بداية حارة راتنجية.</p>', NULL),
-(204, 67, 'heart', '[\"Woody Notes\",\"Amber\",\"Sandalwood\"]', '[\"قلب العطر: الأخشاب، العنبر، خشب الصندل\"]', '<p>Woods, amber, and sandalwood form a warm, complex heart.</p>', '<p>: الأخشاب والعنبر وخشب الصندل يشكلون قلباً دافئاً معقداً.</p>', NULL),
-(205, 67, 'base', '[\"Leather\",\"Musk\",\"Tonka Bean\"]', '[\"قاعدة العطر: الجلد، المسك، حبوب التونكا\"]', '<p>Leather, musk, and tonka bean deliver a powerful, sensual finish.</p>', '<p>جلد ومسك وتونكا يمنحون ختاماً قوياً وحسياً.</p>', NULL),
-(206, 68, 'top', '[\"Labdanum\",\"Ginger\",\"Nutmeg\"]', '[\"النفحات العليا: اللابدانوم، الزنجبيل، جوزة الطيب\"]', 'Spicy labdanum with ginger and nutmeg creates a warm, resinous start.', 'لابدانوم متبل مع زنجبيل وجوزة الطيب يمنح بداية دافئة راتنجية.', NULL),
-(207, 68, 'heart', '[\"Gurjum\",\"Sandalwood\",\"Patchouli\"]', '[\"قلب العطر: راتنج الغرجم، خشب الصندل، الباتشولي\"]', 'Gurjum, sandalwood, and patchouli bring earthy elegance and depth.', 'راتنج الغرجم وخشب الصندل والباتشولي يضفون أناقة ترابية وعمقاً.', NULL),
-(208, 68, 'base', '[\"Incense\",\"Oudh\",\"Cedarwood\",\"Gaiacwood\"]', '[\"قاعدة العطر: البخور، العود، خشب الأرز، خشب الغاياك\"]', 'Incense, oud, cedarwood, and gaiacwood leave a smoky, majestic finish.', 'بخور وعود وخشب الأرز وخشب الغاياك يصوغون ختاماً مهيباً مدخناً.', NULL),
-(209, 71, 'top', '[\"Bergamot\",\"Grapefruit\",\"Orange\",\"Pear\"]', '[\"النوتات العليا: برغموت، جريب فروت، برتقال، كمثرى\"]', 'Bergamot, grapefruit, and orange burst with bright freshness, rounded by pear’s juicy softness for a vivid, welcoming opening.', 'يتوهج البرغموت والجريب فروت والبرتقال بانتعاشٍ واضح، وتلينه عصيرية الكمثرى لبدايةٍ زاهية مرحِّبة.', NULL),
-(210, 71, 'heart', '[\"Sage\",\"Green Tea\",\"Black Currant\",\"Geranium\",\"White Pepper\",\"Turkish Rose\"]', '[\"النوتات الوسطى: ميرمية، شاي أخضر، كشمش أسود، جيرانيوم، فلفل أبيض، ورد تركي\"]', 'Sage and green tea bring aromatic clarity; black currant adds tart dimension, while geranium, white pepper, and Turkish rose define a nuanced floral core.', 'تمنح الميرمية والشاي الأخضر صفاءً عطرياً، ويضيف الكشمش الأسود حدةً لطيفة، فيما يرسم الجيرانيوم والفلفل الأبيض والورد التركي قلباً زهرياً متقناً.', NULL),
-(211, 71, 'base', '[\"Musk\",\"Sandalwood\",\"Amber\",\"Cambodian Oud\",\"Patchouli\",\"Cedar\"]', '[\"النوتات الأساسية: مسك، خشب الصندل، عنبر، عود كمبودي، باتشولي، أرز\"]', 'Musk and sandalwood create a smooth foundation with amber’s glow; Cambodian oud, patchouli, and cedar reinforce depth and longevity.', 'يصوغ المسك وخشب الصندل قاعدةً ناعمة يتوهج فيها العنبر، ويعزز العود الكمبودي والباتشولي والأرز عمقها وثباتها.', NULL),
-(212, 74, 'top', '[\"Sweet Citrus Brilliance: Lime\",\"Orange\"]', '[\"المقدمة: بريق حمضيات حلوة: ليمون، برتقال\"]', 'Sweet citrus brilliance from lime and orange forms a lively opening, setting a clear, zesty frame that prepares the palette for the tropical fruit to follow.', 'بريق حمضي حلو من الليمون والبرتقال يقدّم افتتاحاً نابضاً، يرسم إطاراً واضحاً منعشاً يمهّد لمرحلة الفواكه الاستوائية التالية.', NULL),
-(213, 74, 'heart', '[\"Tropical Fruity Bliss: Mango\",\"Pineapple\",\"Mixed Exotic Fruits\"]', '[\"قلب العطر: بهجة فواكه استوائية: مانجو، أناناس، فواكه غريبة مختلطة\"]', 'Mango and pineapple lead a tropical fruity bliss, joined by mixed exotic fruits to sustain a juicy momentum that bridges citrus to the warm base.', 'يتصدّر المانجو والأناناس بهجة فواكه استوائية، وتدعمها فواكه غريبة مختلطة لتحافظ على إيقاع غني يربط الحمضيات بقاعدة العطر الدافئة.', NULL),
-(214, 74, 'base', '[\"Warm &amp; Comforting Depth: Amber\",\"Amber Resin\",\"Musk\",\"Vanilla\"]', '[\"القاعدة: عمق دافئ ومريح: عنبر، راتنج العنبر، مسك، فانيلا\"]', 'Warm and comforting depth arises as amber and amber resin meet soft musk; vanilla smooths the edges, leaving a composed, gently sweet dry-down.', 'يتجلّى العمق الدافئ والمريح حين يلتقي العنبر وراتنج العنبر بمسك ناعم؛ تصقل الفانيلا الحواف لتجف نفحات العطر بحلاوة هادئة ومتزنة.', NULL),
-(215, 75, 'top', '[\"Turkish Rose\",\"Lavender\",\"Citruses\",\"Peony\"]', '[\"ورد تركي، لافندر، حمضيات، فاوانيا\"]', 'Turkish rose, lavender, citruses, and peony create a bright floral–citrus opening full of elegance', 'ورد تركي ولافندر مع الحمضيات والفاوانيا يمنحون افتتاحية مشرقة زهرية–حمضية أنيقة.', NULL),
-(216, 75, 'heart', '[\"Rose\",\"Sandalwood\",\"White Flowers\",\"Frankincense (Olibanum)\"]', '[\"ورد، خشب الصندل، زهور بيضاء، بخور (لبان)\"]', 'A velvety rose heart enriched with sandalwood, white florals, and incense adds warmth and mystique.', 'قلب مخملي من الورد مدعّم بخشب الصندل والزهور البيضاء والبخور يمنح دفئاً وغموضاً.', NULL),
-(217, 75, 'base', '[\"Oud Accord\",\"Guaiac Wood\",\"Oakmoss\",\"Musk\",\"Ambroxan\"]', '[\"نوتات العود، خشب الغواياك، طحالب السنديان، مسك، أمبروكسان\"]', 'Oud, guaiac wood, oakmoss, musk, and ambroxan leave a smoky–woody signature of refined depth.', 'نوتات العود وخشب الغواياك وطحالب السنديان والمسك والأمبروكسان تترك أثراً خشبياً–دخانياً عميقاً راقياً', NULL),
-(218, 81, 'top', '[\"Turkish Rose\",\"Lavender\",\"Citruses\",\"Peony\"]', '[\"ورد تركي، لافندر، حمضيات، فاوانيا\"]', 'Turkish rose, lavender, citruses, and peony create a bright floral–citrus opening full of elegance', 'ورد تركي ولافندر مع الحمضيات والفاوانيا يمنحون افتتاحية مشرقة زهرية–حمضية أنيقة.', NULL),
-(219, 81, 'heart', '[\"Rose\",\"Sandalwood\",\"White Flowers\",\"Frankincense (Olibanum)\"]', '[\"ورد، خشب الصندل، زهور بيضاء، بخور (لبان)\"]', 'A velvety rose heart enriched with sandalwood, white florals, and incense adds warmth and mystique.', 'قلب مخملي من الورد مدعّم بخشب الصندل والزهور البيضاء والبخور يمنح دفئاً وغموضاً.', NULL),
-(220, 81, 'base', '[\"Oud Accord\",\"Guaiac Wood\",\"Oakmoss\",\"Musk\",\"Ambroxan\"]', '[\"نوتات العود، خشب الغواياك، طحالب السنديان، مسك، أمبروكسان\"]', 'Oud, guaiac wood, oakmoss, musk, and ambroxan leave a smoky–woody signature of refined depth.', 'نوتات العود وخشب الغواياك وطحالب السنديان والمسك والأمبروكسان تترك أثراً خشبياً–دخانياً عميقاً راقياً', NULL),
-(221, 82, 'top', '[\"Rose Absolute\",\"Saffron\",\"Galbanum\",\"Hyacinth\",\"Lemon\",\"bergamot\"]', '[\"النفحات العليا: الورد الخالص، الزعفران، الجالبانوم، الياقوتية، الليمون، البرغموت\"]', '<p>Bright citrus and galbanum meet rose absolute and saffron for a luminous start.</p>', '<p>حمضيات براقة وجالبانوم مع الورد الخالص والزعفران تمنح بداية مشرقة.</p>', NULL),
-(222, 82, 'heart', '[\"violet\",\"papyrus\",\"jasmine\",\"ylang-ylang\",\"rose\",\"carnation\",\"iris\",\"spices\"]', '[\"البنفسج، البردي، الياسمين، الإيلنغ-إيلنغ، الورد، القرنفل، السوسن، التوابل\"]', '<p>A majestic floral heart of jasmine, tuberose, violet, and orris enriched with spices</p>', '<p>قلب زهري مهيب من الياسمين والبردي والبنفسج والسوسن تغنيه التوابل.</p>', NULL),
-(223, 82, 'base', '[\"Sandalwood\",\"amber\",\"moss\",\"musk\",\"patchouli\",\"vetiver\"]', '[\"قاعدة العطر: خشب الصندل، العنبر، الطحالب، المسك، الباتشولي، الفيتيفر\"]', '<p>Sandalwood, amber, musk, and patchouli create a rich, warm atmosphere.</p>', '<p>خشب الصندل والعنبر والمسك والباتشولي يمنحون أجواءً غنية دافئة</p>', NULL),
-(224, 83, 'top', '[\"Hyacinth\",\"Lavender\",\"Fruits\",\"apple\",\"pineapple.\"]', '[\"المقدمة: هياسينث، خزامى، فواكه متنوعة، تفاح، أناناس\"]', 'Dewy hyacinth and calming lavender meet crisp apple and sunlit pineapple, delivering a bright, modern freshness with soft floral lift', 'هياسينث ندي وخزامى مهدّئ يلتقيان بتفاح منعش وأناناس مشرق، لانتعاش عصري مضيء يرتفع بلمسة زهرية رقيقة.', NULL),
-(225, 83, 'heart', '[\"Iris\",\"Jasmine\",\"Pink Pepper\"]', '[\"القلب: سوسن، ياسمين، فلفل وردي\"]', 'Velvety iris and gentle jasmine bloom with a subtle pink-pepper sparkle, shaping a refined, elegant heart that bridges freshness to depth.', 'سوسن مخملي وياسمين ناعم يزهران مع لمعة فلفل وردي خفيفة، ليشكّلا قلباً راقياً يصل الانتعاش بالعمق.', NULL),
-(226, 83, 'base', '[\"Vetiver\",\"Ambroxan\",\"Oud\",\"Musk\"]', '[\"القاعدة: فيتيفر، أمبروكسان، عود، مسك\"]', 'Earthy vetiver and resonant oud provide backbone as ambroxan’s clean amber glow and soft musk leave a polished, comforting trail.', 'فيتيفر ترابي وعود عميق يمنحان ركازة، فيما يضفي أمبروكسان وهجاً عنبرياً نظيفاً وتكمّل لمسة المسك ختاماً مصقولاً مريحاً.', NULL),
-(227, 84, 'top', '[\"Rose Absolute\",\"Saffron\",\"Galbanum\",\"Hyacinth\",\"Lemon\",\"bergamot\"]', '[\"النفحات العليا: الورد الخالص، الزعفران، الجالبانوم، الياقوتية، الليمون، البرغموت\"]', '<p>Bright citrus and galbanum meet rose absolute and saffron for a luminous start.</p>', '<p>حمضيات براقة وجالبانوم مع الورد الخالص والزعفران تمنح بداية مشرقة.</p>', NULL),
-(228, 84, 'heart', '[\"violet\",\"papyrus\",\"jasmine\",\"ylang-ylang\",\"rose\",\"carnation\",\"iris\",\"spices\"]', '[\"البنفسج، البردي، الياسمين، الإيلنغ-إيلنغ، الورد، القرنفل، السوسن، التوابل\"]', '<p>A majestic floral heart of jasmine, tuberose, violet, and orris enriched with spices</p>', '<p>قلب زهري مهيب من الياسمين والبردي والبنفسج والسوسن تغنيه التوابل.</p>', NULL),
-(229, 84, 'base', '[\"Sandalwood\",\"amber\",\"moss\",\"musk\",\"patchouli\",\"vetiver\"]', '[\"قاعدة العطر: خشب الصندل، العنبر، الطحالب، المسك، الباتشولي، الفيتيفر\"]', '<p>Sandalwood, amber, musk, and patchouli create a rich, warm atmosphere.</p>', '<p>خشب الصندل والعنبر والمسك والباتشولي يمنحون أجواءً غنية دافئة</p>', NULL),
-(230, 85, 'top', '[\"Sweet Citrus Brilliance: Lime\",\"Orange\"]', '[\"المقدمة: بريق حمضيات حلوة: ليمون، برتقال\"]', 'Sweet citrus brilliance from lime and orange forms a lively opening, setting a clear, zesty frame that prepares the palette for the tropical fruit to follow.', 'بريق حمضي حلو من الليمون والبرتقال يقدّم افتتاحاً نابضاً، يرسم إطاراً واضحاً منعشاً يمهّد لمرحلة الفواكه الاستوائية التالية.', NULL),
-(231, 85, 'heart', '[\"Tropical Fruity Bliss: Mango\",\"Pineapple\",\"Mixed Exotic Fruits\"]', '[\"قلب العطر: بهجة فواكه استوائية: مانجو، أناناس، فواكه غريبة مختلطة\"]', 'Mango and pineapple lead a tropical fruity bliss, joined by mixed exotic fruits to sustain a juicy momentum that bridges citrus to the warm base.', 'يتصدّر المانجو والأناناس بهجة فواكه استوائية، وتدعمها فواكه غريبة مختلطة لتحافظ على إيقاع غني يربط الحمضيات بقاعدة العطر الدافئة.', NULL),
-(232, 85, 'base', '[\"Warm &amp; Comforting Depth: Amber\",\"Amber Resin\",\"Musk\",\"Vanilla\"]', '[\"القاعدة: عمق دافئ ومريح: عنبر، راتنج العنبر، مسك، فانيلا\"]', 'Warm and comforting depth arises as amber and amber resin meet soft musk; vanilla smooths the edges, leaving a composed, gently sweet dry-down.', 'يتجلّى العمق الدافئ والمريح حين يلتقي العنبر وراتنج العنبر بمسك ناعم؛ تصقل الفانيلا الحواف لتجف نفحات العطر بحلاوة هادئة ومتزنة.', NULL),
-(233, 86, 'top', '[\"Rose Absolute\",\"Saffron\",\"Galbanum\",\"Hyacinth\",\"Lemon\",\"bergamot\"]', '[\"النفحات العليا: الورد الخالص، الزعفران، الجالبانوم، الياقوتية، الليمون، البرغموت\"]', '<p>Bright citrus and galbanum meet rose absolute and saffron for a luminous start.</p>', '<p>حمضيات براقة وجالبانوم مع الورد الخالص والزعفران تمنح بداية مشرقة.</p>', NULL),
-(234, 86, 'heart', '[\"violet\",\"papyrus\",\"jasmine\",\"ylang-ylang\",\"rose\",\"carnation\",\"iris\",\"spices\"]', '[\"البنفسج، البردي، الياسمين، الإيلنغ-إيلنغ، الورد، القرنفل، السوسن، التوابل\"]', '<p>A majestic floral heart of jasmine, tuberose, violet, and orris enriched with spices</p>', '<p>قلب زهري مهيب من الياسمين والبردي والبنفسج والسوسن تغنيه التوابل.</p>', NULL),
-(235, 86, 'base', '[\"Sandalwood\",\"amber\",\"moss\",\"musk\",\"patchouli\",\"vetiver\"]', '[\"قاعدة العطر: خشب الصندل، العنبر، الطحالب، المسك، الباتشولي، الفيتيفر\"]', '<p>Sandalwood, amber, musk, and patchouli create a rich, warm atmosphere.</p>', '<p>خشب الصندل والعنبر والمسك والباتشولي يمنحون أجواءً غنية دافئة</p>', NULL),
-(236, 87, 'top', '[\"Shamama Accords\",\"Rose\"]', '[\"النفحات العليا: نغمات الشمامة، الورد\"]', '<p>Shamama accords and rose create a rich, earthy floral opening.</p>', '<p>نغمات الشمامة مع الورد تمنح بداية ترابية زهرية غنية.</p>', NULL),
-(237, 87, 'heart', '[\"Jasmine\",\"Bakhoor Smoky Accords\"]', '[\"قلب العطر: الياسمين، نفحات البخور المدخنة\"]', '<p>Jasmine with smoky bakhoor accords adds depth and ceremonial beauty.</p>', '<p>ياسمين مع نفحات بخور مدخنة يضفيان عمقاً وسحراً احتفالياً.</p>', NULL),
-(238, 87, 'base', '[\"Patchouli\",\"Musk\"]', '[\"قاعدة العطر: الباتشولي، المسك\"]', '<p>Patchouli and musk leave a lasting aura of comfort and refinement.</p>', '<p>باتشولي ومسك يصوغان هالة مريحة راقية تدوم.</p>', NULL),
-(239, 88, 'top', '[\"White Musk\",\"Jasmine sambac\",\"Exotic Flowers\",\"Iris\",\"Dehn Al Oudh\",\"Roses\",\"Amber\"]', '[\"النفحات العليا: المسك الأبيض، الياسمين السامباك، الأزهار الغريبة، الورد\"]', 'White musk with jasmine sambac, roses, and exotic florals opens with radiance and softness.', 'مسك أبيض مع ياسمين سامباك وورد وأزهار غريبة يفتتح العطر بإشراقة ونعومة.', NULL),
-(240, 88, 'heart', '[]', '[\"قلب العطر: السوسن\"]', 'Iris lends powdery refinement and elegance at the heart.', 'السوسن يضفي لمسة بودَرية راقية أنيقة في القلب.', NULL),
-(241, 88, 'base', '[]', '[\"قاعدة العطر: دهن العود، العنبر\"]', 'Dehn al oudh and amber create a rich, grounding aura of warmth.', 'دهن العود والعنبر يصوغان هالة غنية دافئة متجذرة.', NULL),
-(242, 89, 'top', '[\"Roses\",\"Aldehydes\",\"musk\",\"lilly of the valley White Flowers\",\"OudNotes\",\"Guaiac Wood\",\"Sandalwood\",\"Amber.\"]', '[\"النفحات العليا: الورد، الألدهيدات، زنبق الوادي، الزهور البيضاء\"]', 'Roses, aldehydes, and white florals create a luminous and elegant opening.', 'ورد وألدهيدات وزهور بيضاء يصوغون بداية مشرقة أنيقة.', NULL),
-(243, 89, 'heart', '[]', '[\"قلب العطر: نغمات العود، خشب الغاياك، خشب الصندل\"]', 'Oud, guaiac wood, and sandalwood add richness and refined depth.', 'عود وخشب الغاياك وخشب الصندل يمنحون عمقاً وغنى راقياً.', NULL),
-(244, 89, 'base', '[]', '[\"قاعدة العطر: المسك، العنبر\"]', 'Musk and amber leave a sensual, timeless aura of warmth.', 'مسك وعنبر يمنحان هالة حسية دافئة خالدة.', NULL),
-(245, 90, 'top', '[\"White Musk\",\"Jasmine sambac\",\"Exotic Flowers\",\"Iris\",\"Dehn Al Oudh\",\"Roses\",\"Amber\"]', '[\"النفحات العليا: المسك الأبيض، الياسمين السامباك، الأزهار الغريبة، الورد\"]', 'White musk with jasmine sambac, roses, and exotic florals opens with radiance and softness.', 'مسك أبيض مع ياسمين سامباك وورد وأزهار غريبة يفتتح العطر بإشراقة ونعومة.', NULL),
-(246, 90, 'heart', '[]', '[\"قلب العطر: السوسن\"]', 'Iris lends powdery refinement and elegance at the heart.', 'السوسن يضفي لمسة بودَرية راقية أنيقة في القلب.', NULL),
-(247, 90, 'base', '[]', '[\"قاعدة العطر: دهن العود، العنبر\"]', 'Dehn al oudh and amber create a rich, grounding aura of warmth.', 'دهن العود والعنبر يصوغان هالة غنية دافئة متجذرة.', NULL),
-(248, 91, 'top', '[\"Kiwi\",\"Litchi\",\"Red Fruits\"]', '[\"النفحات العليا: الكيوي، الليتشي، الفواكه الحمراء\"]', 'Juicy kiwi and litchi with red fruits create a sparkling, feel-good opening.', 'كيوي وليتشي مع فواكه حمراء يصوغون بداية متألقة مبهجة.', NULL),
-(249, 91, 'heart', '[\"Chocolate\",\"Vanilla\",\"Orchid\",\"Jasmine\"]', '[\"قلب العطر: الشوكولاتة، الفانيلا، السحلبية، الياسمين\"]', 'A delectable heart of chocolate and vanilla, refined by orchid and jasmine.', 'قلب لذيذ من الشوكولاتة والفانيلا، تصقله أناقة السحلبية والياسمين.', NULL),
-(250, 91, 'base', '[\"Orris\",\"White Musk\",\"Woody Accords\"]', '[\"قاعدة العطر: السوسن، المسك الأبيض، لمسات خشبية\"]', 'Powdery orris, white musk, and soft woods leave a cozy, elegant signature.', ': سوسن بودَري ومسك أبيض وأخشاب ناعمة تمنح توقيعاً مريحاً أنيقاً.', NULL),
-(251, 92, 'top', '[\"Saffron\",\"Jasmine\"]', '[\"النفحات العليا: الزعفران، الياسمين\"]', '<p>Saffron and jasmine open with brightness and floral-spicy elegance.</p>', '<p>الزعفران والياسمين يفتتحان العطر بإشراقة وأناقة زهرية متبلة.</p>', NULL),
-(252, 92, 'heart', '[\"Cedar\",\"Iris\",\"Rose\",\"Patchouli\"]', '[\"قلب العطر: خشب الأرز، السوسن، الورد، الباتشولي\"]', '<p>Cedar, iris, rose, and patchouli form a sophisticated woody-floral heart.</p>', '<p>خشب الأرز والسوسن والورد والباتشولي يصوغون قلباً زهرياً خشبياً راقياً.</p>', NULL),
-(253, 92, 'base', '[\"Amber\",\"Sandalwood\",\"Musk\",\"Oud\"]', '[\"قاعدة العطر: العنبر، خشب الصندل، المسك، العود\"]', '<p>Amber, sandalwood, musk, and oud leave a deep, inviting finish.</p>', '<p>عنبر وخشب الصندل ومسك وعود يمنحون ختاماً عميقاً مضيافاً.</p>', NULL),
-(254, 93, 'top', '[\"Bergamot\",\"Aldehyde\",\"Neroli\"]', '[\"النفحات العليا: البرغموت، الألدهيد، النيرولي\"]', '<p>Bergamot and neroli sparkle with airy aldehydes, creating a luminous, room-brightening start.</p>', '<p>برغموت ونيرولي يتلألآن مع الألدهيدات الهوائية لبداية مشرقة تُنير الأجواء.</p>', NULL),
-(255, 93, 'heart', '[\"Rose\",\"Violet\",\"Orris\",\"Sandal Oud Accord\"]', '[\"قلب البخور: الورد، البنفسج، السوسن، تناغم صندل–عود\"]', '<p>Rose, violet, and orris bloom over a creamy sandal–oud accord for refined floral depth.</p>', '<p>ورد وبنفسج وسوسن يتفتحون فوق تناغم صندل–عود كريمي لعمق زهري راقٍ.</p>', NULL),
-(256, 93, 'base', '[\"Musk\",\"White Amber\",\"Shamama Accords\"]', '[\"القاعدة: المسك، العنبر الأبيض، نغمات الشمامة\"]', '<p>Musk and white amber, enriched by shamama accords, leave a welcoming, lingering warmth.</p>', '<p>مسك وعنبر أبيض تغنيهما نغمات الشمامة، يتركان دفئاً مضيافاً يدوم.</p>', NULL),
-(257, 94, 'top', '[\"Saffron\",\"Cinnamon\",\"Clove\",\"Nutmeg\"]', '[\"النفحات العليا: الزعفران، القرفة، القرنفل، جوزة الطيب\"]', 'Saffron and warm spices ignite the senses with richness and allure', 'زعفران وتوابل دافئة تشعل الحواس بغنى وجاذبية.', NULL),
-(258, 94, 'heart', '[\"Ambrette\",\"Vanilla\",\"Nutty Notes\"]', '[\"قلب العطر: الأمبريت، الفانيلا، النغمات الجوزية\"]', 'Ambrette and vanilla with nutty notes create a soft gourmand indulgence.', 'أمبريت وفانيلا مع لمسات جوزية تمنح ترفاً غورماندياً ناعماً.', NULL),
-(259, 94, 'base', '[\"Musk\",\"Ambery\",\"Tonka Beans\"]', '[\"قاعدة العطر: المسك، نفحات عنبرية، حبوب التونكا\"]', 'Musk, amber, and tonka beans leave a comforting, sensual trail.', 'مسك وعنبر وحبوب التونكا يصوغون أثراً دافئاً حسيّاً باقياً.', NULL),
-(260, 95, 'top', '[\"Raspberry\",\"Neroli\",\"Amalfi Lemon\"]', '[\"النفحات العليا: التوت، زهر النيرولي، الليمون الأمالفي\"]', 'Raspberry, neroli, and Amalfi lemon bring a sparkling fruity-citrus brightness.', 'توت ونيرولي وليمون أمالفي يمنحون إشراقة فاكهية حمضية متلألئة.', NULL),
-(261, 95, 'heart', '[\"Jasmine\",\"Orange Flower\",\"Gardenia\"]', '[\"قلب العطر: الياسمين، زهر البرتقال، الغاردينيا\"]', 'Jasmine, orange flower, and gardenia form a refined floral harmony.', 'ياسمين وزهر البرتقال وغاردينيا يصيغون تناغماً زهرياً راقياً.', NULL),
-(262, 95, 'base', '[\"Honey\",\"Patchouli\",\"Amber Bean\",\"Amber\",\"Leather\",\"Benzoin\",\"Chocolate\"]', '[\"قاعدة العطر: العسل، الباتشولي، فول العنبر، العنبر، الجلد، البنزوين، الشوكولاتة\"]', 'Honey, patchouli, amber, leather, benzoin, and chocolate create a rich, indulgent signature.', 'عسل وباتشولي وعنبر وجلد وبنزوين وشوكولاتة يصوغون توقيعاً غنياً مترفاً.', NULL),
-(263, 96, 'top', '[\"Saffron\",\"Jasmine\"]', '[\"النفحات العليا: الزعفران، الياسمين\"]', '<p>Saffron and jasmine open with brightness and floral-spicy elegance.</p>', '<p>الزعفران والياسمين يفتتحان العطر بإشراقة وأناقة زهرية متبلة.</p>', NULL),
-(264, 96, 'heart', '[\"Cedar\",\"Iris\",\"Rose\",\"Patchouli\"]', '[\"قلب العطر: خشب الأرز، السوسن، الورد، الباتشولي\"]', '<p>Cedar, iris, rose, and patchouli form a sophisticated woody-floral heart.</p>', '<p>خشب الأرز والسوسن والورد والباتشولي يصوغون قلباً زهرياً خشبياً راقياً.</p>', NULL),
-(265, 96, 'base', '[\"Amber\",\"Sandalwood\",\"Musk\",\"Oud\"]', '[\"قاعدة العطر: العنبر، خشب الصندل، المسك، العود\"]', '<p>Amber, sandalwood, musk, and oud leave a deep, inviting finish.</p>', '<p>عنبر وخشب الصندل ومسك وعود يمنحون ختاماً عميقاً مضيافاً.</p>', NULL),
-(266, 97, 'top', '[\"Vanilla\",\"Bergamot\",\"Saffron\",\"Peach\"]', '[\"النفحات العليا: الفانيلا، البرغموت، الزعفران، الخوخ\"]', 'Vanilla with bergamot, saffron, and peach creates a sweet-spicy radiance.', 'فانيلا مع برغموت وزعفران وخوخ تمنح إشراقة حلوة متبلة.', NULL),
-(267, 97, 'heart', '[\"Cedarwood\",\"Violet\",\"Jasmine\"]', '[\"قلب العطر: خشب الأرز، البنفسج، الياسمين\"]', 'Cedarwood anchors violet and jasmine for a refined floral-woody heart.', 'خشب الأرز يحتضن البنفسج والياسمين لقلب زهري خشبي راقٍ.', NULL),
-(268, 97, 'base', '[\"White Musk\",\"Amber\",\"Woods\",\"Agarwood\",\"Patchouli\",\"Sandalwood\"]', '[\"قاعدة العطر: المسك الأبيض، العنبر، الأخشاب، العود، الباتشولي، خشب الصندل\"]', 'Musk, amber, oud, patchouli, and sandalwood leave a warm, lasting signature.', 'مسك وعنبر وعود وباتشولي وخشب الصندل يصوغون توقيعاً دافئاً باقياً.', NULL),
-(269, 98, 'top', '[\"Jasmine\",\"Blood Orange\"]', '[\"النفحات العليا: الياسمين، البرتقال الدموي\"]', 'Jasmine and blood orange open with a luminous floral-citrus sparkle.', 'ياسمين وبرتقال دموي يفتتحان العطر بتألق زهري حمضي مشرق.', NULL),
-(270, 98, 'heart', '[\"Saffron\",\"Cedar\"]', '[\"قلب العطر: الزعفران، خشب الأرز\"]', 'Saffron and cedar add spice and woody refinement to the heart.', 'زعفران وخشب الأرز يضفيان على القلب دفئاً ورقياً خشبياً.', NULL),
-(271, 98, 'base', '[\"Oud\",\"Resins\",\"Amber\"]', '[\"قاعدة العطر: العود، الراتنجات، العنبر\"]', 'Oud, resins, and amber leave a majestic, long-lasting signature.', 'عود وراتنجات وعنبر يصوغون توقيعاً مهيباً باقياً', NULL),
-(272, 99, 'top', '[\"Mandarin & other citruses\",\"Sea Water\"]', '[\"النفحات العليا: اليوسفي والحمضيات، نفحات البحر\"]', '<p>Citrus sparkle and sea water bring freshness and vitality to the start.</p>', '<p>إشراقة الحمضيات مع نفحات البحر تمنح بداية منعشة حيوية.</p>', NULL),
-(273, 99, 'heart', '[\"Lavender\",\"Geranium\",\"Rose\",\"Jasmine\"]', '[\"قلب البخور: اللافندر، الجرانيوم، الورد، الياسمين\"]', '<p>Lavender, geranium, rose, and jasmine bloom with floral softness and balance</p>', '<p>لافندر وجرانيوم وورد وياسمين يزدهرون بنعومة زهرية متوازنة</p>', NULL),
-(274, 99, 'base', '[\"Sandalwood\",\"Musk\",\"Amber\",\"Tobacco\"]', '[\"القاعدة: خشب الصندل، المسك، العنبر، التبغ\"]', '<p>Sandalwood, amber, musk, and tobacco leave a warm, inviting atmosphere.</p>', '<p>خشب الصندل والعنبر والمسك والتبغ يصوغون أجواءً دافئة مضيافة.</p>', NULL),
-(275, 100, 'top', '[\"Aldehydes\",\"Lily of the Valley\",\"White Flowers\",\"Citrus\",\"Roses\",\"Sandalwood\",\"Patchouli\",\"Vetiver\",\"Oud Essentials\",\"Musk\",\"Oud accord\",\"Amber\"]', '[\"النفحات العليا: الألدهيدات، زنبق الوادي، الزهور البيضاء، الحمضيات\"]', 'Aldehydes, citrus, and white florals brighten the space with radiant freshness.', 'ألدهيدات وحمضيات وزهور بيضاء تضيء الأجواء بانتعاش مشرق.', NULL),
-(276, 100, 'heart', '[]', '[\"قلب البخور: الورد، خشب الصندل، الباتشولي، الفيتيفر\"]', 'Roses with sandalwood, patchouli, and vetiver create floral-woody refinement.', 'ورد مع خشب الصندل والباتشولي والفيتيفر يصوغون تناغماً زهرياً خشبياً راقياً.', NULL),
-(277, 100, 'base', '[]', '[\"القاعدة: أساسيات العود، المسك، العنبر، تناغمات العود\"]', 'Oud, musk, and amber leave a deep, traditional aura of warmth.', 'عود ومسك وعنبر يمنحون هالة دافئة عميقة أصيلة.', NULL),
-(278, 101, 'top', '[\"Saffron\",\"Jasmine\"]', '[\"النفحات العليا: الزعفران، الياسمين\"]', '<p>Golden saffron with radiant jasmine creates a luminous, inviting opening.</p>', '<p>زعفران ذهبي مع ياسمين مشرق يمنحان بداية متألقة جذابة.</p>', NULL),
-(279, 101, 'heart', '[\"Iris\",\"Rose\",\"Patchouli\"]', '[\"قلب البخور: الورد، السوسن، الباتشولي\"]', '<p>Rose and iris bloom with elegance, deepened by earthy patchouli.</p>', NULL, NULL),
-(280, 101, 'base', '[\"Cedar\"]', '[\"القاعدة: خشب الأرز\"]', '<p>Cedarwood anchors the scent with warmth and lasting presence.</p>', '<p>خشب الأرز يرسخ العطر بدفء وحضور باقٍ.</p>', NULL),
-(281, 102, 'top', '[\"Warm spices\",\"Saffron\",\"Subtle leather vibes\"]', '[\"النفحات العليا: التوابل الدافئة، الزعفران، نفحات جلدية ناعمة\"]', '<p>Saffron and warm spices with subtle leather notes create a radiant, inviting start.</p>', '<p>زعفران وتوابل دافئة مع نفحات جلدية رقيقة تمنح بداية مشرقة جذابة.</p>', NULL),
-(282, 102, 'heart', '[\"Rich Cambodian Oud\",\"A touch of Indian Oud\",\"Rose or floral nuances\"]', '[\"قلب البخور: عود كمبودي غني، لمسة عود هندي، نغمات زهرية\"]', '<p>Cambodian and Indian oud with floral nuances deliver richness and heritage depth.</p>', '<p>عود كمبودي وهندي مع لمسات زهرية يصوغون عمقاً تراثياً غنياً.</p>', NULL),
-(283, 102, 'base', '[\"Deep Sandalwood\",\"Amber\",\"Soft musk\",\"Resinous Agarwood undertone\"]', '[\"القاعدة: خشب الصندل العميق، العنبر، المسك الناعم، لمسة عود راتنجية\"]', '<p>Sandalwood, amber, musk, and agarwood undertones leave a smoky, majestic trail.</p>', '<p>خشب الصندل والعنبر والمسك مع لمسات عود راتنجية يتركون أثراً مهيباً مدخناً.</p>', NULL),
-(284, 103, 'top', '[\"Warm spices\",\"Saffron\",\"Subtle leather vibes\"]', '[\"النفحات العليا: التوابل الدافئة، الزعفران، نفحات جلدية ناعمة\"]', '<p>Saffron and warm spices with subtle leather notes create a radiant, inviting start.</p>', '<p>زعفران وتوابل دافئة مع نفحات جلدية رقيقة تمنح بداية مشرقة جذابة.</p>', NULL),
-(285, 103, 'heart', '[\"Rich Cambodian Oud\",\"A touch of Indian Oud\",\"Rose or floral nuances\"]', '[\"قلب البخور: عود كمبودي غني، لمسة عود هندي، نغمات زهرية\"]', '<p>Cambodian and Indian oud with floral nuances deliver richness and heritage depth.</p>', '<p>عود كمبودي وهندي مع لمسات زهرية يصوغون عمقاً تراثياً غنياً.</p>', NULL),
-(286, 103, 'base', '[\"Deep Sandalwood\",\"Amber\",\"Soft musk\",\"Resinous Agarwood undertone\"]', '[\"القاعدة: خشب الصندل العميق، العنبر، المسك الناعم، لمسة عود راتنجية\"]', '<p>Sandalwood, amber, musk, and agarwood undertones leave a smoky, majestic trail.</p>', '<p>خشب الصندل والعنبر والمسك مع لمسات عود راتنجية يتركون أثراً مهيباً مدخناً.</p>', NULL),
-(287, 104, 'top', '[\"Aldehydes\",\"Saffron\"]', '[\"ألدهيدات، زعفران\"]', '<p>Aldehydes and saffron create a bright, golden opening that feels luminous and uplifting.</p>', '<p>الألدهيدات والزعفران يمنحان افتتاحية ذهبية مشرقة تنبض بالحيوية والتألق.</p>', NULL),
-(288, 104, 'heart', '[\"Rose Absolute\",\"Jasmine\",\"Shamama\",\"Rose Essence\"]', '[\"ورد مطلق، ياسمين، شمامة، خلاصة الورد\"]', '<p>A luxurious floral heart of rose, jasmine, and shamama enriches the blend with oriental elegance.</p>', '<p>قلب زهري فاخر من الورد والياسمين والشمامة يعمّق العطر بأناقة شرقية مميزة.</p>', NULL),
-(289, 104, 'base', '[\"Musk\",\"Oud (Arian Region)\",\"Warm Resinous Notes\"]', '[\"مسك، عود (منطقة أريان)، نغمات راتنجية دافئة\"]', '<p>A smoky oud from the Arian region fused with musk and resinous warmth creates an enveloping, majestic atmosphere.</p>', '<p>عود الأريان الدخاني الممزوج بالمسك والنغمات الراتنجية الدافئة يكوّن أجواء مهيبة ومترفة.</p>', NULL),
-(290, 105, 'top', '[\"Mint\",\"Rose\"]', '[\"النفحات العليا: النعناع، الورد\"]', '<p>Mint and rose create a refreshing, uplifting start with floral charm.</p>', '<p>نعناع وورد يمنحان بداية منعشة مشرقة بطابع زهري أنيق.</p>', NULL),
-(291, 105, 'heart', '[\"Oud Cambodi\",\"Shamama Accords\",\"Leather\"]', '[\"قلب البخور: عود كمبودي، نغمات الشمامة، الجلد\"]', '<p>Cambodi oud, shamama, and leather bring richness, depth, and ceremonial elegance.</p>', '<p>عود كمبودي مع شمامة وجلد يضفون غنى وعمقاً وأناقة احتفالية.</p>', NULL),
-(292, 105, 'base', '[\"White Amber\",\"Amber Resin\",\"Musk\",\"Patchouli\",\"Tonka\"]', '[\"القاعدة: العنبر الأبيض، راتنج العنبر، المسك، الباتشولي، التونكا\"]', '<p>White amber, musk, patchouli, and tonka leave a warm, sophisticated signature.</p>', '<p>عنبر أبيض ومسك وباتشولي وتونكا يصوغون توقيعاً دافئاً راقياً.</p>', NULL),
-(293, 106, 'top', '[\"Oud\",\"Saffron\",\"Herbs\"]', '[\"النفحات العليا: العود، الزعفران، الأعشاب\"]', '<p>Oud, saffron, and herbs create a noble, aromatic opening.</p>', '<p>عود وزعفران وأعشاب يمنحون بداية عطرية نبيلة</p>', NULL),
-(294, 106, 'heart', '[\"Jasmine\",\"Rose\",\"Shamama Qadeem.\"]', '[\"قلب البخور: الياسمين، الورد، شمامة قديم\"]', '<p>Jasmine, rose, and shamama qadeem bring depth, earthiness, and ceremonial beauty.</p>', '<p>ياسمين وورد وشمامة قديم يضفون عمقاً وثراءً بطابع احتفالي.</p>', NULL),
-(295, 106, 'base', '[\"Patchouli\",\"Oud\",\"Musk\",\"Amber\",\"Vetiver\",\"Ambroxan\"]', '[\"القاعدة: الباتشولي، العود، المسك، العنبر، الفيتيفر، الأمبروكسان\"]', '<p>Patchouli, musk, amber, oud, vetiver, and ambroxan leave a royal, lasting trail</p>', '<p>باتشولي ومسك وعنبر وعود وفيتيفر وأمبروكسان يصوغون أثراً ملكياً باقياً.</p>', NULL),
-(296, 107, 'top', '[\"Cardamom\",\"Bergamot\",\"Lemon\",\"Plum\",\"Lavender\",\"Angelica\",\"Juniper\",\"Pink Pepper\",\"Incense\",\"Jasmine\",\"Pear\",\"Lily of the Valley\",\"Peach\",\"Melon\"]', '[\"النفحات العليا: الهيل، البرغموت، الليمون، البرقوق، اللافندر، الأنجليكا، العرعر، الفلفل الوردي، البخور، الياسمين، الإجاص، زنبق الوادي، الدراق، البطيخ\"]', 'A lively burst of fruits, spices, and florals creates a dazzling, joyful opening.', 'انفجار نابض من الفواكه والتوابل والزهور يصوغ بداية مبهجة متألقة.', NULL),
-(297, 107, 'heart', '[\"Ylang Ylang\",\"Floral\",\"Orange Blossom\",\"Cedar\",\"Violet\",\"Rose\",\"Orris\",\"Coconut\",\"White Flowers\"]', '[\"قلب العطر: الإيلنغ–إيلنغ، الزهور، زهر البرتقال، الأرز، البنفسج، الورد، السوسن، جوز الهند، الزهور البيضاء\"]', 'Ylang-ylang, rose, violet, and orange blossom weave an elegant floral harmony.', 'إيلنغ–إيلنغ وورد وبنفسج وزهر البرتقال يصوغون تناغماً زهيرياً راقياً.', NULL),
-(298, 107, 'base', '[\"Vanilla\",\"Musk\",\"Patchouli\",\"Tobacco\",\"Apple\",\"Amber\",\"Sandalwood\"]', '[\"قاعدة العطر: الفانيلا، المسك، الباتشولي، التبغ، التفاح، العنبر، خشب الصندل\"]', 'Vanilla, musk, amber, and sandalwood leave a warm, sensual, sophisticated trail.', 'فانيلا ومسك وعنبر وخشب صندل يمنحون أثراً دافئاً حسيّاً راقياً.', NULL),
-(299, 108, 'top', '[\"Lemon (Citrus Sparkle)\"]', '[\"ليمون (انتعاش حمضي متلألئ)\"]', '<p>Sparkling lemon bursts with brightness, adding a crisp and energizing citrus sparkle.</p>', '<p>يتألق الليمون بانتعاش متلألئ يمنح العطر إشراقة حيوية منعشة.</p>', NULL),
-(300, 108, 'heart', '[\"Lavender\",\"Vanilla (Floral–Gourmand Heart)\"]', '[\"لافندر، فانيلا (قلب زهري–حلو)\"]', '<p>A soft heart of lavender and vanilla creates a floral–gourmand harmony that is both soothing and refined.</p>', '<p>قلب ناعم من اللافندر والفانيلا يمنح تناغماً زهرياً–حلواً يفيض بالهدوء والرقي.</p>', NULL),
-(301, 108, 'base', '[\"Frankincense\",\"Oud (Woody–Resinous Drydown)\"]', '[\"بخور، عود (جفاف خشبي–راتنجي)\"]', '<p>Deep oud and smoky frankincense settle the fragrance into a warm, woody–resinous signature that lingers with elegance.</p>', '<p>عود فاخر ممزوج بدخان البخور يمنح القاعدة عمقاً خشبياً–راتنجياً يترك أثراً أنيقاً طويل الأمد.</p>', NULL),
-(302, 109, 'top', '[\"Rose\",\"Jasmine\",\"Patchouli\"]', '[\"ورد، ياسمين، باتشولي\"]', '<p>A radiant opening of rose, jasmine, and patchouli, balancing floral elegance with earthy depth.</p>', '<p>افتتاحية متألقة من الورد والياسمين والباتشولي تمزج بين الرقي الزهري والعمق الترابي.</p>', NULL),
-(303, 109, 'heart', '[\"Oud Bangladesh\",\"Shamama Accords\"]', '[\"عود بنغلاديش، نغمات الشمامة\"]', '<p>The heart reveals Bangladeshi oud wrapped in shamama accords, offering exotic richness and traditional warmth.</p>', '<p>قلب غني بعود بنغلاديش ممزوج بنغمات الشمامة ليمنح فخامة مميزة ودفئاً تقليدياً.</p>', NULL),
-(304, 109, 'base', '[\"Bakhoor Smoky Accords\",\"Musk\"]', '[\"بخور دخاني، مسك\"]', '<p>A smoky bakhoor dry down with soft musk creates an opulent and lingering atmosphere.</p>', '<p>قاعدة بخورية دخانية مع لمسة مسك ناعمة تمنح أجواء مترفة تدوم طويلاً.</p>', NULL),
-(305, 110, 'top', '[\"Oud\",\"Saffron\",\"Herbs\"]', '[\"النفحات العليا: العود، الزعفران، الأعشاب\"]', '<p>Oud, saffron, and herbs create a noble, aromatic opening.</p>', '<p>عود وزعفران وأعشاب يمنحون بداية عطرية نبيلة</p>', NULL),
-(306, 110, 'heart', '[\"Jasmine\",\"Rose\",\"Shamama Qadeem.\"]', '[\"قلب البخور: الياسمين، الورد، شمامة قديم\"]', '<p>Jasmine, rose, and shamama qadeem bring depth, earthiness, and ceremonial beauty.</p>', '<p>ياسمين وورد وشمامة قديم يضفون عمقاً وثراءً بطابع احتفالي.</p>', NULL);
-INSERT INTO `fragrance_notes` (`id`, `product_id`, `note_type`, `ingredients_en`, `ingredients_ar`, `description_en`, `description_ar`, `image_url`) VALUES
-(307, 110, 'base', '[\"Patchouli\",\"Oud\",\"Musk\",\"Amber\",\"Vetiver\",\"Ambroxan\"]', '[\"القاعدة: الباتشولي، العود، المسك، العنبر، الفيتيفر، الأمبروكسان\"]', '<p>Patchouli, musk, amber, oud, vetiver, and ambroxan leave a royal, lasting trail</p>', '<p>باتشولي ومسك وعنبر وعود وفيتيفر وأمبروكسان يصوغون أثراً ملكياً باقياً.</p>', NULL),
-(308, 111, 'top', '[\"Aldehydes\",\"Saffron\"]', '[\"ألدهيدات، زعفران\"]', '<p>Aldehydes and saffron create a bright, golden opening that feels luminous and uplifting.</p>', '<p>الألدهيدات والزعفران يمنحان افتتاحية ذهبية مشرقة تنبض بالحيوية والتألق.</p>', NULL),
-(309, 111, 'heart', '[\"Rose Absolute\",\"Jasmine\",\"Shamama\",\"Rose Essence\"]', '[\"ورد مطلق، ياسمين، شمامة، خلاصة الورد\"]', '<p>A luxurious floral heart of rose, jasmine, and shamama enriches the blend with oriental elegance.</p>', '<p>قلب زهري فاخر من الورد والياسمين والشمامة يعمّق العطر بأناقة شرقية مميزة.</p>', NULL),
-(310, 111, 'base', '[\"Musk\",\"Oud (Arian Region)\",\"Warm Resinous Notes\"]', '[\"مسك، عود (منطقة أريان)، نغمات راتنجية دافئة\"]', '<p>A smoky oud from the Arian region fused with musk and resinous warmth creates an enveloping, majestic atmosphere.</p>', '<p>عود الأريان الدخاني الممزوج بالمسك والنغمات الراتنجية الدافئة يكوّن أجواء مهيبة ومترفة.</p>', NULL),
-(311, 112, 'top', '[\"Rose\",\"Saffron\",\"Nagamotha\"]', '[\"ورد، زعفران، نجموثة\"]', '<p>A luminous blend of rose, saffron, and earthy nagamotha creates a refined floral–spicy opening.</p>', '<p>مزيج متألق من الورد والزعفران والنجموثة الترابية يمنح افتتاحية زهرية–تبهيرية راقية.</p>', NULL),
-(312, 112, 'heart', '[\"Oud Arian\",\"Dehnal Oud Hindi\",\"Leather\",\"Orris\"]', '[\"عود أريان، دهن العود الهندي، جلد، سوسن\"]', '<p>A noble heart where Arian and Hindi oud blend with leather and orris, embodying depth and tradition.</p>', '<p>قلب مهيب يجمع بين عود الأريان ودهـن العود الهندي مع الجلد والسوسن ليجسد عمقاً وأصالة.</p>', NULL),
-(313, 112, 'base', '[\"Musk\",\"Ambergris\",\"Sandal Oud\",\"Combodi Accord\",\"Incense\"]', '[\"مسك، عنبر رمادي، عود صندل، عود كمبودي، بخور\"]', '<p>Musk, ambergris, sandalwood oud, Cambodian oud, and incense form a majestic smoky signature.</p>', '<p>مزيج من المسك والعنبر الرمادي وعود الصندل والعود الكمبودي مع البخور يمنح بصمة دخانية ملكية.</p>', NULL),
-(314, 113, 'top', '[\"Citrus\",\"Bergamot\",\"Spices\"]', '[\"حمضيات، برغموت، توابل\"]', '<p>A sparkling opening of citrus and bergamot touched with spices, offering freshness with a refined edge.</p>', '<p>افتتاحية متألقة من الحمضيات والبرغموت مع لمسات من التوابل تمنح انتعاشاً برونق راقٍ.</p>', NULL),
-(315, 113, 'heart', '[\"Floral Notes\",\"Leather\",\"Musk\"]', '[\"نغمات زهرية، جلد، مسك\"]', '<p>Florals softened by musk and enriched with leather give the heart warmth and sophistication</p>', '<p>أزهار رقيقة يكسوها المسك ويعززها الجلد لتمنح القلب دفئاً وأناقة.</p>', NULL),
-(316, 113, 'base', '[\"Agarwood\",\"Amber\"]', '[\"عود، عنبر\"]', '<p>Agarwood and amber form a deep, smoky, resinous finish, leaving an aura of nobility and tradition</p>', '<p>عود نقي وعنبر فاخر يكوّنان لمسة دخانية راتنجية عميقة، تترك هالة من الفخامة والأصالة.</p>', NULL),
-(317, 114, 'top', '[\"Sea Notes\",\"Bergamot\"]', '[\"نغمات بحرية، برغموت\"]', 'Sparkling sea notes and bergamot bring a wave of crisp marine freshness.', 'نفحات بحرية متلألئة مع البرغموت تضفي موجة من الانتعاش البحري النقي.', NULL),
-(318, 114, 'heart', '[\"Rosemary\",\"Sage\",\"Geranium\",\"Anise\"]', '[\"إكليل الجبل، ميرمية، جرانيوم، يانسون\"]', 'Aromatic herbs of rosemary, sage, geranium, and anise add sophistication and depth.', 'أعشاب عطرية من إكليل الجبل والميرمية والجرانيوم واليانسون تمنح العطر عمقاً وأناقة.', NULL),
-(319, 114, 'base', '[\"Incense\",\"Patchouli\",\"Ambroxan\",\"White Musk\",\"Vetiver\",\"Moss\"]', '[\"بخور، باتشولي، أمبروكسان، مسك أبيض، فيتيفر، طحالب\"]', 'Incense, patchouli, and musk enriched with ambroxan, vetiver, and moss create a smoky–woody trail of elegance.', 'البخور والباتشولي والمسك مدعّمة بالأمبروكسان والفيتيفر والطحالب تمنح أثراً خشبياً–دخانياً أنيقاً.', NULL),
-(320, 115, 'top', '[\"Indian Roses\",\"White Flowers\"]', '[\"ورود هندية، أزهار بيضاء\"]', '<p>A graceful floral opening—soft rose petals and luminous white blossoms—sets an elegant, inviting tone.</p>', '<p>افتتاحية زهرية رقيقة من بتلات الورد ولمعان الأزهار البيضاء تمنح العطر لمسة راقية ومُرحِّبة.</p>', NULL),
-(321, 115, 'heart', '[\"Ambergris\",\"Amber Resin\",\"Black Amber\"]', '[\"عنبر بحري (أمبريغريس)، راتنج العنبر، عنبر أسود\"]', '<p>A triad of amber nuances adds depth and warmth—polished, luxurious, and seamlessly enveloping.</p>', '<p>ثلاثية من درجات العنبر تمنح عمقاً ودفئاً—مترفة مصقولة تلتف حول الحواس بانسجام.</p>', NULL),
-(322, 115, 'base', '[\"Dehnal Oud Indian\",\"Dehnal Oud Cambodi\"]', '[\"دهن العود الهندي، دهن العود الكمبودي\"]', '<p>A regal oud signature where Indian and Cambodian oils fuse for a dignified, lingering ambery-oud trail.</p>', '<p>بصمة عود ملكية يتناغم فيها الهندي مع الكمبودي، لتترك أثراً عنبرياً عودياً فاخراً وطويل الأمد.</p>', NULL),
-(323, 116, 'top', '[\"Bergamot\",\"Mandarin\",\"Aquatic Notes\"]', '[\"برغموت، مندَرين، نغمات مائية\"]', 'Bergamot, mandarin, and aquatic notes create a sparkling, refreshing opening that feels luminous and pure.', 'البرغموت والمندرين والنغمات المائية تمنح افتتاحية متألقة منعشة تنبض بالنقاء والضياء.', NULL),
-(324, 116, 'heart', '[\"Jasmine\",\"Rose.\"]', '[\"ياسمين، ورد\"]', 'A timeless floral duo of jasmine and rose brings elegance and grace to the heart.', 'ثنائي زهري خالد من الياسمين والورد يضفي على القلب لمسة من الرقي والنعومة.', NULL),
-(325, 116, 'base', '[\"Ambroxan\",\"Sandalwood\",\"Musk\"]', '[\"أمبروكسان، خشب الصندل، مسك\"]', 'Ambroxan, sandalwood, and musk shape a sensual, refined finish that lingers with sophistication.', 'الأمبروكسان وخشب الصندل والمسك يمنحون لمسة نهائية راقية وحسية تدوم بأناقة.', NULL),
-(326, 117, 'top', '[\"Grapefruit\",\"Pink Pepper\",\"Mint\",\"Lemon\"]', '[\"جريب فروت، فلفل وردي، نعناع، ليمون\"]', 'Grapefruit, pink pepper, mint, and lemon create a zesty, sparkling opening with fresh vibrancy.', 'جريب فروت وفلفل وردي ونعناع وليمون يمنحون افتتاحية متألقة نابضة بالانتعاش والحيوية.', NULL),
-(327, 117, 'heart', '[\"Ginger\",\"Nutmeg\",\"Jasmine\",\"Iso E Super\"]', '[\"زنجبيل، جوزة الطيب، ياسمين، Iso E Super\"]', 'Spicy ginger and nutmeg blend with jasmine and Iso E Super for a smooth, refined depth', 'زنجبيل متبّل وجوزة طيب دافئة تتناغم مع الياسمين وأناقة Iso E Super لعمق متوازن راقٍ.', NULL),
-(328, 117, 'base', '[\"Incense\",\"Vetiver\",\"Cedar\",\"Sandalwood\",\"Patchouli\",\"Labdanum\",\"White Musk\"]', '[\"بخور، فيتيفر، أرز، خشب الصندل، باتشولي، لابدانوم، مسك أبيض\"]', 'Incense, vetiver, and woods enriched with patchouli, labdanum, and musk create a smoky, long-lasting trail.', 'بخور وفيتيفر وأخشاب مدعّمة بالباتشولي واللابدانوم والمسك تمنح أثراً دخانياً طويلاً مليئاً بالفخامة', NULL),
-(329, 118, 'top', '[\"Passion Fruit\",\"Grapefruit\",\"Pineapple\",\"Tangerine\",\"Strawberry\"]', '[\"فاكهة العاطفة، جريب فروت، أناناس، يوسفي، فراولة\"]', 'A sparkling fruit cocktail—passion fruit, grapefruit, pineapple, tangerine, and strawberry—delivers juicy brightness with playful energy.', 'كوكتيل فاكهي متلألئ من فاكهة العاطفة والجريب فروت والأناناس واليوسفي والفراولة يمنح إشراقة عصيرية مفعمة بالحيوية.', NULL),
-(330, 118, 'heart', '[\"Peony\",\"Vanilla Orchid\",\"Berries\",\"Jasmine\",\"Lily of the Valley\"]', '[\"فاوانيا، أوركيد الفانيلا، توت، ياسمين، زنابق الوادي\"]', 'Peony and vanilla orchid bloom with berries, jasmine, and lily of the valley for a modern, romantic floral core.', 'تتفتح الفاوانيا وأوركيد الفانيلا مع التوت والياسمين وزنابق الوادي، لتشكّل قلباً زهيرياً معاصراً رومانسي الملامح.', NULL),
-(331, 118, 'base', '[\"Musk\",\"Oakmoss\",\"Woods\"]', '[\"مسك، طحالب السنديان، أخشاب\"]', 'Musk, oakmoss, and woods create a smooth, soft-woody musk trail—clean, polished, and quietly elegant', 'يمزج المسك وطحالب السنديان والأخشاب أثراً ناعماً خشبيّاً–مسكياً بلمسة نظيفة مصقولة وأناقة هادئة.', NULL),
-(332, 119, 'top', '[\"Bergamot\",\"Cypress\",\"Leather\"]', '[\"برغموت، سرو، جلد\"]', 'Bright bergamot and aromatic cypress cut through with a sleek leather edge—fresh, precise, and immediately distinctive.', 'برغموت متألّق وسرو عطري مع حافة جلدية أنيقة—انتعاش دقيق وبصمة لافتة منذ اللحظة الأولى.', NULL),
-(333, 119, 'heart', '[\"Incense\",\"Violet Leaves\",\"Geranium\"]', '[\"بخور، أوراق البنفسج، جرانيوم\"]', 'A ribbon of incense winds through cool violet leaves and polished geranium, adding smoky lift and refined greenery.', 'شريط من البخور ينساب عبر أوراق البنفسج الباردة والجرانيوم المصقول، ليمنح ارتفاعاً دخانياً وخضرة راقية.', NULL),
-(334, 119, 'base', '[\"Patchouli\",\"Musk\",\"Agarwood\",\"Guaiac Wood\"]', '[\"باتشولي، مسك، عود، خشب غواياك\"]', 'Patchouli and musk soften into noble agarwood and guaiac wood, creating a deep, woody aura that resonates long after the smoke clears.', 'يذوب الباتشولي والمسك في فخامة العود وخشب الغواياك ليشكّلا هالة خشبية عميقة تدوم طويلاً بعد انقضاء الدخان.', NULL),
-(335, 120, 'top', '[\"Strawberry\",\"Cherry\",\"Pineapple\",\"Mandarin\"]', '[\"فراولة، كرز، أناناس، يوسفي\"]', 'A sparkling cocktail of strawberry, cherry, pineapple, and mandarin delivers a juicy, playful brightness.', 'كوكتيل متلألئ من الفراولة والكرز والأناناس واليوسفي يمنح إشراقة عصيرية مرحة.', NULL),
-(336, 120, 'heart', '[\"Caramel\",\"Rose\",\"Jasmine\",\"Violet\"]', '[\"كراميل، ورد، ياسمين، بنفسج\"]', 'Caramel drapes over rose, jasmine, and violet, creating a sweet yet refined floral heart', 'الكراميل ينساب فوق الورد والياسمين والبنفسج ليمنح القلب حلاوة راقية متوازنة.', NULL),
-(337, 120, 'base', '[\"Patchouli\",\"Musk\",\"Amber\"]', '[\"باتشولي، مسك، عنبر\"]', 'Patchouli, musk, and amber provide warmth and depth, leaving a sensual, elegant trail.', 'الباتشولي والمسك والعنبر يضفون دفئاً وعمقاً، ليتركا أثراً أنيقاً وحسياً طويل الأمد.', NULL),
-(338, 121, 'top', '[\"Turkish Rose\",\"Lavender\",\"Citruses\",\"Peony\"]', '[\"ورد تركي، لافندر، حمضيات، فاوانيا\"]', 'A radiant opening of Turkish rose, lavender, citruses, and peony delivers brightness and soft floral freshness.', 'افتتاحية متألقة من الورد التركي واللافندر والحمضيات والفاوانيا تمنح إشراقة وحيوية زهرية ناعمة.', NULL),
-(339, 121, 'heart', '[\"Rose\",\"Sandalwood\",\"White Flowers\",\"Frankincense (Olibanum)\"]', '[\"ورد، خشب الصندل، زهور بيضاء، بخور (لبان)\"]', 'A rich heart of rose, sandalwood, and white flowers elevated by incense for depth and mystique.', 'قلب غني بالورد وخشب الصندل والزهور البيضاء تعزّزه لمسة البخور لعمق وغموض آسر.', NULL),
-(340, 121, 'base', '[\"Oud Accord\",\"Guaiac Wood\",\"Oakmoss\",\"Musk\",\"Ambroxan.\"]', '[\"نوتات العود، خشب الغواياك، طحالب السنديان، مسك، أمبروكسان\"]', 'Oud accord, guaiac wood, oakmoss, musk, and ambroxan shape a smoky–woody trail of elegance and strength', 'نوتات العود وخشب الغواياك وطحالب السنديان مع المسك والأمبروكسان تمنح أثراً خشبياً–دخانياً أنيقاً وقوياً.', NULL),
-(341, 122, 'top', '[\"Oud Notes\",\"Leather\"]', '[\"نوتات العود، جلد\"]', 'Oud wrapped in leather creates a bold and sophisticated opening of strength and depth.', 'العود الممزوج بالجلد يمنح افتتاحية قوية وأنيقة تنبض بالعمق والهيبة.', NULL),
-(342, 122, 'heart', '[\"Assamese Oud\"]', '[\"عود آسام\"]', 'Rare Assamese oud shines at the center, smoky and regal, embodying tradition and luxury', 'عود آسام النادر يتألق في القلب بدخان مهيب وشخصية ملكية تجسد الأصالة والفخامة.', NULL),
-(343, 122, 'base', '[\"Amber\",\"Sweet Oud Accord\"]', '[\"عنبر، عود حلو\"]', 'Amber and sweet oud accord soften the finish, leaving a warm, refined trail.', 'العنبر الممزوج بنوتة عود حلوة يضفي لمسة دافئة راقية تدوم طويلاً.', NULL),
-(344, 123, 'top', '[\"Red Fruits\",\"Watermelon\",\"Lavender\",\"Sicilian Orange\"]', '[\"فواكه حمراء، بطيخ، لافندر، برتقال صقلي\"]', 'A refreshing cocktail of red fruits, watermelon, lavender, and Sicilian orange brings brightness and playful vibrancy.', 'كوكتيل منعش من الفواكه الحمراء والبطيخ واللافندر والبرتقال الصقلي يمنح إشراقة وحيوية مرحة.', NULL),
-(345, 123, 'heart', '[\"Sandalwood\",\"Ambroxan\",\"White Musk\"]', '[\"خشب الصندل، أمبروكسان، مسك أبيض\"]', 'Sandalwood, ambroxan, and white musk create a smooth, modern warmth with refined sensuality.', 'خشب الصندل والأمبروكسان والمسك الأبيض يشكّلون دفئاً عصرياً ناعماً بحسية راقية.', NULL),
-(346, 123, 'base', '[\"Lotus\",\"Jasmine\",\"Lily of the Valley\",\"Sea Accord\"]', '[\"لوتس، ياسمين، زنابق الوادي، نفحات بحرية\"]', 'Lotus, jasmine, lily of the valley, and sea accords leave a luminous floral–aquatic trail.', 'اللوتس والياسمين وزنابق الوادي مع النفحات البحرية يتركون أثراً زهرياً–مائياً متألقاً.', NULL),
-(347, 124, 'top', '[\"Peach\",\"Apple Blossom\"]', '[\"خوخ، أزهار التفاح\"]', 'Peach and apple blossom open with fruity–floral softness, light and inviting.', 'خوخ وأزهار التفاح يقدمان افتتاحية فاكهية–زهرية ناعمة وخفيفة آسرة', NULL),
-(348, 124, 'heart', '[\"Pineapple Blossom\",\"Rose\"]', '[\"أزهار الأناناس، ورد\"]', 'Pineapple blossom and rose bring playful brightness with classic floral elegance.', 'أزهار الأناناس والورد يضفيان إشراقة مرحة تمتزج مع أناقة زهرية خالدة.', NULL),
-(349, 124, 'base', '[\"Musk\",\"Patchouli\",\"Sandalwood\"]', '[\"مسك، باتشولي، خشب الصندل\"]', 'Musk, patchouli, and sandalwood create a warm, velvety foundation of depth and refinement.', 'مسك وباتشولي وخشب الصندل يشكلون قاعدة دافئة مخملية تنبض بالعمق والرقي.', NULL),
-(350, 125, 'top', '[\"Orange\",\"Grapefruit\",\"Bergamot\",\"Peach\",\"Cardamom\"]', '[\"برتقال، جريب فروت، برغموت، خوخ، هيل\"]', 'Orange, grapefruit, bergamot, peach, and cardamom create a sparkling fresh–spicy opening.', 'البرتقال والجريب فروت والبرغموت والخوخ والهيل يمنحون افتتاحية متألقة منعشة–تبهيرية.', NULL),
-(351, 125, 'heart', '[\"Rose\",\"Jasmine\",\"Geranium\",\"Litchi\",\"Clary Sage\"]', '[\"ورد، ياسمين، جرانيوم، ليتشي، ميرمية\"]', 'Rose, jasmine, geranium, and litchi, enriched with clary sage, form a floral–herbal elegance.', 'الورد والياسمين والجرانيوم والليتشي مدعّمة بالميرمية العطرية تشكّل لمسة زهرية–عشبية راقية.', NULL),
-(352, 125, 'base', '[\"Patchouli\",\"Vanilla\",\"Musk\",\"Vetiver\",\"Oud Accords\",\"Ambroxan\"]', '[\"باتشولي، فانيلا، مسك، فيتيفر، نوتات العود، أمبروكسان\"]', 'Patchouli, vanilla, musk, vetiver, and oud accords polished with ambroxan create a deep, lasting trail.', 'الباتشولي والفانيلا والمسك والفيتيفر ونوتات العود مع الأمبروكسان يمنحون أثراً عميقاً ثابتاً يدوم طويلاً.', NULL),
-(353, 126, 'top', '[\"Bergamot\",\"Orange\"]', '[\"برغموت، برتقال\"]', 'Bright bergamot and orange deliver a sparkling citrus opening full of vitality.', 'برغموت وبرتقال مشرقان يمنحان افتتاحية حمضية متألقة مفعمة بالحيوية', NULL),
-(354, 126, 'heart', '[\"Floral\",\"Green\",\"Cedarwood\"]', '[\"نغمات زهرية، نغمات خضراء، خشب الأرز\"]', 'A refined floral–green accord enriched with cedarwood adds natural elegance and balance.', 'تناغم زهري–أخضر راقٍ يتألق بخشب الأرز ليضفي أناقة طبيعية وتوازناً.', NULL),
-(355, 126, 'base', '[\"Sandalwood\",\"Vanilla\",\"Dry Woody\",\"Musk\",\"amber\"]', '[\"خشب الصندل، فانيلا، أخشاب جافة، مسك، عنبر\"]', 'Sandalwood, vanilla, musk, dry woods, and amber form a smooth, warm, and lasting finish.', 'خشب الصندل والفانيلا والمسك والأخشاب الجافة والعنبر يشكلون لمسة نهائية دافئة وناعمة تدوم طويلاً.', NULL),
-(356, 127, 'top', '[\"Sicilian Orange\",\"Jasmine\",\"Lily\",\"apple\"]', '[\"برتقال صقلي، ياسمين، زنابق، تفاح\"]', 'Sicilian orange with jasmine, lily, and apple creates a sparkling fruity–floral opening.', 'برتقال صقلي مع الياسمين والزنابق والتفاح يمنح افتتاحية فاكهية–زهرية متألقة.', NULL),
-(357, 127, 'heart', '[\"Powdery Accord\",\"Vanilla Bean\",\"Sea Notes\"]', '[\"نغمات بودرية، حبوب الفانيلا، نغمات بحرية\"]', 'A soft powdery accord with vanilla bean and sea notes balances sweetness with airy freshness.', 'نغمات بودرية ناعمة مع حبوب الفانيلا والنفحات البحرية توازن بين الحلاوة والانتعاش.', NULL),
-(358, 127, 'base', '[\"Musk\",\"Cashmeran\",\"Sandalwood\",\"Ambroxan\"]', '[\"مسك، كاشمران، خشب الصندل، أمبروكسان\"]', 'Musk, cashmeran, sandalwood, and ambroxan provide a silky, sensual, and modern woody finish.', 'المسك والكاشمران وخشب الصندل والأمبروكسان يمنحون لمسة نهائية حريرية عصرية وحسية.', NULL),
-(359, 128, 'top', '[\"Heliotrope\",\"Tangerine\",\"Orchid\"]', '[\"هيليوتروب، يوسفي، أوركيد\"]', 'Heliotrope, tangerine, and orchid create a soft yet radiant floral–fruity opening.', 'هيليوتروب مع يوسفي وأوركيد يمنحون افتتاحية زهرية–فاكهية ناعمة ومشرقة.', NULL),
-(360, 128, 'heart', '[\"Tropical Fruits\",\"White Flower\",\"Peony\"]', '[\"فواكه استوائية، زهور بيضاء، فاوانيا\"]', 'Tropical fruits with white flowers and peony bring a vibrant, feminine charm.', 'فواكه استوائية وزهور بيضاء مع الفاوانيا تضفي لمسة أنثوية مفعمة بالحيوية.', NULL),
-(361, 128, 'base', '[\"Vanilla\",\"Musk\",\"Amber\"]', '[\"فانيلا، مسك، عنبر\"]', 'Vanilla, musk, and amber form a sensual, warm finish that lingers elegantly.', 'فانيلا ومسك وعنبر يشكلون قاعدة دافئة حسيّة تدوم بأناقة.', NULL),
-(362, 129, 'top', '[\"Cardamom\",\"Sichuan Pepper\",\"Agarwood\"]', '[\"هيل، فلفل سيشواني، عود\"]', 'Cardamom, Sichuan pepper, and oud create a spicy, refined opening full of oriental richness.', 'الهيل والفلفل السيشواني والعود يمنحون افتتاحية متبّلة راقية غنية بالطابع الشرقي.', NULL),
-(363, 129, 'heart', '[\"Brazilian Rosewood\",\"Sandalwood\",\"Vetiver\"]', '[\"خشب الروزوود البرازيلي، خشب الصندل، فيتيفر\"]', 'Brazilian rosewood, sandalwood, and vetiver form an elegant woody balance with creamy and earthy depth.', 'خشب الروزوود البرازيلي وخشب الصندل والفيتيفر يشكلون تناغماً خشبياً أنيقاً بعمق كريمي وترابي.', NULL),
-(364, 129, 'base', '[\"Tonka Bean\",\"Amber Resin\",\"Vanilla\"]', '[\"حبوب التونكا، راتنج العنبر، فانيلا\"]', 'Tonka bean, amber resin, and vanilla leave a warm, sensual trail of sophistication.', 'حبوب التونكا وراتنج العنبر والفانيلا يمنحون أثراً دافئاً حسياً مليئاً بالأناقة.', NULL),
-(365, 130, 'top', '[\"Tobacco\",\"Black Pepper\",\"Pineapple\",\"Cardamom\",\"Nutmeg\",\"Cinnamon\",\"Grapefruit\"]', '[\"تبغ، فلفل أسود، أناناس، هيل، جوزة الطيب، قرفة، جريب فروت\"]', 'Smoldering tobacco laced with black pepper and warm cardamom–nutmeg–cinnamon, lifted by juicy pineapple and zesty grapefruit.', 'تبغ متوهّج مع فلفل أسود ولمسات هيل وجوزة الطيب وقرفة، ترفعه عصارية الأناناس وحيوية الجريب فروت.', NULL),
-(366, 130, 'heart', '[\"Patchouli\",\"Coffee\",\"Iris\",\"Lavender\"]', '[\"باتشولي، قهوة، سوسن، لافندر\"]', 'Patchouli and roasted coffee create plush depth, refined by silky iris and the clean aromatics of lavender.', 'باتشولي مع قهوة محمّصة يمنحان عمقاً مخملياً، تصقله نعومة السوسن ورونق اللافندر العطري.', NULL),
-(367, 130, 'base', '[\"Vanilla\",\"Amber\",\"Drywood\",\"Benzoin\",\"Labdanum\",\"Sandalwood\",\"Haitian Vetiver\"]', '[\"فانيلا، عنبر، أخشاب جافة، بنزوين، لابدانوم، خشب الصندل، فيتيفر هايتي\"]', 'Vanilla and amber meld with dry woods, benzoin, labdanum, sandalwood, and Haitian vetiver for a long, resinous–woody finish.', 'فانيلا وعنبر ينسجمان مع أخشاب جافة وبنزوين ولابدانوم وخشب الصندل وفيتيفر هايتي لختام خشبي–راتنجي طويل الأمد.', NULL),
-(368, 131, 'top', '[\"Cherry\",\"Almond\"]', '[\"كرز، لوز\"]', 'Cherry and almond create a luscious, gourmand opening that is both playful and addictive', 'الكرز واللوز يقدمان افتتاحية غورماندية شهية مفعمة بالمرح والجاذبية.', NULL),
-(369, 131, 'heart', '[\"Cherry\",\"Plum\",\"Turkish Rose\",\"Jasmine\"]', '[\"كرز، برقوق، ورد تركي، ياسمين\"]', 'A fruity–floral heart of cherry, plum, Turkish rose, and jasmine adds depth and sensual elegance.', 'قلب فاكهي–زهري من الكرز والبرقوق والورد التركي والياسمين يضفي عمقاً وأناقة حسية.', NULL),
-(370, 131, 'base', '[\"Tonka\",\"Vanilla\",\"Cinnamon\",\"Benzoin\",\"Sandalwood\",\"Cedar\",\"Vetiver\"]', '[\"حبوب التونكا، فانيلا، قرفة، بنزوين، خشب الصندل، أرز، فيتيفر\"]', 'Tonka, vanilla, cinnamon, and woods enriched with benzoin leave a warm, indulgent trail.', 'حبوب التونكا والفانيلا والقرفة والأخشاب مدعّمة بالبنزوين تمنح أثراً دافئاً مترفاً طويل الأمد.', NULL),
-(371, 132, 'top', '[\"Orange\",\"Red Berries\",\"Peach\"]', '[\"برتقال، توت أحمر، خوخ\"]', 'Orange, red berries, and peach create a sparkling, velvety fruity opening.', 'برتقال وتوت أحمر مع خوخ مخملي يمنحون افتتاحية فاكهية متألقة وناعمة.', NULL),
-(372, 132, 'heart', '[\"White Flowers\",\"Rose\",\"Honey\"]', '[\"زهور بيضاء، ورد، عسل\"]', 'White flowers and rose enriched with honey bring elegance, warmth, and sensual depth.', 'زهور بيضاء وورد فاخر تغمرها لمسة عسل تمنح العطر أناقة ودفئاً وحسية عميقة.', NULL),
-(373, 132, 'base', '[\"Moss\",\"Sandalwood\",\"Ambroxan\"]', '[\"طحالب، خشب الصندل، أمبروكسان\"]', 'Moss, sandalwood, and ambroxan form a refined, modern woody–ambery trail.', 'الطحالب وخشب الصندل والأمبروكسان يشكّلون أثراً خشبياً–عنبرية عصرياً راقياً.', NULL),
-(374, 133, 'top', '[\"Amalfi Lemon\",\"Raspberry\",\"Neroli\"]', '[\"ليمون أمالفي، توت العليق، زهر النارنج\"]', 'Amalfi lemon, raspberry, and neroli create a sparkling fruity–citrus opening with fresh sweetness.', 'ليمون أمالفي وتوت العليق وزهر النارنج يمنحون افتتاحية حمضية–فاكهية متألقة ومنعشة.', NULL),
-(375, 133, 'heart', '[\"Jasmine\",\"African Orange\",\"Orange Flower\",\"Gardenia\"]', '[\"ياسمين، زهرة برتقال إفريقية، زهر البرتقال، غاردينيا\"]', 'Jasmine, African orange flower, orange blossom, and gardenia form a radiant, feminine floral bouquet.', 'ياسمين وزهرة البرتقال الإفريقية وزهر البرتقال والغاردينيا يشكّلون باقة زهرية مشرقة أنثوية.', NULL),
-(376, 133, 'base', '[\"White Honey\",\"Patchouli\",\"Amber\"]', '[\"عسل أبيض، باتشولي، عنبر\"]', 'White honey, patchouli, and amber leave a golden, sensual trail of warmth and depth.', 'عسل أبيض وباتشولي وعنبر يتركون أثراً ذهبياً دافئاً وحسياً عميقاً.', NULL),
-(377, 134, 'top', '[\"Sparkling Fresh Accord\",\"Bergamot\",\"Bitter Almond\"]', '[\"لمسة منعشة متلألئة، برغموت، لوز مُرّ\"]', 'A crisp, sparkling lift pairs citrus brightness with the smooth bite of bitter almond, striking an elegant contrast that feels instantly polished.', 'انتعاش متلألئ يزاوج إشراقة الحمضيات مع لمسة اللوز المرّ المصقولة، في تباين أنيق يضفي طابعاً فورياً متأنقاً.', NULL),
-(378, 134, 'heart', '[\"Peony\",\"Ylang-Ylang\"]', '[\"فاوانيا، إيلنغ-إيلنغ\"]', 'Silky florals unfold in a soft, luminous bouquet; peony adds airy prettiness while ylang-ylang lends creamy depth and quiet sensuality.', 'زهور حريرية تتفتح في باقة مضيئة؛ تمنح الفاوانيا خفة رشيقة ويضفي الإيلنغ-إيلنغ عمقاً كريميّاً وحسية هادئة.', NULL),
-(379, 134, 'base', '[\"Vanilla\",\"Coumarin\",\"Musk\"]', '[\"فانيلّا، كومارين، مِسك\"]', 'A velvety finish where vanilla and coumarin melt into soft musk, creating a smooth, comforting trail that lingers with poised sophistication.', 'خاتمة مخملية تذوب فيها الفانيلّا والكومارين في مسك ناعم، لتترك أثراً مريحاً مصقولاً يدوم بأناقة متوازنة', NULL),
-(380, 135, 'top', '[\"Saffron\",\"Jasmine\",\"Candied Orange\"]', '[\"زعفران، ياسمين، برتقال مسكّر\"]', 'Saffron, jasmine, and candied orange create a sparkling, sweet-spicy opening full of allure.', 'الزعفران والياسمين والبرتقال المسكّر يمنحون افتتاحية مشرقة حلوة–متبّلة آسرة.', NULL),
-(381, 135, 'heart', '[\"Cotton Candy\",\"Ambergris\"]', '[\"غزل البنات، عنبر رمادي (أمبريغريس)\"]', 'Cotton candy melts into ambergris, balancing playful sweetness with refined marine depth.', 'غزل البنات يذوب في العنبر الرمادي ليوازن بين الحلاوة المرحة والعمق البحري الراقي.', NULL),
-(382, 135, 'base', '[\"Woody Notes\",\"Cedar\",\"Ambroxan\"]', '[\"نغمات خشبية، أرز، أمبروكسان\"]', 'Woody notes, cedar, and ambroxan provide a modern, radiant finish with lasting elegance.', 'نغمات خشبية وأرز وأمبروكسان تشكل لمسة نهائية عصرية مشرقـة تدوم بأناقة.', NULL),
-(383, 136, 'top', '[\"Peony\",\"Mandarin\",\"Citrus\"]', '[\"فاوانيا، يوسفي، حمضيات\"]', 'Peony, mandarin, and citrus create a sparkling fruity–floral opening full of light and joy.', 'فاوانيا مع يوسفي وحمضيات تمنح افتتاحية زهرية–فاكهية متلألئة مليئة بالبهجة.', NULL),
-(384, 136, 'heart', '[\"Osmanthus\",\"Rose\"]', '[\"أوسمانثوس، ورد\"]', 'Osmanthus and rose form a delicate, romantic heart that feels soft and graceful.', 'الأوسمانثوس والورد يشكلان قلباً رقيقاً رومانسياً ينبض بالنعومة والرقي.', NULL),
-(385, 136, 'base', '[\"Pink Pepper\",\"Patchouli\",\"Sandalwood\"]', '[\"فلفل وردي، باتشولي، خشب الصندل\"]', 'Pink pepper, patchouli, and sandalwood leave a sensual, modern trail with warmth and depth.', 'فلفل وردي وباتشولي وخشب الصندل يمنحون أثراً عصرياً دافئاً مفعماً بالعمق والحسية', NULL),
-(386, 137, 'top', '[\"Saffron\",\"Pear\",\"Red Berries\",\"Kinam Oud Accord\"]', '[\"زعفران، كمثرى، توت أحمر، نوتة عود كينام\"]', 'Saffron, pear, red berries, and kinam oud create a radiant, exotic opening both fruity and precious.', 'زعفران مع كمثرى وتوت أحمر ونوتة عود كينام يمنحون افتتاحية مشرقة نادرة تجمع بين الفاكهية والفخامة.', NULL),
-(387, 137, 'heart', '[\"Gardenia\",\"Jasmine\",\"Bulgarian Rose\",\"Rose Grasse\",\"Frangipani\"]', '[\"قلب راتنجي غامض\"]', 'A resinous heart, cloaked in mystery, bridges the fruity brightness with the dark richness of oud.', 'قلب راتنجي غامض يربط بين إشراقة المقدمة وعمق العود الداكن.', NULL),
-(388, 137, 'base', '[\"Brown Sugar\",\"Ambrette\",\"Oud\",\"White Musk\",\"Cacao\",\"Patchouli\",\"Rose Resins\"]', '[\"سكر بني، مسك نباتي (أمبريت)، عود، مسك أبيض، كاكاو، باتشولي، راتنج الورد\"]', 'Brown sugar, ambrette, oud, white musk, cacao, patchouli, and rose resins leave a sumptuous, long-lasting trail.', 'سكر بني مع مسك نباتي وعود ومسك أبيض وكاكاو وباتشولي وراتنج الورد يتركون أثراً فاخراً ثابتاً يدوم طويلاً.', NULL),
-(389, 138, 'top', '[\"Indian Oud\",\"Leather\"]', '[\"العود الهندي، الجلد\"]', 'Indian oud and leather open with strength and authority, instantly defining the fragrance’s noble character.', 'يفتتح العود الهندي مع الجلد بقوة وهيبة، ليمنح العطر طابعًا مهيبًا منذ اللحظة الأولى.', NULL),
-(390, 138, 'heart', '[\"White Flowers\",\"Vanilla\"]', '[\"الزهور البيضاء، الفانيليا\"]', 'White flowers and vanilla add a graceful softness, balancing the depth with refined sweetness.', 'تمنح الزهور البيضاء مع الفانيليا نعومة أنيقة، توازن العمق بلمسة حلاوة راقية.', NULL),
-(391, 138, 'base', '[\"White Musk\",\"Amber\"]', '[\"المسك الأبيض، الكهرمان\"]', 'White musk and amber anchor the scent in sensual warmth and enduring elegance.', 'يرسخ المسك الأبيض مع الكهرمان العطر بدفء حسي وأناقة تدوم طويلًا.', NULL),
-(392, 139, 'top', '[\"Floral Accord\",\"Herbs\"]', '[\"نوتة زهرية، أعشاب عطرية\"]', 'A luminous floral accord blended with herbs, offering freshness and elegance at first encounter.', 'تناغم زهري مشرق ممزوج بالأعشاب، يمنح انتعاشاً وأناقة منذ اللحظة الأولى.', NULL),
-(393, 139, 'heart', '[\"Indian Rose\",\"Vanilla\",\"Powdery Notes\"]', '[\"ورد هندي، فانيليا، نغمات بودرية\"]', 'Indian rose with vanilla and powdery notes creates a refined, romantic heart full of warmth.', 'الورد الهندي مع الفانيليا والنغمات البودرية يصوغ قلباً راقياً ورومانسياً مليئاً بالدفء.', NULL),
-(394, 139, 'base', '[\"Indian &amp; Cambodian Oud Notes\",\"Amber\",\"Musk\"]', '[\"عود هندي وكمبودي، كهرمان، مسك\"]', 'Indian and Cambodian oud intertwine with amber and musk, leaving a rich, luxurious trail.', 'يلتقي العود الهندي والكمبودي مع الكهرمان والمسك ليتركا أثراً غنياً وفاخراً.', NULL),
-(395, 140, 'top', '[\"Cardamom\",\"Bergamot\",\"Pink Pepper\",\"Angelica Root\",\"Brazilian Orange\",\"Lavender\",\"Coconut\",\"Melon\",\"Banana\",\"Raspberry\"]', '[\"هيل، برغموت، فلفل وردي، جذر أنجيليكا، برتقال برازيلي، لافندر، جوز الهند، شمام، موز، توت علّيق\"]', 'Spicy cardamom and pink pepper meet citrus and tropical fruits for a lively, uplifting opening.', 'يلتقي الهيل والفلفل الوردي بالحمضيات والفواكه الاستوائية ليمنحا افتتاحية نابضة ومنعشة.', NULL),
-(396, 140, 'heart', '[\"Marine Notes\",\"Cyclamen\",\"Lily of the Valley\",\"Rose\",\"Cashmere Wood\",\"Iris\",\"Orange Blossom\",\"Jasmine\",\"Magnolia\",\"Patchouli\",\"Rose\",\"Tulip\"]', '[\"نغمات بحرية، سيكلامين، زنبق الوادي، ورد، خشب الكشمير، سوسن، زهر البرتقال، ياسمين، ماغنوليا، باتشولي، توليب\"]', 'A lush bouquet of rose, magnolia, tulip, and jasmine enhanced by marine notes and soft woods.', 'باقة زهرية غنية من الورد والماغنوليا والتوليب والياسمين، تتعزز بنغمات بحرية وخشب ناعم.', NULL),
-(397, 140, 'base', '[\"Sandalwood\",\"White Musk\",\"Tonka\",\"Moss\",\"Amber\",\"Thai Oud\",\"Caramel\",\"Vanilla\"]', '[\"صندل، مسك أبيض، تونكا، طحلب، كهرمان، عود تايلندي، كراميل، فانيليا\"]', 'Creamy sandalwood and Thai oud entwined with caramel, vanilla, amber, and musk for a lasting sensual trail.', 'الصندل الكريمي مع العود التايلندي يتمازجان بالكراميل والفانيليا والكهرمان والمسك ليتركا أثراً حسياً طويل الأمد.', NULL),
-(398, 141, 'top', '[\"Orange\",\"Mandarin\",\"Bergamot\",\"Orange Blossom\"]', '[\"برتقال، يوسفي، برغموت، زهر البرتقال\"]', 'A radiant burst of citrus fruits and orange blossom brings freshness and energy.', 'انطلاقة متألقة من الحمضيات وزهر البرتقال تمنح انتعاشاً وحيوية.', NULL),
-(399, 141, 'heart', '[\"Turkish Rose\",\"Jasmine\",\"Ylang-Ylang\",\"Mimosa\"]', '[\"ورد تركي، ياسمين، إيلنغ إيلنغ، ميموزا\"]', 'Turkish rose, jasmine, ylang-ylang, and mimosa create a lush, elegant floral harmony.', 'الورد التركي والياسمين والإيلنغ والميموزا يصوغون تناغماً زهورياً غنياً وأنيقاً.', NULL),
-(400, 141, 'base', '[\"Patchouli\",\"White Musk\",\"Vanilla\",\"Vetiver\",\"Tonka Bean\",\"Ambroxan\"]', '[\"باتشولي، مسك أبيض، فانيليا، فيتيفر، حبوب التونكا، أمبروكسان\"]', 'Patchouli, vanilla, vetiver, and musk enriched with tonka and ambroxan leave a sensual, refined trail.', 'الباتشولي والفانيليا والفيتيفر والمسك يتعززون بالتونكا والأمبروكسان ليتركوا أثراً حسياً راقياً.', NULL),
-(401, 143, 'top', '[\"Litchi\",\"Jackfruit\",\"Kiwi\"]', '[\"ليتشي، جاك فروت، كيوي\"]', 'Litchi, jackfruit, and kiwi sparkle with juicy, tropical brightness for a playful first impression.', 'يمنح مزيج الليتشي والجاك فروت والكيوي بريقاً استوائياً عصيرياً يوقّع انطباعاً أولياً مرحاً.', NULL),
-(402, 143, 'heart', '[\"White Chocolate\",\"Orchid\",\"Jasmine\",\"Vanilla Cake Accord\"]', '[\"شوكولاتة بيضاء، أوركيد، ياسمين، اتفاق كعكة الفانيليا\"]', 'White chocolate wraps orchid and jasmine in creamy softness, elevated by a vanilla-cake nuance for modern gourmand appeal.', 'تحتضن الشوكولاتة البيضاء الأوركيد والياسمين بنعومة كريمية، تتوهج بلمسة كعكة الفانيليا لأسلوب غورماني عصري.', NULL),
-(403, 143, 'base', '[\"Musk\",\"Orris\",\"Woody Accord\"]', '[\"مسك، أوريس، اتفاق خشبي\"]', 'Musk and orris, brushed with a woody accord, create a smooth, comforting dry-down with refined elegance.', 'يمنح المسك والأوريس مع الاتفاق الخشبي جفافاً ناعماً مريحاً يفيض بأناقة راقية.', NULL),
-(404, 144, 'top', '[\"Coffee\",\"Almond\",\"Orange\",\"Cacao\"]', '[\"قهوة، لوز، برتقال، كاكاو\"]', 'Coffee and cacao, brightened by orange and smoothed with almond, create a delectable, textured first impression.', 'تمنح القهوة والكاكاو مع إشراقة البرتقال ولمسة اللوز افتتاحية شهية وغنية الملمس.', NULL),
-(405, 144, 'heart', '[\"White Flowers\",\"Orris\",\"Bulgarian Rose\"]', '[\"زهور بيضاء، أوريس، ورد بلغاري\"]', 'White florals with orris and Bulgarian rose add elegance and poise, bridging gourmand warmth to floral refinement', 'تضفي الزهور البيضاء مع الأوريس والورد البلغاري أناقة وتوازناً بين دفء الغورمان ولمسة الزهور الراقية.', NULL),
-(406, 144, 'base', '[\"Tonka Bean\",\"Vanilla\",\"Praline\",\"Sandalwood\",\"Musk\"]', '[\"حبوب التونكا، فانيليا، برالين، صندل، مسك\"]', 'Tonka, vanilla, and praline melt into creamy sandalwood and soft musk for a comforting, modern signature.', 'تنساب التونكا والفانيليا والبرالين داخل صندل كريمي ومسك ناعم لتوقيع عصري مريح.', NULL),
-(407, 145, 'top', '[\"Citrus\",\"Nectarine\",\"Apple\",\"Black Currant\"]', '[\"حمضيات، نكترين، تفاح، كشمش أسود\"]', 'Citrus, nectarine, apple, and black currant burst with juicy clarity, painting a bright, modern opening.', 'تمنح الحمضيات والنكترين والتفاح والكشمش الأسود انطلاقة عصرية مشرقة ومفعمة بالعصيرية.', NULL),
-(408, 145, 'heart', '[\"Gardenia\",\"Magnolia\",\"Jasmine\",\"Freesia\",\"Lily of the Valley\"]', '[\"غاردينيا، ماغنوليا، ياسمين، فريزيا، زنبق الوادي\"]', 'Gardenia, magnolia, jasmine, freesia, and lily of the valley weave a soft, feminine floral veil—polished and radiant.', 'تنسج الغاردينيا والماغنوليا والياسمين والفريزيا وزنبق الوادي حجاباً زهورياً ناعماً متلألئ الأناقة.', NULL),
-(409, 145, 'base', '[\"Patchouli\",\"Musk\",\"Sandalwood\",\"Vanilla\",\"Amber\"]', '[\"باتشولي، مسك، صندل، فانيليا، كهرمان\"]', 'Patchouli, musk, sandalwood, vanilla, and amber melt into a silky, comforting trail with poised warmth.', 'يذوب الباتشولي والمسك والصندل والفانيليا والكهرمان في أثر حريري دافئ يفيض بالسكينة.', NULL),
-(410, 146, 'top', '[\"Bergamot\",\"Davana\",\"Pink Pepper\"]', '[\"برغموت، دافانا، فلفل وردي\"]', 'Bergamot’s crisp sparkle and davana’s warm sweetness, spiced with pink pepper, create a vivid, uplifting start.', 'يمنح البرغموت لمعاناً هشّاً والدافانا حلاوة دافئة، تتوهّج مع الفلفل الوردي لافتتاحية مشرقة ومفعمة بالطاقة.', NULL),
-(411, 146, 'heart', '[\"Agarwood\",\"White Amber\",\"Rosemary\"]', '[\"عود، عنبر أبيض، إكليل الجبل\"]', 'Agarwood meets white amber for luminous depth, while rosemary adds aromatic clarity and poise.', 'يلتقي العود بـ العنبر الأبيض ليصنعا عمقاً متلألئاً، وتمنح إكليل الجبل وضوحاً عطرياً وأناقة متزنة.', NULL),
-(412, 146, 'base', '[\"Leather\",\"Musk\",\"Haitian Vetiver\",\"Ambroxan\"]', '[\"جلد، مسك، فيتيفر هايتي، أمبروكسان\"]', 'Supple leather and soft musk, refined by Haitian vetiver and a clean ambroxan trail for lasting sophistication.', 'جلد مرهف ومسك ناعم تصقله الفيتيفر الهايتي مع أثرٍ نقي من الأمبركسان لرفاهية تدوم.', NULL),
-(413, 147, 'top', '[\"Leather\",\"Sandal\"]', '[\"جلد، صندل\"]', 'A textured opening of leather with creamy sandal sets a sophisticated, tactile mood from the first spray.', 'افتتاحية ذات ملمس فاخر من الجلد مع الصندل الكريمي ترسم مزاجاً أنيقاً منذ الرشة الأولى.', NULL),
-(414, 147, 'heart', '[\"Rose\",\"iso e super\"]', '[\"ورد، Iso E Super\"]', 'Rose blooms with the airy, modern radiance of Iso E Super, adding lift, diffusion, and polished understatement.', 'يتفتح الورد مع إشراقة Iso E Super الهوائية العصرية، ليمنح انتشاراً راقياً وتوازناً مصقولاً.', NULL),
-(415, 147, 'base', '[\"Cedarwood\",\"Oud\",\"Amber\"]', '[\"خشب الأرز، عود، كهرمان\"]', 'Cedarwood and oud, cushioned by amber, create a warm, resonant trail that feels poised and enduring.', 'يصوغ خشب الأرز والعود، مع احتضان الكهرمان، أثراً دافئاً عميقاً بإحساس متوازن وثباتٍ طويل.', NULL),
-(416, 148, 'top', '[\"Apple\",\"Red Fruits\",\"Pear\",\"Citrus Accord\",\"Orange Blossom\"]', '[\"تفاح، فواكه حمراء، إجاص، أكورد حمضي، زهر البرتقال\"]', 'Crisp apple, juicy red fruits, and pear meet a bright citrus accord, while orange blossom adds sunlit lift and polish.', 'يلتقي التفاح مع الفواكه الحمراء والإجاص بلمسة أكورِد حمضي مشرق، وتمنح زهرة البرتقال إشراقة دافئة وأناقة مصقولة.', NULL),
-(417, 148, 'heart', '[\"White Flowers\",\"Jasmine\",\"Lily of the Valley\"]', '[\"زهور بيضاء، ياسمين، زنبق الوادي\"]', 'White flowers, jasmine, and lily of the valley form a luminous bouquet that bridges fruity freshness to refined florals.', 'تصوغ الزهور البيضاء مع الياسمين وزنبق الوادي باقة متلألئة تصل انتعاش الفاكهة برقي الزهور.', NULL),
-(418, 148, 'base', '[\"Amber\",\"Vanilla\",\"Maltol\",\"Musk\",\"Cedarwood\"]', '[\"كهرمان، فانيليا، مالتول، مسك، خشب الأرز\"]', 'Vanilla and maltol wrap amber, musk, and cedarwood in a soft gourmand glow for a smooth, elegant dry-down.', 'تحتضن الفانيليا والمالتول الكهرمان والمسك وخشب الأرز بتوهج غورماني ناعم لجفاف مخملي أنيق.', NULL),
-(419, 149, 'top', '[\"Bergamot\",\"Pink Pepper\",\"Elemi\",\"Nutmeg\",\"Tangerine\",\"Oud\",\"Honey\"]', '[\"المقدمة: برغموت، فلفل وردي، إليمي، جوزة الطيب، يوسفي، عود، عسل\"]', 'A vibrant opening of bergamot, pink pepper, and tangerine, heightened by elemi and nutmeg, deepened with oud and honey for a striking first impression.', 'افتتاح نابض بالبرغموت والفلفل الوردي واليوسفي، تعزّزه لمسات الإليمي وجوزة الطيب، ويثريه العود والعسل لانطباع أوّل قوي.', NULL),
-(420, 149, 'heart', '[\"Patchouli\",\"Aromatic Accords\",\"Vetiver\",\"Cashmere Wood\",\"Cinnamon\",\"Rose\",\"Saffron\",\"Jasmine\",\"Orange Blossom\"]', '[\"قلب العطر: باتشولي، أكوردات عطرية، ڤيتيڤر، خشب الكشمير، قرفة، ورد، زعفران، ياسمين، زهر البرتقال\"]', 'Patchouli, vetiver, and cashmere wood form a textured base for cinnamon, rose, saffron, jasmine, and orange blossom, blending spice, woods, and florals seamlessly.', 'باتشولي وڤيتيڤر وخشب الكشمير يشكّلون أساساً متماسكاً يتناغم مع القرفة والورد والزعفران والياسمين وزهر البرتقال، بدمج متقن للتوابل والأخشاب والزهور.', NULL),
-(421, 149, 'base', '[\"Musk\",\"Amber\",\"Raspberry\",\"Saffron\",\"Oakmoss\",\"Powdery\",\"Ambrette Seeds\",\"Leather\",\"Sandalwood\",\"Violet\",\"Agarwood\",\"Ambroxan\"]', '[\"القاعدة: مسك، عنبر، توت، زعفران، طحلب البلوط، بودري، بذور الأمبريت، جلد، خشب الصندل، بنفسج، عود، أمبروكسان\"]', 'Musk and amber embrace raspberry, oakmoss, and ambrette seeds; leather, sandalwood, violet, agarwood, and ambroxan define a deep, enduring signature.', 'يمتزج المسك والعنبر مع التوت وطحلب البلوط وبذور الأمبريت؛ فيما يرسّخ الجلد وخشب الصندل والبنفسج والعود والأمبروكسان بصمة عميقة طويلة الأمد.', NULL),
-(422, 150, 'top', '[\"Orange\",\"Coconut\",\"Tangerine\",\"Pineapple\"]', '[\"برتقال، جوز الهند، يوسفي، أناناس\"]', 'Orange, coconut, tangerine, and pineapple burst with tropical brightness—creamy, juicy, and uplifting from the first touch.', 'يمنح البرتقال وجوز الهند واليوسفي والأناناس بريقاً استوائياً كريمي الملمس، منعشاً ومبهجاً منذ اللحظة الأولى.', NULL),
-(423, 150, 'heart', '[\"Myrrh\",\"Helicrysum\",\"Cashmere Wood\",\"Lily of the Valley\"]', '[\"مُرّ (مرّ)، هيليكريزم، خشب الكشمير، زنبق الوادي\"]', 'Myrrh and helichrysum add resinous glow, softened by cashmere wood and the dewy purity of lily of the valley.', 'يمنح المُرّ والهيليكريزم وهجاً رزينيّاً دافئاً، تصقله نعومة خشب الكشمير ونداوة زنبق الوادي.', NULL),
-(424, 150, 'base', '[\"Musk\",\"Vanilla\",\"Caramel\",\"Dry Woods\"]', '[\"مسك، فانيليا، كراميل، أخشاب جافة\"]', 'Musk and vanilla wrap caramel warmth over dry woods, leaving a smooth, comforting, and gently gourmand trail.', 'يحتضن المسك والفانيليا دفءَ الكراميل فوق أخشاب جافة، ليو́لد أثراً ناعماً مريحاً بطابع غورماني رقيق.', NULL),
-(425, 151, 'top', '[\"Apple\",\"Lemon\"]', '[\"تفاح، ليمون\"]', 'Apple and lemon open with a crisp, zesty brightness—fresh, sharp, and instantly modern.', 'تمنح التفاح والليمون انطلاقة مشرقة ومنعشة بطابع عصري متألق.', NULL),
-(426, 151, 'heart', '[\"Lily of the Valley\",\"Leather\",\"Patchouli\"]', '[\"زنبق الوادي، جلد، باتشولي\"]', 'Lily of the valley softens the boldness of leather and patchouli, creating a refined yet daring core.', 'يضفي زنبق الوادي لمسة رقيقة توازن قوة الجلد وعمق الباتشولي، ليشكّل قلباً جريئاً راقياً.', NULL),
-(427, 151, 'base', '[\"Moss\",\"Musk\",\"Amber\"]', '[\"طحلب، مسك، كهرمان\"]', 'Moss, musk, and amber ground the fragrance in sensual warmth, leaving an elegant, lingering trail.', 'يثبّت الطحلب والمسك والكهرمان العطر بدفء حسي، ليترك أثراً أنيقاً يدوم طويلاً.', NULL),
-(428, 152, 'top', '[\"Bergamot\",\"Pink Pepper\",\"Elemi\",\"Nutmeg\",\"Tangerine\",\"Oud\",\"Honey\"]', '[\"المقدمة: برغموت، فلفل وردي، إليمي، جوزة الطيب، يوسفي، عود، عسل\"]', 'A vibrant opening of bergamot, pink pepper, and tangerine, heightened by elemi and nutmeg, deepened with oud and honey for a striking first impression.', 'افتتاح نابض بالبرغموت والفلفل الوردي واليوسفي، تعزّزه لمسات الإليمي وجوزة الطيب، ويثريه العود والعسل لانطباع أوّل قوي.', NULL),
-(429, 152, 'heart', '[\"Patchouli\",\"Aromatic Accords\",\"Vetiver\",\"Cashmere Wood\",\"Cinnamon\",\"Rose\",\"Saffron\",\"Jasmine\",\"Orange Blossom\"]', '[\"قلب العطر: باتشولي، أكوردات عطرية، ڤيتيڤر، خشب الكشمير، قرفة، ورد، زعفران، ياسمين، زهر البرتقال\"]', 'Patchouli, vetiver, and cashmere wood form a textured base for cinnamon, rose, saffron, jasmine, and orange blossom, blending spice, woods, and florals seamlessly.', 'باتشولي وڤيتيڤر وخشب الكشمير يشكّلون أساساً متماسكاً يتناغم مع القرفة والورد والزعفران والياسمين وزهر البرتقال، بدمج متقن للتوابل والأخشاب والزهور.', NULL),
-(430, 152, 'base', '[\"Musk\",\"Amber\",\"Raspberry\",\"Saffron\",\"Oakmoss\",\"Powdery\",\"Ambrette Seeds\",\"Leather\",\"Sandalwood\",\"Violet\",\"Agarwood\",\"Ambroxan\"]', '[\"القاعدة: مسك، عنبر، توت، زعفران، طحلب البلوط، بودري، بذور الأمبريت، جلد، خشب الصندل، بنفسج، عود، أمبروكسان\"]', 'Musk and amber embrace raspberry, oakmoss, and ambrette seeds; leather, sandalwood, violet, agarwood, and ambroxan define a deep, enduring signature.', 'يمتزج المسك والعنبر مع التوت وطحلب البلوط وبذور الأمبريت؛ فيما يرسّخ الجلد وخشب الصندل والبنفسج والعود والأمبروكسان بصمة عميقة طويلة الأمد.', NULL),
-(431, 153, 'top', '[\"Pink Pepper\",\"Mandarin\",\"Bergamot\",\"Passion Fruit\",\"Peach\",\"Sweet Oud Accord\"]', '[\"فلفل وردي، ماندرين، برغموت، فاكهة العاطفة، خوخ، اتفاق عود حلو\"]', 'Pink pepper and citrus sparkle over passion fruit and peach, lifted by a sweet oud accord for a playful, radiant opening.', 'يتلألأ الفلفل الوردي والحمضيات فوق فاكهة العاطفة والخوخ، وتمنح اتفاق العود الحلو انطلاقة مرحة ومشرقة.', NULL),
-(432, 153, 'heart', '[\"Rose Grasse\",\"Rose Bulgaria\",\"Almond\",\"Geranium\",\"Caramel\"]', '[\"ورد غراس، ورد بلغاري، لوز، إبرة الراعي، كراميل\"]', 'A romantic duet of Grasse and Bulgarian roses, softened with almond and geranium, drizzled in caramel for velvety gourmand charm.', 'ثنائي وردي رومانسي من غراس والبلغاري، تليّنه اللوز وإبرة الراعي وتُحليه لمسة كراميل لنعومة غورمانية مخملية.', NULL),
-(433, 153, 'base', '[\"Heliotrope Notes\",\"Patchouli\",\"Vanilla\",\"Tonka\",\"Sugar\",\"Moss\",\"Musk\",\"Oud\"]', '[\"نغمات هليوتروب، باتشولي، فانيليا، تونكا، سكر، طحلب، مسك، عود\"]', 'Heliotrope, patchouli, vanilla, and tonka meet sugar, moss, musk, and oud—creamy, sensual, and elegantly lingering.', 'تلتقي نغمات الهليوتروب والباتشولي والفانيليا والتونكا مع السكر والطحلب والمسك والعود لختام كريمي حسي يدوم بأناقة.', NULL),
-(434, 154, 'top', '[\"Saffron\",\"Talc Powder\",\"Fresh Notes\"]', '[\"زعفران، بودرة (تالك)، نغمات منعشة\"]', 'Saffron’s golden warmth meets talc-like softness and fresh nuances for a clean, welcoming lift.', 'يجتمع دفء الزعفران الذهبي مع نعومة البودرة ولمسات منعشة لانتعاش نظيف مرحّب.', NULL),
-(435, 154, 'heart', '[\"Rose\",\"Leather\",\"Vanilla\",\"White Flowers\"]', '[\"ورد، جلد، فانيليا، زهور بيضاء\"]', 'Rose and white florals glow with vanilla’s creaminess, refined by a subtle leather sheen.', 'يتلألأ الورد والزهور البيضاء بنعومة الفانيليا، تعكسها لمسة جلدية رقيقة راقية.', NULL),
-(436, 154, 'base', '[\"White Musk\",\"Oud\",\"Sandalwood\",\"Amber\"]', '[\"مسك أبيض، عود، خشب الصندل، كهرمان\"]', 'White musk, oud, sandalwood, and amber create a smooth, room-enveloping trail—comforting, elegant, and enduring.', 'يصوغ المسك الأبيض والعود وخشب الصندل والكهرمان أثراً ناعماً يملأ المكان—مريحاً وأنيقاً وباقياً.', NULL),
-(437, 155, 'top', '[\"Mandarin\"]', '[\"ماندرين\"]', '<p>Mandarin sparkles clean and bright, inviting and uplifting as the first waves of smoke rise.</p>', '<p>يوفّر الماندرين بريقاً نظيفاً ومنعشاً يرحّب بالضيوف مع أولى خيوط الدخان.</p>', NULL),
-(438, 155, 'heart', '[\"Indian Roses\",\"White Flowers\"]', '[\"ورود هندية، زهور بيضاء\"]', '<p>Indian roses with white flowers weave a plush floral veil—elegant, welcoming, and serene.</p>', '<p>تنسج الورود الهندية مع الزهور البيضاء حجاباً زهورياً وثيراً—أنيقاً ومرحِّباً وهادئاً.</p>', NULL),
-(439, 155, 'base', '[\"Amber\",\"White Musk\",\"DEHN AL OUD\",\"Black Musk\"]', '[\"دهن العود، كهرمان، مسك أبيض، مسك أسود\"]', '<p>Dehn Al Oud and amber settle into white musk enriched by black musk, leaving a deep, comforting trail that lingers.</p>', '<p>يستقر دهن العود والكهرمان على مِسكٍ أبيض تعزّزه لمسة مسك أسود، لأثرٍ عميقٍ مريح يدوم.</p>', NULL),
-(440, 156, 'top', '[\"Rose Bouquet\",\"Rose\",\"Peony\",\"Saffron\",\"Mango\",\"Bergamot\",\"Orange Blossom\",\"Pink Pepper\",\"Lemon\",\"Grapefruit\"]', '[\"باقة ورد، ورد، فاوانيا، زعفران، مانجو، برغموت، زهر البرتقال، فلفل وردي، ليمون، جريب فروت\"]', 'Rose bouquet and peony glow with citrus—bergamot, lemon, grapefruit—while mango, pink pepper, and orange blossom add juicy brightness and sparkle.', 'تلمع باقة الورد والفاوانيا مع بريق الحمضيات—برغموت وليمون وجريب فروت—وتمنح المانجو والفلفل الوردي وزهر البرتقال إشراقة عصيرية مرِحة.', NULL),
-(441, 156, 'heart', '[\"Isparta Rose\",\"Black Tea\",\"Iris\",\"Amber\",\"Praline\",\"Saffron\"]', '[\"ورد إسبارطا، شاي أسود، سوسن، كهرمان، برالين، زعفران\"]', 'Isparta rose unfurls beside black tea, iris, amber, praline, and saffron—romantic depth with gourmand warmth and polished elegance.', 'يتفتح ورد إسبارطا إلى جانب الشاي الأسود والسوسن والكهرمان والبرالين والزعفران لعمقٍ رومانسي بدفء غورماني وأناقة مصقولة.', NULL),
-(442, 156, 'base', '[\"Musk\",\"Guaiac Wood\",\"Oud Ahme Kinam Accord\",\"Cypriol\",\"Nagarmotha\",\"Cedar. Cedarwood\",\"Tonka\",\"Patchouli\"]', '[\"مسك، خشب الغاياك، اتفاق عود أحمد كينام، سيبريول، ناغارموثا، خشب الأرز، تونكا، باتشولي\"]', 'Musk and guaiac wood fuse with Oud Ahme Kinam accord, cypriol, nagarmotha, cedar, tonka, and patchouli for a smoky-woody, refined signature.', 'تتآلف المسك وخشب الغاياك مع اتفاق عود أحمد كينام والسيبريول والناغارموثا وخشب الأرز والتونكا والباتشولي لتوقيعٍ خشبي دخاني راقٍ.', NULL),
-(443, 157, 'top', '[\"Apple\",\"Lavender\",\"Cinnamon\",\"Bergamot\",\"Grapefruit\",\"Sparkling Malt Notes\"]', '[\"تفاح، لافندر، قرفة، برغموت، جريب فروت، نغمات مالت متلألئة\"]', 'Crisp apple and airy lavender sparkle with bergamot and grapefruit; cinnamon and sparkling malt add warmth and modern lift.', 'يتألق التفاح واللافندر مع البرغموت والجريب فروت، وتمنح القرفة ومالت متلألئ دفئاً ولمسة عصرية منتعشة.', NULL),
-(444, 157, 'heart', '[\"Orange Blossom\",\"Lily of the Valley\",\"Leather\"]', '[\"زهر البرتقال، زنبق الوادي، جلد\"]', 'A refined floral core of orange blossom and lily of the valley meets supple leather for elegant contrast and structure.', 'يلتقي زهر البرتقال وزنبق الوادي بلمسة جلدية مرهفة، ليرسما قلباً زهرياً مصقولاً بتباين أنيق.', NULL),
-(445, 157, 'base', '[\"Vanilla CO₂\",\"Musk\",\"Patchouli\",\"Amber\"]', '[\"فانيليا CO₂، مسك، باتشولي، كهرمان\"]', 'Creamy vanilla CO₂ and musk glide over patchouli and amber, leaving a warm, polished trail with lasting presence.', 'تنزلق فانيليا CO₂ الكريمية مع المسك فوق الباتشولي والكهرمان، لتترك أثراً دافئاً مصقولاً وحضوراً يدوم.', NULL),
-(446, 158, 'top', '[\"Caramel\",\"Sugar\",\"Coconut\",\"Cardamom\",\"Sicilian Bergamot\"]', '[\"كراميل، سكر، جوز الهند، هيل، برغموت صقلي\"]', 'Caramel and sugar swirl with creamy coconut; cardamom spice and Sicilian bergamot add lift, keeping the sweetness bright and inviting.', 'يدور الكراميل والسكر مع نعومة جوز الهند، وتمنح الهيل والبرغموت الصقلي ارتفاعاً منعشاً يوازن الحلاوة ويزيد جاذبيتها.', NULL),
-(447, 158, 'heart', '[\"Vanilla\",\"Orange Blossom\",\"Incense\",\"Chocolate\",\"Milk\"]', '[\"فانيليا، زهر البرتقال، بخور، شوكولاتة، حليب\"]', 'Vanilla and orange blossom glow with a soft thread of incense, enriched by chocolate and milk for plush, dessert-like warmth.', 'تتألق الفانيليا وزهر البرتقال مع خيطٍ رقيق من البخور، وتزيدهما الشوكولاتة والحليب دفئاً شهياً مخملياً.', NULL),
-(448, 158, 'base', '[\"White Musk\",\"Ambroxan\",\"Woods\",\"Tonka Beans\"]', '[\"مسك أبيض، أمبروكسان، أخشاب، حبوب التونكا\"]', 'White musk and ambroxan drift over woods and tonka beans, creating a smooth, modern gourmand trail that lingers elegantly.', 'ينساب المسك الأبيض والأمبركسان فوق أخشاب وتونكا ليشكّلا أثراً غورمانياً حديثاً ناعماً يدوم بأناقة.', NULL),
-(449, 159, 'top', '[\"Smoky Oud Accord\",\"Saffron\",\"Dry incense\"]', '[\"اتفاق عود دخاني، زعفران، بخور جاف\"]', '<p>Smoky oud accord with saffron and dry incense creates an immediate aura of ceremony and warmth.</p>', '<p>يصنع اتفاق العود الدخاني مع الزعفران والبخور الجاف هالةً احتفالية دافئة منذ اللحظة الأولى.</p>', NULL),
-(450, 159, 'heart', '[\"Indian agarwood\",\"Rose\",\"Herbs\"]', '[\"عود هندي، ورد، أعشاب\"]', '<p>Indian agarwood deepens the smoke; rose and herbs lend elegance, balancing intensity with gentle aromatic lift.</p>', '<p>يعزّز العود الهندي العمق الدخاني، وتمنح الورد والأعشاب أناقةً تعادل القوة بانتعاشٍ عطري رصين.</p>', NULL),
-(451, 159, 'base', '[\"White Amber\",\"White Musk\",\"Labdanum\"]', '[\"كهرمان أبيض، مسك أبيض، لابدانوم\"]', '<p>White amber, white musk, and labdanum leave a soft, luminous finish that lingers serenely in the air.</p>', '<p>يترك الكهرمان الأبيض والمسك الأبيض واللابدانوم خاتمةً ناعمة متلألئة تدوم بهدوء في الأجواء.</p>', NULL),
-(452, 161, 'top', '[\"Blood Orange\",\"Juniper Berries\",\"Sicilian Lemon\",\"Cardamom\"]', '[\"برتقال دموي، توت العرعر، ليمون صقلي، هال\"]', 'Blood orange and Sicilian lemon sparkle over juniper’s cool bite, rounded by cardamom’s warmth for an energetic, modern lift.', 'يلمع البرتقال الدموي والليمون الصقلي فوق لمسة العرعر الباردة، ويمنح الهال دفئاً متوازناً لافتتاحية عصرية نابضة.', NULL),
-(453, 161, 'heart', '[\"Iso E Super\",\"Lavender\",\"Geranium\",\"Clary Sage\",\"Hedione\"]', '[\"Iso E Super، لافندر، إبرة الراعي، ميرمية، هيديون\"]', 'Iso E Super with lavender, geranium, clary sage, and hedione creates airy diffusion—clean, refined, and quietly magnetic.', 'يمتزج Iso E Super مع اللافندر وإبرة الراعي والميرمية وهيديون لينسج انتشاراً هوائياً نظيفاً راقياً بجاذبية هادئة.', NULL),
-(454, 161, 'base', '[\"Vetiver\",\"Cedarwood\",\"Patchouli\",\"Ambroxan\",\"White Musk\"]', '[\"فيتيفر، خشب الأرز، باتشولي، أمبروكسان، مسك أبيض\"]', 'Vetiver, cedarwood, and patchouli anchor a sleek base, lifted by ambroxan and softened with white musk for a smooth, lasting trail.', 'يرسو الفيتيفر وخشب الأرز والباتشولي قاعدة أنيقة، ترفعها الأمبركسان وتلينها المسك الأبيض لأثر سلس يدوم.', NULL),
-(455, 162, 'top', '[\"Sea Notes\",\"Watermelon\",\"Grapefruit\",\"Mandarin Orange\"]', '[\"نغمات بحرية، بطيخ، جريب فروت، ماندارين\"]', 'Sea notes with watermelon, grapefruit, and mandarin deliver an immediate, sparkling coolness—refreshing and crystalline.', 'تمنح النغمات البحرية مع البطيخ والجريب فروت والماندارين برودةً متلألئة فورية—منعشة نقية.', NULL);
-INSERT INTO `fragrance_notes` (`id`, `product_id`, `note_type`, `ingredients_en`, `ingredients_ar`, `description_en`, `description_ar`, `image_url`) VALUES
-(456, 162, 'heart', '[\"Jasmine\",\"Rosemary\"]', '[\"ياسمين، إكليل الجبل\"]', 'Jasmine adds airy brightness while rosemary threads a clean aromatic line for poise and clarity.', 'يضفي الياسمين إشراقة هوائية، وتنسج إكليل الجبل خطاً عطرياً نظيفاً يمنح اتزاناً وصفاءً.', NULL),
-(457, 162, 'base', '[\"Ambergris\",\"Woods\",\"Moss\",\"Patchouli\"]', '[\"عنبر رمادي (Ambergris)، أخشاب، طحلب، باتشولي\"]', 'Ambergris, woods, moss, and patchouli ground the freshness in a smooth, modern, marine-woody signature.', 'يُثبّت العنبر الرمادي مع الأخشاب والطُحلب والباتشولي الانتعاشَ بتوقيعٍ بحري خشبي ناعم وحديث.', NULL),
-(458, 163, 'top', '[\"Vanilla\",\"Pear\",\"Marshmallow\",\"Violet Leaves\",\"Ylang-Ylang\"]', '[\"فانيليا، إجاص، مارشميلو، أوراق البنفسج، يلانغ-يلانغ\"]', 'Vanilla, pear, and marshmallow glow with violet leaves and ylang-ylang—soft, bright, and instantly joyful.', 'تتألق الفانيليا والإجاص والمارشميلو مع أوراق البنفسج ويلانغ-يلانغ بإشراقة ناعمة مرِحة منذ البداية.', NULL),
-(459, 163, 'heart', '[\"Bubblegum\",\"Jelly Bean\",\"Caramel\",\"Jasmine\",\"Labdanum\"]', '[\"علكة، جيلي بين، كراميل، ياسمين، لابدانوم\"]', 'Bubblegum, jelly bean, and caramel create a playful gourmand core, refined by jasmine and resinous labdanum.', 'يصوغ العلكة وحلوى الجيلي والكراميل قلباً غورمانياً مرحاً، تصقله لمسة ياسمين وعمق اللابدانوم.', NULL),
-(460, 163, 'base', '[\"Sugar\",\"Patchouli\",\"Tonka\",\"Cashmere Wood\",\"Sandalwood\",\"Vetiver\",\"White Musk\"]', '[\"سكر، باتشولي، حبوب التونكا، خشب الكشمير، خشب الصندل، فيتيفر، مسك أبيض\"]', 'Sugar, patchouli, and tonka melt into cashmere wood, sandalwood, vetiver, and white musk for a smooth, cuddly dry-down.', 'يذوب السكر والباتشولي والتونكا داخل خشب الكشمير والصندل والفيتيفر والمسك الأبيض لجفافٍ مخملي دافئ.', NULL),
-(461, 164, 'top', '[\"Black Pepper\",\"Saffron\",\"Peppermint\",\"Camomile\",\"Ginger\"]', '[\"فلفل أسود، زعفران، نعناع، بابونج، زنجبيل\"]', 'Black pepper and saffron sparkle over ginger’s warmth; peppermint cools the edges while camomile lends a soft, calming cushion.', 'يتلألأ الفلفل الأسود والزعفران فوق دفء الزنجبيل، ويبرد النعناع الحواف، فيما يضفي البابونج وسادة ناعمة مهدّئة.', NULL),
-(462, 164, 'heart', '[\"Rose\",\"Tolu Balm\",\"Jasmine\",\"Geranium\",\"Litchi\"]', '[\"ورد، تولو بالم، ياسمين، إبرة الراعي، ليتشي\"]', 'A polished bouquet where rose and tolu balm lead, refined by jasmine and geranium, with litchi adding a juicy, modern lift.', 'باقة مصقولة يتقدّمها الورد وتولو بالم، تصقلها الياسمين وإبرة الراعي، وتمنحها الليتشي رفعة عصرية عصيرية.', NULL),
-(463, 164, 'base', '[\"White Musk\",\"Amber\",\"Cedarwood\",\"Sandalwood\"]', '[\"مسك أبيض، كهرمان، خشب الأرز، خشب الصندل\"]', 'White musk and amber melt into cedarwood and sandalwood for a smooth, elegant trail that lingers with quiet confidence.', 'يذوب المسك الأبيض والكهرمان داخل خشب الأرز وخشب الصندل لصياغة أثر ناعم أنيق يدوم بثقة هادئة.', NULL),
-(464, 165, 'top', '[\"Raspberry\"]', '[\"توت العليق\"]', 'A bright pop of raspberry delivers juicy freshness and modern charm from the first touch.', 'تمنح توت العليق انطلاقةً عصريةً عصيريةً تضفي إشراقاً منذ اللحظة الأولى.', NULL),
-(465, 165, 'heart', '[\"White Flowers\",\"Papyrus\"]', '[\"زهور بيضاء، بَرْدي (بابيروس)\"]', 'Silky white flowers meet airy papyrus, shaping an elegant, diffusive heart with polished texture.', 'تلتقي الزهور البيضاء بنفحات البَرْدي الهوائية لتصوغ قلباً أنيقاً بملمسٍ مصقول وانتشارٍ رشيق.', NULL),
-(466, 165, 'base', '[\"Amber\",\"Dry Woody\",\"Musk\"]', '[\"كهرمان، أخشاب جافة، مسك\"]', 'Amber and dry woody tones blend with musk for a smooth, intimate trail that lingers softly.', 'تنساب الكهرمان والأخشاب الجافة مع المسك لتترك أثراً ناعماً حميماً يدوم برقة.', NULL),
-(467, 166, 'top', '[\"Sugar\",\"Dates\",\"Mandarin\",\"Red Berries\"]', '[\"سكر، تمر، ماندرين، توتات حمراء\"]', 'Sugary brightness with dates, mandarin, and red berries creates a delectable, playful lift.', 'تمنح حلاوة السكر مع التمر والماندرين والتوتات الحمراء انتعاشاً شهياً مرحاً.', NULL),
-(468, 166, 'heart', '[\"Bulgarian Rose\",\"Peony\",\"Vanilla\",\"Cacao\"]', '[\"ورد بلغاري، فاوانيا، فانيليا، كاكاو\"]', 'Bulgarian rose and peony bloom through creamy vanilla and soft cacao for a velvety, romantic core.', 'يتفتح الورد البلغاري والفاوانيا عبر الفانيليا والكاكاو ليلدا قلباً رومانسياً مخملياً.', NULL),
-(469, 166, 'base', '[\"White Musk\",\"Amber\",\"Tonka\"]', '[\"مسك أبيض، كهرمان، تونكا\"]', 'White musk, amber, and tonka blend into a smooth, gently gourmand finish that lingers with elegance.', 'يمتزج المسك الأبيض والكهرمان والتونكا في ختامٍ ناعم بغورمانية لطيفة تدوم بأناقة.', NULL),
-(470, 167, 'top', '[\"Raspberry\"]', '[\"توت علّيق\"]', 'Raspberry flashes a tart-sweet spark, adding color and contrast before the darkness deepens.', 'يمنح التوت العلّيق ومضة حلاوةٍ حمضية تلوّن الافتتاحية وتُمهد لعمقٍ لاحق.', NULL),
-(471, 167, 'heart', '[\"Orris\",\"Burnt Wood Effect\"]', '[\"سوسن (أوريس)، تأثير الخشب المحترق\"]', 'Orris lends powdery elegance while the burnt-wood effect weaves a smoky, magnetic texture.', 'يُضفي السوسن أناقة بودرية فيما ينسج تأثير الخشب المحترق قواماً دخانياً آسراً.', NULL),
-(472, 167, 'base', '[\"Labdanum\",\"Oud\",\"Tobacco\",\"Ambroxan\"]', '[\"لابدانوم، عود، تبغ، أمبروكسان\"]', 'Labdanum, oud, and tobacco unfurl in resinous warmth; ambroxan adds a clean, modern radiance to the lingering trail.', 'تنفتح اللابدانوم والعود والتبغ على دفءٍ راتنجي، وتمنح الأمبركسان إشراقة نظيفة عصرية للأثر الباقي.', NULL),
-(473, 169, 'top', '[\"Fresh Aldehydic\",\"Dewy rose\",\"Jasmine blossom\"]', '[\"ألدهيدات منعشة، ورد نديّ، زهر الياسمين\"]', '<p>Fresh aldehydic brightness with dewy rose and jasmine blossom creates a clean, uplifting start that aerates your space.</p>', '<p>تمنح الألدهيدات المنعشة مع وردٍ نديّ وزهرة الياسمين بدايةً نظيفة مشرقة تُهَوّي الأجواء.</p>', NULL),
-(474, 169, 'heart', '[\"Saffron warmth\",\"Creamy sandalwood\",\"Labdanum resin\"]', '[\"دفء زعفران، صندل كريمي، راتنج لابدانوم\"]', '<p>Saffron warmth melts into creamy sandalwood, enriched by labdanum resin for a glowing, ceremonial aura.</p>', '<p>يذوب دفء الزعفران في صندلٍ كريمي يعززه راتنج اللابدانوم لهالةٍ احتفالية متوهجة.</p>', NULL),
-(475, 169, 'base', '[\"Soft white musks\",\"amber\",\"Cambodian-style oud oil\",\"Indonesian Arian oud chips (sweet-burning)\"]', '[\"مسكات بيضاء ناعمة، كهرمان، زيت عود بطابع كمبودي، رقائق عود آريان إندونيسية (احتراق حلو)\"]', '<p>Soft white musks and amber fuse with Cambodian-style oud oil on sweet-burning Indonesian Arian chips for a welcoming, room-filling trail.</p>', '<p>تتآلف المسكات البيضاء الناعمة والكهرمان مع زيت عود بطابع كمبودي على رقائق عود آريان الإندونيسية ذات الاحتراق الحلو، لأثرٍ دافئ يملأ المكان.</p>', NULL),
-(476, 170, 'top', '[\"Aldehydes\",\"Saffron\"]', '[\"ألدهيدات، زعفران\"]', 'Crisp aldehydes glow with saffron, creating a bright, luxurious opening that feels both airy and opulent.', 'تتألق الألدهيدات مع الزعفران لافتتاحية مشرقة فاخرة تجمع بين النقاء الهوائي والدفء الراقي.', NULL),
-(477, 170, 'heart', '[\"Rose\",\"Vanilla\",\"Woods\"]', '[\"ورد، فانيليا، أخشاب\"]', 'A plush rose blooms through creamy vanilla over elegant woods, shaping a romantic, refined core.', 'يتوهّج الورد عبر الفانيليا الكريمية فوق أخشاب أنيقة، ليصوغ قلباً رومانسياً مصقولاً.', NULL),
-(478, 170, 'base', '[\"Labdanum\",\"Agarwood\",\"Vanilla\"]', '[\"لابدانوم، دهن العود، فانيليا\"]', 'Resinous labdanum and noble agarwood enriched with vanilla leave a deep, long-lasting oriental trail.', 'يمنح اللابدانوم الراتنجي ودهن العود مع الفانيليا أثراً شرقياً عميقاً طويل البقاء.', NULL),
-(479, 171, 'top', '[\"Peony\",\"Aldehydes\"]', '[\"فاوانيا، ألدهيدات\"]', 'Peony’s dewy softness meets airy aldehydes for a bright, clean opening with delicate sparkle.', 'يلتقي نعيم الفاوانيا بندىً رقيق مع الألدهيدات الهوائية لافتتاحية نظيفة متلألئة.', NULL),
-(480, 171, 'heart', '[\"White Flowers\",\"Rose\"]', '[\"زهور بيضاء، ورد\"]', 'A graceful blend of white florals and rose adds feminine bloom and silky diffusion.', 'تمنح الزهور البيضاء مع الورد ازدهاراً أنثوياً وانتشاراً حريرياً رقيقاً.', NULL),
-(481, 171, 'base', '[\"Musky\",\"Amber\"]', '[\"مسكي، كهرماني\"]', 'A tender musky base warmed by amber, leaving a soft, comforting trail with polished elegance.', 'قاعدة مسكية رقيقة تدفؤها لمسة كهرمان، لتترك أثراً مريحاً ناعماً بأناقة مصقولة.', NULL),
-(482, 172, 'top', '[\"Saffron\",\"Leather\",\"Red Fruits\"]', '[\"زعفران، جلد، فواكه حمراء\"]', 'Saffron’s golden glow and supple leather are brightened by red fruits for a magnetic, modern opening.', 'يضيء الزعفران الذهبي وتنعم الجلود المرنة مع الفواكه الحمراء لافتتاحية جذّابة عصرية.', NULL),
-(483, 172, 'heart', '[\"Oud\",\"Rose\"]', '[\"عود، ورد\"]', 'A refined arabesque of oud and rose—silky, deep, and impeccably balanced.', 'تناغم شرقي راقٍ بين العود والورد—حريري، عميق، ومتوازن بإتقان.', NULL),
-(484, 172, 'base', '[\"Oud\",\"Praline\",\"Vanilla\"]', '[\"عود، برالين، فانيليا\"]', 'Oud returns draped in praline and vanilla, creating a smooth, enveloping sweetness with dignified warmth.', 'يعود العود متشحاً بـ البرالين والفانيليا ليمنح حلاوة ناعمة ملتفّة بدفء رصين.', NULL),
-(485, 173, 'top', '[\"Grapefruit\",\"Bergamot\",\"Ginger\"]', '[\"جريب فروت، برغموت، زنجبيل\"]', 'Grapefruit and bergamot sparkle with ginger’s warmth, delivering a brisk, uplifting start.', 'يتلألأ الجريب فروت والبرغموت مع دفء الزنجبيل لانطلاقةٍ منتعشة سريعة الإيقاع.', NULL),
-(486, 173, 'heart', '[\"Ambrette\",\"White Amber\",\"Agarwood\",\"Rosemary\"]', '[\"أمبريت، عنبر أبيض، عود، إكليل الجبل\"]', 'Ambrette’s musky glow meets white amber and oud, refined by rosemary for airy, modern clarity.', 'تجتمع مسكيّة الأمبريت مع العنبر الأبيض والعود، وتمنحها إكليل الجبل صفاءً أخضر وهوائياً معاصراً.', NULL),
-(487, 173, 'base', '[\"Ambroxan\",\"Patchouli\",\"Vetiver\",\"Musk\",\"Leather\"]', '[\"أمبركسان، باتشولي، فيتيفر، مسك، جلد\"]', 'Ambroxan radiance over patchouli and vetiver, softened by musk and sleek leather for a confident, contemporary trail.', 'إشراقة الأمبركسان فوق الباتشولي والفيتيفر، تتنعّم بـ المسك ولمسة جلدية مصقولة لأثرٍ معاصر واثق.', NULL),
-(488, 175, 'top', '[\"Floral (Turkish rose\",\"lavender\",\"lemon\",\"peony)\"]', '[\"زهري (ورد تركي، لافندر، ليمون، فاوانيا)\"]', 'Turkish rose and lavender bloom with lemon’s sparkle and peony’s softness—bright, inviting, and uplifting.', 'يتفتح الورد التركي واللافندر مع بريق الليمون ونعومة الفاوانيا—إشراقة مشرقة مرحِّبة.', NULL),
-(489, 175, 'heart', '[\"Sweet (sandal wood\",\"white flowers\",\"frankincense)\"]', '[\"حلو (خشب الصندل، زهور بيضاء، لبان)\"]', 'A sweet, serene core where creamy sandalwood and white flowers meet the sacred warmth of frankincense.', 'قلب حلو وهادئ يجمع خشب الصندل الكريمي والزهور البيضاء مع دفء اللبان.', NULL),
-(490, 175, 'base', '[\"Musky( agarwood\",\"guaiac wood\",\"oak moss\",\"Musk\",\"amber)\"]', '[\"مسكي (دهن العود، خشب الغاياك، طحلب البلوط، مسك، كهرمان)\"]', 'Musky depth of oud and guaiac wood, rounded by oak moss, musk, and amber for a lingering, room-filling trail.', 'عمق مسكي من العود وخشب الغاياك تصقله طحالب البلوط والمسك والكهرمان لأثرٍ ممتد يملأ الأجواء.', NULL),
-(491, 176, 'top', '[\"Aldehydes\",\"Fruits\"]', '[\"ألدهيدات، فواكه\"]', '<p>A clean aldehydic shimmer lifts juicy fruits, creating an instantly welcoming, well-aired brightness.</p>', '<p>يمنح البريق الألدهيدي مع الفواكه إشراقةً نظيفة مرحِّبة وكأنّ المكان يتنفس نضارة.</p>', NULL),
-(492, 176, 'heart', '[\"Rose\",\"Jasmine\",\"Herbs\"]', '[\"ورد، ياسمين، أعشاب\"]', '<p>Rose and jasmine bloom through soft herbal tones, refining the smoke with graceful floral poise.</p>', '<p>يتفتح الورد والياسمين فوق لمسات عشبية ناعمة، فتتهذّب رائحة الدخان بأناقةٍ زهرية رشيقة.</p>', NULL),
-(493, 176, 'base', '[\"Amber\",\"Sandalwood\",\"Oud Notes Cedar\",\"Musk\"]', '[\"كهرمان، خشب الصندل، نوتات عود، أرز (سيدر)، مسك\"]', '<p>A comforting trail of amber, sandalwood, and oud notes, polished by cedar and musk for a warm, lingering atmosphere.</p>', '<p>أثرٌ دافئ من الكهرمان وخشب الصندل ونوتات العود تصقله الأرز والمسك لأجواءٍ باقية مريحة.</p>', NULL),
-(494, 177, 'top', '[\"APPLE\",\"LAVENDER\",\"CINNAMON\",\"BERGAMOT\",\"GRAPEFRUIT\",\"SPARKLING MALT\"]', '[\"تفاح، لافندر، قرفة، برغموت، جريب فروت، مالت متلألئ\"]', '<p>Crisp apple and lavender sparkle with bergamot, grapefruit, and cinnamon; sparkling malt adds a modern, effervescent lift.</p>', '<p>يتألق التفاح واللافندر مع البرغموت والجريب فروت والقرفة، وتمنح المالت المتلألئة رفعة عصرية فوّارة.</p>', NULL),
-(495, 177, 'heart', '[\"ORANGE BLOSSOM\",\"LILLY OF THE VALLEY. LEATHER\"]', '[\"زهر البرتقال، زنبق الوادي، جلد\"]', '<p>Elegant orange blossom and lily of the valley meet supple leather for floral luminosity with tailored poise.</p>', '<p>يجتمع زهر البرتقال وزنبق الوادي مع جلد مرهف لإشراقة زهرية متوازنة الصياغة.</p>', NULL),
-(496, 177, 'base', '[\"VANILLA CO2\",\"MUSK\",\"PATCHOUL\",\"AMBER.\"]', '[\"فانيليا CO₂، مسك، باتشولي، كهرمان\"]', '<p>Creamy vanilla CO₂ and musk glide over patchouli and warm amber, leaving a smooth, room-enveloping trail.</p>', '<p>تنزلق فانيليا CO₂ والمسك فوق الباتشولي والكهرمان الدافئ، تاركةً أثراً ناعماً يملأ المكان.</p>', NULL),
-(497, 178, 'top', '[\"Raspberry\",\"Saffron\",\"Pear\",\"Red Berries\",\"Black Currant\",\"Pink Pepper\",\"Bergamot\",\"Peony\",\"Apple\",\"Hazelnut\",\"Tagette\",\"Sparkling Accords.\"]', '[\"توت علّيق، زعفران، إجاص، توتات حمراء، كشمش أسود، فلفل وردي، برغموت، فاوانيا، تفاح، بندق، تاجيت، نغمات متلألئة\"]', 'Juicy berries, raspberry and black currant, swirl with pear, apple, hazelnut, and citrusy bergamot; saffron, pink pepper, tagette, peony, and sparkling accords add radiant lift.', 'تتناغم الفواكه العصيرية—توت علّيق وكشمش أسود—مع إجاص وتفاح وبندق وبرغموت، وتمنح زعفران وفلفل وردي وتاجيت وفاوانيا ونغمات متلألئة بريقاً مفعماً بالحيوية.', NULL),
-(498, 178, 'heart', '[\"Rose\",\"Jasmine\",\"Gardenia\",\"Frangipani\",\"Osmanthus\",\"Orris\",\"Burnt Wood Effect\",\"Coconut\",\"Plum\",\"Orange Flower\",\"Cinnamon\",\"Nutmeg.\"]', '[\"ورد، ياسمين، غاردينيا، فرنغيباني، أوسمانثس، أوريس، تأثير خشب محترق، جوز الهند، برقوق، زهر البرتقال، قرفة، جوزة الطيب\"]', 'A plush bouquet—rose, jasmine, gardenia, frangipani, osmanthus, orris—given intrigue by a burnt wood effect, smoothed with coconut, and spiced by cinnamon and nutmeg.', 'باقة وثيره من ورد وياسمين وغاردينيا وفرنغيباني وأوسمانثس وأوريس، تتفرد بـ تأثير الخشب المحترق وتلينها جوز الهند وتدفئها القرفة وجوزة الطيب.', NULL),
-(499, 178, 'base', '[\"Oud\",\"Tobacco\",\"Labdanum\",\"Patchouli\",\"Ambroxan\",\"White Musk\",\"Ambrette\",\"Brown Sugar\",\"Cacao\",\"Chocolate\",\"Caramel\",\"Sandalwood\",\"Guaiacwood\",\"Cashmeran\",\"Vanilla\",\"Benzoin\",\"Tonka Bean\",\"Amber\",\"Rose Resins\"]', '[\"عود، تبغ، لابدانوم، باتشولي، أمبركسان، مسك أبيض، أمبريت، سكر بني، كاكاو، شوكولاتة، كراميل، خشب الصندل، غاياك وود، كاشميرن، فانيليا، بنزوين، حبوب التونكا، كهرمان، راتنجات الورد\"]', 'Decadent depth: oud, tobacco, labdanum, patchouli, and ambroxan meet white musk/ambrette and gourmand brown sugar, cacao, chocolate, caramel over sandalwood, guaiacwood, cashmeran, vanilla, benzoin, tonka, amber, rose resins.', 'عمق مترف: عود وتبغ ولابدانوم وباتشولي وأمبركسان مع مسك أبيض وأمبريت، ونوتات غورمانية من سكر بني وكاكاو وشوكولاتة وكراميل فوق صندل وغاياك وكاشميرن وفانيليا وبنزوين وتونكا وكهرمان وراتنجات الورد.', NULL),
-(500, 179, 'top', '[\"Blood Orange\",\"Juniper Berries\",\"Sicilian Lemon\",\"Cardamom\"]', '[\"برتقال دموي، توت العرعر، ليمون صقلي، هال\"]', 'Blood orange and Sicilian lemon sparkle over juniper’s cool bite, rounded by cardamom’s warmth for an energetic lift.', 'يلمع البرتقال الدموي والليمون الصقلي فوق لمسة العرعر الباردة، ويوازن الهال الافتتاحية بدفءٍ نابض.', NULL),
-(501, 179, 'heart', '[\"Iso E Super\",\"Lavender\",\"Geranium\",\"Clary Sage\",\"Hedione\"]', '[\"Iso E Super، لافندر، إبرة الراعي، ميرمية، هيديون\"]', 'Iso E Super with lavender, geranium, clary sage, and hedione creates airy diffusion—clean, refined, and quietly magnetic.', 'يمتزج Iso E Super مع اللافندر وإبرة الراعي والميرمية وهيديون لينسج انتشاراً هوائياً نظيفاً راقياً بجاذبية هادئة.', NULL),
-(502, 179, 'base', '[\"Vetiver\",\"Cedarwood\",\"Patchouli\",\"Ambroxan\",\"White Musk\"]', '[\"فيتيفر، خشب الأرز، باتشولي، أمبروكسان، مسك أبيض\"]', 'Vetiver, cedarwood, and patchouli anchor a sleek base, lifted by ambroxan and softened with white musk for a smooth, lasting trail.', 'يرسو الفيتيفر وخشب الأرز والباتشولي قاعدة أنيقة، ترفعها الأمبركسان وتلينها المسك الأبيض لأثرٍ سلسٍ يدوم.', NULL),
-(503, 181, 'top', '[\"Sweet lime\",\"Lavender\",\"Green Apple.\"]', '[\"النوتات العليا: ليم حلو، لافندر، تفاح أخضر\"]', 'Sweet lime sparkles beside lavender’s calm and crisp green apple, creating a bright, clean introduction with airy aromatic freshness.', 'يتلألأ الليم الحلو بجوار هدوء اللافندر وقرمشة التفاح الأخضر لبدايةٍ مشرقة نقية بانتعاشٍ عطري هوائي.', NULL),
-(504, 181, 'heart', '[\"Healing wood\",\"Geranium\",\"Pine\",\"Magnolia\"]', '[\"النوتات الوسطى: خشب علاجي، جيرانيوم، صنوبر، ماغنوليا\"]', 'Healing wood shapes a smooth core; geranium adds aromatic color, pine brings cool clarity, and magnolia rounds the bouquet with soft, velvety bloom.', 'يصوغ الخشب العلاجي قلباً ناعماً؛ يلوّن الجيرانيوم بنفحة عطرية، ويمنح الصنوبر وضوحاً بارداً، وتُدوِّر الماغنوليا الباقة بتفتحٍ مخملي.', NULL),
-(505, 181, 'base', '[\"Amber\",\"Musk\",\"Sandalwood\",\"Oud\",\"Patchouli.\"]', '[\"النوتات الأساسية: عنبر، مسك، خشب الصندل، عود، باتشولي\"]', 'Amber and musk form a warm foundation while sandalwood and oud add polished woodiness; patchouli anchors the finish with depth and persistence.', 'يشكّل العنبر والمسك أساساً دافئاً، ويضيف خشب الصندل والعود خشبية مصقولة؛ يثبت الباتشولي الخاتمة بعمقٍ وثبات.', NULL),
-(506, 182, 'top', '[\"Bergamot\",\"Grapefruit\",\"Orange\",\"Pear\"]', '[\"النوتات العليا: برغموت، جريب فروت، برتقال، كمثرى\"]', 'Bergamot, grapefruit, and orange burst with bright freshness, rounded by pear’s juicy softness for a vivid, welcoming opening.', 'يتوهج البرغموت والجريب فروت والبرتقال بانتعاشٍ واضح، وتلينه عصيرية الكمثرى لبدايةٍ زاهية مرحِّبة.', NULL),
-(507, 182, 'heart', '[\"Sage\",\"Green Tea\",\"Black Currant\",\"Geranium\",\"White Pepper\",\"Turkish Rose\"]', '[\"النوتات الوسطى: ميرمية، شاي أخضر، كشمش أسود، جيرانيوم، فلفل أبيض، ورد تركي\"]', 'Sage and green tea bring aromatic clarity; black currant adds tart dimension, while geranium, white pepper, and Turkish rose define a nuanced floral core.', 'تمنح الميرمية والشاي الأخضر صفاءً عطرياً، ويضيف الكشمش الأسود حدةً لطيفة، فيما يرسم الجيرانيوم والفلفل الأبيض والورد التركي قلباً زهرياً متقناً.', NULL),
-(508, 182, 'base', '[\"Musk\",\"Sandalwood\",\"Amber\",\"Cambodian Oud\",\"Patchouli\",\"Cedar\"]', '[\"النوتات الأساسية: مسك، خشب الصندل، عنبر، عود كمبودي، باتشولي، أرز\"]', 'Musk and sandalwood create a smooth foundation with amber’s glow; Cambodian oud, patchouli, and cedar reinforce depth and longevity.', 'يصوغ المسك وخشب الصندل قاعدةً ناعمة يتوهج فيها العنبر، ويعزز العود الكمبودي والباتشولي والأرز عمقها وثباتها.', NULL),
-(509, 183, 'top', '[\"Red Fruits\",\"Pear\",\"Pear\",\"Melon\"]', '[\"النفحات العليا: التوت الأحمر، الإجاص، البطيخ\"]', 'A juicy burst of red fruits, pear, and melon brings freshness and playful charm.', 'انفجار عصيري من التوت الأحمر والإجاص والبطيخ يمنح انتعاشاً وبهجة مرحة.', NULL),
-(510, 183, 'heart', '[\"Rose\",\"Freesia\",\"Magnolia\",\"hedione.\"]', '[\"قلب العطر: الورد، الفريزيا، الماغنوليا، الهيديون\"]', 'Rose, freesia, and magnolia bloom with soft elegance, brightened by airy hedione.', 'الوردة والفريزيا والماغنوليا تتفتح برقة أنيقة، تضيئها لمسة هيديون مشرقة.', NULL),
-(511, 183, 'base', '[\"Ambroxan\",\"White Musk\",\"Patchouli\",\"sandalwood.\"]', '[\"قاعدة العطر: الأمبروكسان، المسك الأبيض، الباتشولي، خشب الصندل\"]', 'Ambroxan, white musk, patchouli, and sandalwood create a smooth and lasting signature.', 'أمبروكسان ومسك أبيض وباتشولي وخشب الصندل يصوغون توقيعاً ناعماً يدوم طويلاً', NULL),
-(512, 184, 'top', '[\"Sicilian Orange\",\"Jasmine\",\"Lily\",\"apple\"]', '[\"المقدمة: برتقال صقلي، ياسمين، زنبق، تفاح\"]', 'Radiant Sicilian orange lifts a soft jasmine–lily bouquet as crisp apple adds a playful bite for a bright, polished opening.', 'يرفع البرتقال الصقلي المتلألئ باقة ياسمين–زنبق ناعمة، فيما يضيف التفاح قرمشة مرِحة لافتتاحية مشرقة مصقولة.', NULL),
-(513, 184, 'heart', '[\"Powdery Accord\",\"Vanilla Bean\",\"Sea Notes\"]', '[\"القلب: أكورد بودري، فانيلا (حبة فانيلا)، نفحات بحرية\"]', 'A velvety powdery veil and true vanilla bean meet airy sea notes, blending comfort with a clean, breezy freshness.', 'حجاب بودري مخملي مع حبة فانيلا أصيلة يلتقيان بنفحات بحرية هوائية، في تمازجٍ بين الدفء والانتعاش النقي.', NULL),
-(514, 184, 'base', '[\"Musk\",\"Cashmeran\",\"Sandalwood\",\"Ambroxan\"]', '[\"القاعدة: مسك، كاشميرن، خشب الصندل، أمبروكسان\"]', 'Silky musk and plush cashmeran melt into creamy sandalwood, while ambroxan radiates a modern, lasting glow.', 'يذوب المسك الحريري والكاشميرن الوثير في خشب صندل كريمي، ويمنح الأمبروكسان وهجاً حديثاً طويل البقاء.', NULL),
-(515, 191, 'top', '[\"Bergamot\",\"Pink Pepper\",\"Elemi\",\"Nutmeg\",\"Tangerine\",\"Oud\",\"Honey\"]', '[\"المقدمة: برغموت، فلفل وردي، إليمي، جوزة الطيب، يوسفي، عود، عسل\"]', 'A vibrant opening of bergamot, pink pepper, and tangerine, heightened by elemi and nutmeg, deepened with oud and honey for a striking first impression.', 'افتتاح نابض بالبرغموت والفلفل الوردي واليوسفي، تعزّزه لمسات الإليمي وجوزة الطيب، ويثريه العود والعسل لانطباع أوّل قوي.', NULL),
-(516, 191, 'heart', '[\"Patchouli\",\"Aromatic Accords\",\"Vetiver\",\"Cashmere Wood\",\"Cinnamon\",\"Rose\",\"Saffron\",\"Jasmine\",\"Orange Blossom\"]', '[\"قلب العطر: باتشولي، أكوردات عطرية، ڤيتيڤر، خشب الكشمير، قرفة، ورد، زعفران، ياسمين، زهر البرتقال\"]', 'Patchouli, vetiver, and cashmere wood form a textured base for cinnamon, rose, saffron, jasmine, and orange blossom, blending spice, woods, and florals seamlessly.', 'باتشولي وڤيتيڤر وخشب الكشمير يشكّلون أساساً متماسكاً يتناغم مع القرفة والورد والزعفران والياسمين وزهر البرتقال، بدمج متقن للتوابل والأخشاب والزهور.', NULL),
-(517, 191, 'base', '[\"Musk\",\"Amber\",\"Raspberry\",\"Saffron\",\"Oakmoss\",\"Powdery\",\"Ambrette Seeds\",\"Leather\",\"Sandalwood\",\"Violet\",\"Agarwood\",\"Ambroxan\"]', '[\"القاعدة: مسك، عنبر، توت، زعفران، طحلب البلوط، بودري، بذور الأمبريت، جلد، خشب الصندل، بنفسج، عود، أمبروكسان\"]', 'Musk and amber embrace raspberry, oakmoss, and ambrette seeds; leather, sandalwood, violet, agarwood, and ambroxan define a deep, enduring signature.', 'يمتزج المسك والعنبر مع التوت وطحلب البلوط وبذور الأمبريت؛ فيما يرسّخ الجلد وخشب الصندل والبنفسج والعود والأمبروكسان بصمة عميقة طويلة الأمد.', NULL),
-(518, 192, 'top', '[\"ORANGE\",\"SST FLOWER\",\"PEPPER\"]', '[\"برتقال، زهر، فلفل\"]', '<p>A bright burst of orange meets a delicate floral lift and a lively pepper bite—sparkling, modern freshness that commands attention from the first spray.</p><p>&nbsp;</p>', '<p>انطلاقة برتقال متوهّجة مع نفحة زهرية رقيقة ولمسة فلفل نابضة—انتعاش عصري متلألئ يجذب الانتباه من الرشة الأولى.</p><h3>&nbsp;</h3>', NULL),
-(519, 192, 'heart', '[\"LAVENDER\",\"PINK PEPPER\",\"PATCHOULI\"]', '[\"لافندر، فلفل وردي، باتشولي\"]', '<p>Lavender brings calm clarity while pink pepper shimmers with rosy spice; patchouli anchors the heart with refined depth and contemporary elegance.</p><p>&nbsp;</p>', '<p>يمنح اللافندر صفاءً هادئًا، ويتلألأ الفلفل الوردي بتوابل وردية؛ ويثبّت الباتشولي القلب بعمق مصقول وأناقة عصرية.</p><h3>&nbsp;</h3>', NULL),
-(520, 192, 'base', '[\"MUSK AMBER RESINS\",\"LABDUNUM\"]', '[\"راتنجات المسك والعنبر، لابدانوم\"]', '<p>Sensual musk and amber resins melt into balsamic labdanum, creating a smooth, enveloping trail that lingers with warm, golden allure.</p><p>&nbsp;</p>', '<article class=\"text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&amp;:has([data-writing-block])&gt;*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]\"><div class=\"text-base my-auto mx-auto pb-10 [--thread-content-margin:--spacing(4)] thread-sm:[--thread-content-margin:--spacing(6)] thread-lg:[--thread-content-margin:--spacing(16)] px-(--thread-content-margin)\"><div class=\"[--thread-content-max-width:40rem] thread-lg:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col agent-turn\"><div class=\"flex max-w-full flex-col grow\"><div class=\"min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal [.text-message+&amp;]:mt-1\"><div class=\"flex w-full flex-col gap-1 empty:hidden first:pt-[1px]\"><div class=\"markdown prose dark:prose-invert w-full break-words light markdown-new-styling\"><p>يمتزج المسك والعنبر الراتنجي مع اللابدانوم البلسمي، ليصنعا أثرًا ناعمًا دافئًا يلفّ البشرة بجاذبية ذهبية طويلة الأمد.</p></div></div></div></div><div class=\"z-0 flex min-h-[46px] justify-start\">&nbsp;</div><div class=\"mt-3 w-full empty:hidden\"><div class=\"text-center\">&nbsp;</div></div></div></div></article><div class=\"pointer-events-none h-px w-px\">&nbsp;</div>', NULL),
-(521, 193, 'top', '[\"Citrus Zest\",\"Raspberry\",\"Saffron\",\"Thyme\"]', '[\"المقدمة: زست الحمضيات، توت العليق، زعفران، زعتر\"]', 'Citrus zest and raspberry lead with energy; saffron and thyme add aromatic definition, preparing the senses for the floral core and polished woods ahead.', 'يتصدر زست الحمضيات وتوت العليق بإيقاع حيوي، ويضيف الزعفران والزعتر تحديداً عطرياً يمهّد لزهرية القلب وخشبية القاعدة المصقولة.', NULL),
-(522, 193, 'heart', '[\"Iris\",\"Violet Leaf\",\"Olibanum Jasmine\"]', '[\"قلب العطر: سوسن، ورقة البنفسج، أوليبانوم ياسمين\"]', 'Iris, violet leaf, and olibanum jasmine define the center, blending floral and green facets to guide the composition smoothly toward leather and woods.', 'يشكّل السوسن وورقة البنفسج وأوليبانوم ياسمين صميم العطر، بتوليفة زهرية خضراء تقود بسلاسة نحو الجلد والأخشاب.', NULL),
-(523, 193, 'base', '[\"Leather Accord\",\"Suede\",\"Cedar\",\"Vetiver\",\"Amber\",\"Woody Notes\"]', '[\"القاعدة: أكورد الجلد، شمواه، أرز، ڤيتيڤر، عنبر، نوتات خشبية\"]', 'Leather accord and suede establish the signature, supported by cedar and vetiver; amber and woody notes complete an enduring, well-structured dry-down.', 'يرسّخ أكورد الجلد والشمواه الطابع الأساس، يدعمه الأرز والڤيتيڤر؛ وتُكمل نوتات العنبر والخشب جفافاً متماسكاً وطويل الأمد.', NULL),
-(524, 194, 'top', '[\"Bergamot\",\"Black currant\",\"Lemon\",\"Saffron\",\"Nutmeg\",\"Ginger\",\"Raspberry\"]', '[\"البرغموت، الكشمش الأسود، الليمون، الزعفران، جوزة الطيب، الزنجبيل، التوت العليق\"]', '<p>Bright and spirited: bergamot and lemon sparkle over black currant and raspberry, warmed by saffron, nutmeg, and ginger for a zesty, spiced-fruity lift.<br>&nbsp;</p>', '<p data-start=\"1800\" data-end=\"2134\">منعشة وحيوية: يلمع البرغموت والليمون فوق الكشمش الأسود والتوت العليق، تدفئهما لمسات الزعفران وجوزة الطيب والزنجبيل لانتعاش فاكهي متبّل.</p><p data-start=\"2136\" data-end=\"2468\">&nbsp;</p>', NULL),
-(525, 194, 'heart', '[\"Leather\",\"Oakwood\",\"Rose Damascena\",\"Patchouli\",\"Cashmeran\",\"Caramel\",\"Plum\"]', '[\"جلد، خشب السنديان (البلوط)، ورد دمشقي، باتشولي، كشميران، كراميل، برقوق\"]', '<p>Textured elegance: plush leather and oakwood cradle Damascena rose and patchouli, enriched with cashmeran, caramel, and plum for a velvety, modern opulence.<br>&nbsp;</p>', '<p data-start=\"2136\" data-end=\"2468\">أناقة مُحاكة بالتفاصيل: جلد فاخر وخشب السنديان يحتضنان الورد الدمشقي والباتشولي، مع كشميران وكراميل وبرقوق لفخامة مخملية عصرية.</p><p data-start=\"2470\" data-end=\"2769\" data-is-last-node=\"\" data-is-only-node=\"\">&nbsp;</p>', NULL),
-(526, 194, 'base', '[\"Oud\",\"Papyrus\",\"Vetiver\",\"White Musk\",\"IncenOud\",\"Papyrus\",\"Vetiver\",\"White Musk\",\"Incense\",\"Cedarwood\",\"Talcse\",\"Cedarwood\",\"Talc\"]', '[\"عود، بردي، فيتيفير، مسك أبيض، بخور، خشب الأرز، بودرة تلك\"]', '<p>Enduring aura: oud, papyrus, vetiver, incense, and cedarwood melt into soft white musk and talc, leaving a refined powdery-woody signature.<br>&nbsp;</p>', '<article class=\"text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&amp;:has([data-writing-block])&gt;*]:pointer-events-auto [content-visibility:auto] supports-[content-visibility:auto]:[contain-intrinsic-size:auto_100lvh] scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]\" tabindex=\"-1\" dir=\"auto\" data-turn-id=\"request-WEB:94be7c19-89fb-4e9c-8f1d-deb0c6881265-0\" data-testid=\"conversation-turn-2\" data-scroll-anchor=\"false\" data-turn=\"assistant\"><div class=\"text-base my-auto mx-auto [--thread-content-margin:--spacing(4)] thread-sm:[--thread-content-margin:--spacing(6)] thread-lg:[--thread-content-margin:--spacing(16)] px-(--thread-content-margin)\"><div class=\"[--thread-content-max-width:40rem] thread-lg:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col agent-turn\" tabindex=\"-1\"><div class=\"flex max-w-full flex-col grow\"><div class=\"min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal [.text-message+&amp;]:mt-1\" data-message-author-role=\"assistant\" data-message-id=\"08464a93-47bc-4c37-9894-7bc027bd11b6\" dir=\"auto\" data-message-model-slug=\"gpt-5-thinking\"><div class=\"flex w-full flex-col gap-1 empty:hidden first:pt-[1px]\"><div class=\"markdown prose dark:prose-invert w-full break-words light markdown-new-styling\"><p data-start=\"2470\" data-end=\"2769\" data-is-last-node=\"\" data-is-only-node=\"\">هالة ثابتة: يندمج العود والبردي والفيتيفير والبخور وخشب الأرز مع مسك أبيض وبودرة تلك، ليبقى أثر خشبي بودري راقٍ.</p></div></div></div></div><div class=\"z-0 flex min-h-[46px] justify-start\">&nbsp;</div></div></div></article><article class=\"text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&amp;:has([data-writing-block])&gt;*]:pointer-events-auto scroll-mt-(--header-height)\" tabindex=\"-1\" dir=\"auto\" data-turn-id=\"17ea42ec-9b64-4cd7-8275-838652bc094b\" data-testid=\"conversation-turn-3\" data-scroll-anchor=\"false\" data-turn=\"user\"><h5 class=\"sr-only\">&nbsp;</h5></article>', NULL),
-(527, 195, 'top', '[\"grape fruit\",\"bergamot\",\"davana\",\"pink pepper\",\"ginger\"]', '[\"جريب فروت، برغموت، دافانا، فلفل وردي، زنجبيل\"]', '<p>Crisp and sparkling: grapefruit and bergamot brighten davana, with pink pepper and ginger adding a lively, modern spice.<br>&nbsp;</p>', '<p data-start=\"1676\" data-end=\"1949\">منعشة ومتلألئة: يضيء الجريب فروت والبرغموت دفانا، وتمنح لمسات الفلفل الوردي والزنجبيل توابلاً عصرية نابضة.</p><p data-start=\"1951\" data-end=\"2218\">&nbsp;</p>', NULL),
-(528, 195, 'heart', '[\"Ambrette\",\"white amber\",\"agarwood\",\"rose mary\"]', '[\"أمبريت، عنبر أبيض، عود، روزماري\"]', '<p>Aromatic poise: ambrette and white amber wrap agarwood, while rosemary threads a green, elegant facet through the woods.<br>&nbsp;</p>', '<p data-start=\"1951\" data-end=\"2218\">اتزان عطري: أمبريت وعنبر أبيض يحتضنان العود، ويضيف الروزماري خيطاً أخضر أنيقاً يتماوج بين الأخشاب.</p><p data-start=\"2220\" data-end=\"2494\" data-is-last-node=\"\" data-is-only-node=\"\">&nbsp;</p>', NULL),
-(529, 195, 'base', '[\"Ambroxan\",\"patchouli\",\"vetiver\",\"musk\",\"leather\"]', '[\"أمبروكسان، باتشولي، فيتيفير، مسك، جلد\"]', '<p>Enduring sophistication: ambroxan, patchouli, vetiver, and musk glide over a supple leather accord for a clean, confident trail.<br>&nbsp;</p>', '<article class=\"text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&amp;:has([data-writing-block])&gt;*]:pointer-events-auto [content-visibility:auto] supports-[content-visibility:auto]:[contain-intrinsic-size:auto_100lvh] scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]\" tabindex=\"-1\" dir=\"auto\" data-turn-id=\"request-WEB:94be7c19-89fb-4e9c-8f1d-deb0c6881265-2\" data-testid=\"conversation-turn-6\" data-scroll-anchor=\"true\" data-turn=\"assistant\"><div class=\"text-base my-auto mx-auto pb-10 [--thread-content-margin:--spacing(4)] thread-sm:[--thread-content-margin:--spacing(6)] thread-lg:[--thread-content-margin:--spacing(16)] px-(--thread-content-margin)\"><div class=\"[--thread-content-max-width:40rem] thread-lg:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col agent-turn\" tabindex=\"-1\"><div class=\"flex max-w-full flex-col grow\"><div class=\"min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal [.text-message+&amp;]:mt-1\" data-message-author-role=\"assistant\" data-message-id=\"5dc4570f-a217-4e21-a66a-2cfb493ad9a9\" dir=\"auto\" data-message-model-slug=\"gpt-5-thinking\"><div class=\"flex w-full flex-col gap-1 empty:hidden first:pt-[1px]\"><div class=\"markdown prose dark:prose-invert w-full break-words light markdown-new-styling\"><p data-start=\"2220\" data-end=\"2494\" data-is-last-node=\"\" data-is-only-node=\"\">أناقة ثابتة: أمبروكسان وباتشولي وفيتيفير ومسك تنساب فوق نفحة جلد ناعمة، تاركة أثراً نظيفاً واثقاً.</p></div></div></div></div><div class=\"z-0 flex min-h-[46px] justify-start\">&nbsp;</div><div class=\"mt-3 w-full empty:hidden\"><div class=\"text-center\">&nbsp;</div></div></div></div></article><div class=\"pointer-events-none h-px w-px\" aria-hidden=\"true\" data-edge=\"true\">&nbsp;</div>', NULL),
-(530, 196, 'top', '[\"Grape fruit\",\"Jasmine\",\"Aldehyde\"]', '[\"الجريب فروت، الياسمين، الألدهيدات\"]', '<p>Sparkling grapefruit and airy aldehydes lift jasmine for a clean, modern burst that feels bright, polished, and instantly uplifting.</p>', '<p>جريب فروت متلألئ ولمسة ألدهيد هوائية ترفع الياسمين لبداية نظيفة وعصرية متألقة ومنعشة.</p>', NULL),
-(531, 196, 'heart', '[\"White Flowers\",\"Lily\",\"Rose India\",\"Saffron\"]', '[\"الزهور البيضاء، الزنبق، الورد الهندي، الزعفران\"]', '<p>A refined bouquet of white flowers, lily, and Indian rose, delicately spiced with saffron for luminous floral elegance.</p>', '<p>باقة راقية من الزهور البيضاء والزنبق والورد الهندي، تتوهج برشّة زعفران تمنح أناقة زهرية مشرقة.</p>', NULL),
-(532, 196, 'base', '[\"Musks\",\"Warm wood\",\"Vanilla\",\"Ambroxan\",\"Incense\",\"Ahmed Al Maghribi Aged Shamama Signature Accord\",\"Oud Hindi\"]', '[\"المسك، الأخشاب الدافئة، الفانيلا، الأمبروكسان، البخور، خلاصة الشمامة المعتّقة المميزة من أحمد المغربي، العود الهندي\"]', '<p>Warm woods, vanilla, and ambroxan glow with incense and musk, enriched by Aged Shamama and grounded in noble Hindi oud.</p>', '<p>أخشاب دافئة وفانيلا وأمبروكسان يتوهجون مع البخور والمسك، تتعمّق بأكورد الشمامة المعتّق وتستقر على عود هندي نبيل.</p>', NULL),
-(533, 197, 'top', '[\"Bergamot\",\"Grapefruit\",\"Orange\",\"Mandarin\",\"Juniper\",\"Pepper\",\"Clary Sage\",\"Saffron\",\"Apple\"]', '[\"برغموت، جريب فروت، برتقال، ماندرين، عرعر، فلفل، مريمية، زعفران، تفاح\"]', '<p>A charged burst of bergamot, grapefruit, orange, and mandarin cut through with juniper, pepper, clary sage, saffron, and a crisp apple brightness.</p>', '<p>انطلاقة نابضة من البرغموت والجريب فروت والبرتقال والماندرين، تتقاطع مع العرعر والفلفل والمريمية والزعفران ولمعة تفاح منعشة.</p>', NULL),
-(534, 197, 'heart', '[\"Sambac Jasmine\",\"Neroli\",\"Cardamom\",\"Black Pepper\",\"Rose\",\"Ambrette\",\"Muguet\",\"Clary Sage\",\"Bakhoor notes\",\"Sandalwood\"]', '[\"ياسمين سامباك، نيرولي، هيل، فلفل أسود، ورد، أمبريت، ميوغي (زنبق الوادي)، مريمية، نوتات بخور، خشب الصندل\"]', '<p>Radiant florals—Sambac jasmine, neroli, rose, and muguet—energized by cardamom and black pepper, rounded with ambrette, clary sage, sandalwood, and atmospheric bakhoor notes.</p>', '<p>زهور متوهجة—ياسمين سامباك ونيرولي وورد وميوغي—منشطة بالهال والفلفل الأسود، ومصقولة بأمبريت ومريمية وصندل ونفحات بخور غامرة.</p>', NULL),
-(535, 197, 'base', '[\"Musk\",\"Ambergris\",\"Cedar\",\"Patchouli\",\"Vetiver\",\"Leather Accord\",\"Cashmeran\",\"Signature combodi oud\",\"Guaiac Wood\"]', '[\"مسك، عنبر رمادي، أرز، باتشولي، فيتيفر، أكورد الجلد، كاشميرن، عود كومبودي مميز، خشب الجاياك\"]', '<p>A deep, smoky signature: musk and ambergris over cedar, patchouli, vetiver, leather accord, cashmeran, guaiac wood, and the house’s Signature Combodi oud.</p>', '<p>توقيع عميق ومدخن: مسك وعنبر رمادي فوق الأرز والباتشولي والفيتيفر وأكورد الجلد وكاشميرن وخشب الجاياك وعود كومبودي المميز.</p>', NULL),
-(536, 198, 'top', '[\"Mandarin\",\"Peach\",\"Orange\",\"Pear\",\"Bergamot\",\"Ginger\"]', '[\"ماندرين، خوخ، برتقال، كمثرى، برغموت، زنجبيل\"]', '<p>A sparkling fusion of mandarin, orange, and bergamot with juicy peach and pear, sharpened by ginger for a crisp, modern lift.</p>', '<p>توليفة متلألئة من الماندرين والبرتقال والبرغموت مع خوخ وكمثرى عَصِريين، يشحذها الزنجبيل لانتعاش حديث ونقي.</p>', NULL),
-(537, 198, 'heart', '[\"Freesia\",\"Sambac Jasmine\",\"Orange Blossom\",\"Leather\",\"Woody Notes\",\"Saffron\"]', '[\"فريزيا، ياسمين سامباك، زهر البرتقال، جلد، نوتات خشبية، زعفران\"]', '<p>Radiant florals—freesia, Sambac jasmine, and orange blossom—outlined in sleek leather and polished woods, illuminated with a refined saffron touch.</p>', '<p>زهور متوهجة—فريزيا وياسمين سامباك وزهر البرتقال—تتحدد بجلد أنيق وأخشاب مصقولة، ويضيئها نفح زعفران راقٍ.</p>', NULL),
-(538, 198, 'base', '[\"Musk\",\"Vanilla\",\"Rose\",\"Bakhoory accord\",\"Ambroxan\",\"Cedar\",\"Incense\"]', '[\"مسك، فانيلا، ورد، أكورد بخوري، أمبروكسان، أرز، بخور\"]', '<p>A sensual, atmospheric finish of musk and vanilla with ambroxan’s glow, grounded by cedar, bakhoory accord, soft incense, and a gentle rose nuance.</p>', '<p>خاتمة حسية وغامرة من مسك وفانيلا مع إشعاع أمبروكسان، تتوازن بأرز وأكورد بخوري وبخورٍ ناعم ولمسة ورد رخيمة.</p>', NULL),
-(539, 199, 'top', '[\"Citrus\",\"Jasmine\",\"Aldehydic\"]', '[\"حمضيات، ياسمين، ألدهيدات\"]', '<p>A bright, sparkling start where citrus zest and jasmine glow meet an airy aldehydic sheen for immediate elegance</p>', '<p>بداية متلألئة تجمع حيوية الحمضيات مع وهج الياسمين ولمسة ألدهيدية هوائية تمنح أناقة فورية.</p><p>&nbsp;</p>', NULL),
-(540, 199, 'heart', '[\"White Flowers\",\"lily\",\"Rose\"]', '[\"زهور بيضاء، زنبق، ورد\"]', '<p>A silky white-floral bouquet unfurls with lily’s purity and rose’s grace, creating a luminous, feminine aura.<br>&nbsp;</p>', '<p>باقة زهرية بيضاء حريرية تتفتح بنقاوة الزنبق ورقيّ الورد، لتصنع هالة مضيئة أنثوية.</p><p>&nbsp;</p>', NULL),
-(541, 199, 'base', '[\"Musk\",\"Woody\",\"Amber\",\"Vanilla\"]', '[\"مسك، نفحات خشبية، عنبر، فانيلا\"]', '<p>A sensual, lasting trail where velvety musk and refined woods cradle ambered warmth and creamy vanilla.<br>&nbsp;</p>', '<div class=\"flex flex-col text-sm pb-25\"><article class=\"text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&amp;:has([data-writing-block])&gt;*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]\"><div class=\"text-base my-auto mx-auto pb-10 [--thread-content-margin:--spacing(4)] @w-sm/main:[--thread-content-margin:--spacing(6)] @w-lg/main:[--thread-content-margin:--spacing(16)] px-(--thread-content-margin)\"><div class=\"[--thread-content-max-width:40rem] @w-lg/main:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col agent-turn\"><div class=\"flex max-w-full flex-col grow\"><div class=\"min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal [.text-message+&amp;]:mt-1\"><div class=\"flex w-full flex-col gap-1 empty:hidden first:pt-[1px]\"><div class=\"markdown prose dark:prose-invert w-full wrap-break-word light markdown-new-styling\"><p>أثر حسي طويل يدوم يجمع مسكًا مخمليًا وأخشابًا راقية بدفء عنبري ونعومة فانيلا كريمية.</p></div></div></div></div><div class=\"z-0 flex min-h-[46px] justify-start\">&nbsp;</div><div class=\"mt-3 w-full empty:hidden\"><div class=\"text-center\">&nbsp;</div></div></div></div></article></div><div class=\"pointer-events-none h-px w-px absolute bottom-0\">&nbsp;</div>', NULL),
-(542, 200, 'top', '[\"Clary Sage\",\"Rhubarb\",\"Blackberry\"]', '[\"المريمية (كلاري ساج)، راوند، توت العليق\"]', '<p>Clary sage lends airy aromatics to a vivid opening where crisp rhubarb slices through the juicy darkness of blackberry. Energetic, modern, and mouth-watering.</p>', '<p>تمنح المريمية نفَساً عطِراً متّسماً بالانتعاش، يتلاقى مع حِدّة الراوند وقِتام توت العليق العصيري. بداية نابضة، عصرية وملفتة.</p>', NULL),
-(543, 200, 'heart', '[\"Egyptian Jasmine\",\"Marine Notes\",\"Lily of the Valley\"]', '[\"ياسمين مصري، نفحات بحرية، زنبق الوادي\"]', '<p>Egyptian jasmine unfurls with lily of the valley, bathed in clean marine notes that add brightness and motion—like sunlight glancing off waves.</p>', '<p>يتفتح الياسمين المصري وإلى جواره زنبق الوادي، تغمرهما نفحات بحرية نظيفة تضيف إشراقاً وحركة—كأنها أشعة شمس تنعكس على الموج.</p>', NULL),
-(544, 200, 'base', '[\"Mineral Notes\",\"Ambergris\",\"Musk\"]', '[\"نوتات معدنية، عنبر بحري، مسك\"]', '<p>A sleek mineral texture meets the radiant lift of ambergris and a tender musk veil. The finish is luminous, refined, and quietly unforgettable.</p>', '<p>نسيج معدني أنيق يلتقي بوهج العنبر البحري وحجاب مسكي رقيق. خاتمة مشرقة ومصقولة، تبقى في الذاكرة بهدوء.</p>', NULL),
-(545, 206, 'top', '[\"GRAPEFRUIT\",\"BERGAMOT\",\"PINK PEPPER\",\"APPLE\",\"MANDARIN.\"]', '[\"جريب فروت، برغموت، فلفل وردي، تفاح، يوسفي\"]', '<p>A bright citrus flash of grapefruit and bergamot, sharpened by pink pepper, softened by crisp apple and sweet mandarin.</p>', '<p>ومضة حمضية مشرقة من الجريب فروت والبرغموت، تتوهج بالفلفل الوردي وتلينها هشاشة التفاح وحلاوة الماندرين.</p>', NULL),
-(546, 206, 'heart', '[\"CARDAMOM\",\"LAVENDER\",\"SAFFRON\",\"ORRIS\",\"ROSE\",\"RASPBERRY\",\"OSMANTHUS\",\"JASMINE FLOWER\",\"GALBANUM.\"]', '[\"الهيل، الخزامى، الزعفران، السوسن، الورد، التوت، الأوسمانثوس، زهرة الياسمين، الجلبانوم.\"]', '<p>Cardamom and saffron warm an aromatic-luxe bouquet—lavender and orris turn silky while rose, raspberry, osmanthus, and jasmine bloom with a green galbanum edge.</p>', '<p>الهيل والزعفران يضيفان دفئًا لباقة فاخرة؛ لافندر وأوريس يمنحان نعومة مخملية، فيما تتفتح الوردة مع توت العليق والأوسمانثوس والياسمين بلمسة خضراء من الجالبانوم.</p>', NULL),
-(547, 206, 'base', '[\"OUD ESSENCE\",\"VETIVER\",\"OAKMOSS\",\"SANDALWOOD\",\"CEDARWOOD\",\"CASHMERE WOOD\",\"AMBRAL NOTES\",\"VANILLA LABDANUM ANIMALIC NUANCE.\"]', '[\"خلاصة العود، نجيل الهند، طحلب السنديان، خشب الصندل، خشب الأرز، خشب الكشمير، نفحات العنبر، الفانيليا، اللابدانوم، لمسة حيوانية.\"]', '<p>Oud essence sinks into vetiver, oakmoss, sandalwood, cedar, and cashmere wood. Ambral notes glow, while vanilla and labdanum deepen the finish—touched by an animalic nuance for a bolder signature.</p>', '<p>خلاصة العود تمتزج مع فيتيفر وأوك موس وصندل وأرز وكشمير وود. نفحات أمبرالية متوهجة، تعمّقها الفانيلا واللابدانوم، مع لمسة حيوانية تمنح توقيعًا أكثر جرأة</p>', NULL),
-(548, 207, 'top', '[\"Bergamot\",\"Lavender\",\"Basil\"]', '[\"برغموت، لافندر، ريحان\"]', '<p>Bergamot sparkles up front, balanced by soothing lavender and a crisp basil-green edge for a bright, aromatic first impression.<br>&nbsp;</p>', '<p>برغموت متلألئ في البداية يتوازن مع لافندر مهدّئ ولمسة ريحان خضراء تمنح افتتاحية عطرية مشرقة ومنعشة.</p>', NULL),
-(549, 207, 'heart', '[\"Rose\",\"Jasmine\",\"Lily\"]', '[\"ورد، ياسمين، زنبق\"]', '<p>Rose and jasmine unfold into a smooth, luminous floral core, while lily adds a fresh, elegant softness that feels airy yet refined.</p>', '<p>يتفتح الورد والياسمين إلى قلب زهري ناعم ومضيء، ويضيف الزنبق نعومة أنيقة ولمسة منعشة تمنح إحساساً راقياً وخفيفاً.</p>', NULL),
-(550, 207, 'base', '[\"Oud Accord\",\"Vetiver\",\"Amber\",\"Vanilla\"]', '[\"أكورد العود، فيتيفر، عنبر، فانيلا\"]', '<p>An oud accord lays a warm, sophisticated foundation, enriched by amber and creamy vanilla, with vetiver adding an earthy, dry balance.</p>', '<p>يؤسس أكورد العود قاعدة دافئة وراقية، يعززها العنبر والفانيلا الكريمية، بينما يضيف الفيتيفر توازناً جافاً ترابياً يزيدها أناقة.</p>', NULL),
-(551, 208, 'top', '[\"Mango\",\"Mint\",\"Ginger\",\"Lemon\"]', '[\"مانجو، زنجبيل، ليمون\"]', '<p>Mango and lemon shine with a bright, juicy sparkle, while ginger adds a crisp, energetic edge.</p>', '<p>مانجو وليمون بلمعة عصيرية منعشة، ويمنح الزنجبيل حدة نظيفة وحيوية.</p>', NULL),
-(552, 208, 'heart', '[\"Jasmine\",\"Cedar\",\"Coumarin\"]', '[\"ياسمين، خشب الأرز، كومارين\"]', '<p>Jasmine blooms softly at the center, balanced by cedar’s woody calm and a smooth coumarin sweetness.</p>', '<p>يتفتح الياسمين بنعومة في القلب، مع توازن خشب الأرز ولمسة كومارين حلوة مخملية.</p>', NULL),
-(553, 208, 'base', '[\"Musk\",\"Agarwood (Oud)\",\"Amber\"]', '[\"مسك، عود (أكاروود)، عنبر\"]', '<p>Musk settles close to the skin as oud deepens the tone, warmed through with amber’s elegant glow.</p>', '<p>يستقر المسك قرب البشرة، ويمنح العود عمقاً واضحاً، بينما يضيف العنبر دفئاً راقياً ولمعاناً ناعماً.</p>', NULL),
-(554, 209, 'top', '[\"Pistachio\",\"Toasted Vermicelli Accords\"]', '[\"فستق، أكورد الشعيرية المحمّصة\"]', '<p>Pistachio leads with a smooth, nutty richness, uplifted by toasted vermicelli accords for a warm, roasted glow.</p>', '<p>فستق غني وناعم يتقدّم المشهد، تدعمه أكورد الشعيرية المحمّصة بلمسة دافئة محمّصة ومريحة.</p>', NULL),
-(555, 209, 'heart', '[\"Cream\",\"Chocolate\"]', '[\"كريمة، شوكولا\"]', '<p>Cream melts into chocolate for a velvety gourmand core—soft, indulgent, and irresistibly smooth.</p>', '<p>كريمة تذوب داخل الشوكولا لتصنع قلباً مخملياً غورماند—ناعم، غني، وسلس بشكل جذّاب</p>', NULL),
-(556, 209, 'base', '[\"Vanilla\",\"Musk\",\"Cooked Sugar\"]', '[\"فانيلا، مسك، سكّر مطبوخ\"]', '<p>Vanilla and musk create a cozy, clean warmth, while cooked sugar adds a gentle caramelized sweetness that lingers.</p>', '<p>فانيلا ومسك يمنحان دفئاً نظيفاً ومريحاً، ويضيف السكّر المطبوخ حلاوة كراميلية خفيفة تدوم بأناقة.</p>', NULL),
-(557, 210, 'top', '[\"Lavender\",\"Leather\"]', '[\"لافندر، جلد\"]', '<p>Lavender brings a clean aromatic lift, while leather adds a smooth, dark edge from the very first spray.</p>', '<p>يمنح اللافندر انتعاشًا عطريًا نظيفًا، ويضيف الجلد لمسة داكنة ناعمة منذ البداية.</p>', NULL),
-(558, 210, 'heart', '[\"Rose\",\"Jasmine\",\"Oud\"]', '[\"ورد، ياسمين، عود\"]', '<p>Rose and jasmine bloom with a classic floral richness, deepened and anchored by oud for a more intense, opulent core.</p>', '<p>يتفتح الورد والياسمين بثراء زهري كلاسيكي، ويأتي العود ليمنحهما عمقًا وفخامة في القلب.</p>', NULL),
-(559, 210, 'base', '[\"Amber\",\"Musk\",\"Woody Notes\"]', '[\"عنبر، مسك، نغمات خشبية\"]', '<p>Amber warms the dry-down, musk smooths the texture, and woody notes leave a refined, enduring finish.</p>', '<p>يدفئ العنبر النهاية، ويصقل المسك الملمس، بينما تترك النغمات الخشبية أثرًا راقيًا ثابتًا.</p>', NULL),
-(560, 211, 'top', '[\"Almond\",\"Buttermilk\",\"Lemon\"]', '[\"لبن (باترميلك)، ليمون\"]', '<p>Almond meets creamy buttermilk, sharpened by a clean lemon sparkle for a bright, silky opening.</p>', '<p>لوز كريمي مع لبن ناعم، ترفعه لمعة ليمون نظيفة لافتتاحية مشرقة وحريرية.</p>', NULL),
-(561, 211, 'heart', '[\"Coconut\",\"Coffee\",\"Birch\"]', '[\"جوز الهند، قهوة، خشب البتولا\"]', '<p>Coconut folds into roasted coffee, while birch adds a subtle woody refinement that polishes the gourmand core.</p>', '<p>جوز الهند يلتف حول القهوة المحمّصة، وتضيف البتولا لمسة خشبية رقيقة تمنح القلب أناقة متوازنة.</p>', NULL),
-(562, 211, 'base', '[\"Vanilla\",\"Caramel\",\"Musk\"]', '[\"فانيلا، كراميل، مسك\"]', '<p>Vanilla and caramel melt into a soft musk, leaving a smooth, cozy trail with gentle sweetness.</p>', '<p>فانيلا وكراميل يذوبان فوق مسك ناعم، لذيل مخملي دافئ بحلاوة هادئة.</p>', NULL),
-(563, 212, 'top', '[\"Bergamot\",\"Mandarin\",\"Lemon\"]', '[\"برغموت، ماندرين، ليمون\"]', '<p>A bright, clean citrus opening—bergamot, mandarin, and lemon—sparkles with freshness and clarity.</p>', '<p>افتتاحية حمضية مشرقة ونظيفة—برغموت وماندرين وليمون—تمنح إحساساً فوريًا بالانتعاش والصفاء.</p>', NULL),
-(564, 212, 'heart', '[\"Moroccan Jasmine\",\"Rose\",\"Orange Flower\"]', '[\"ياسمين مغربي، ورد، زهر البرتقال\"]', '<p>Moroccan jasmine meets rose and orange flower for a polished floral core—soft, radiant, and effortlessly elegant.</p>', '<p>يلتقي الياسمين المغربي مع الورد وزهر البرتقال ليقدّم قلباً زهرياً راقياً—ناعمًا ومضيئًا وأناقةً بلا مجهود.</p>', NULL),
-(565, 212, 'base', '[\"Musk\",\"Birch\",\"Oakmoss\"]', '[\"مسك، بتولا، طحلب البلوط\"]', '<p>Musk smooths into birch and oakmoss, creating a fresh woody-green finish with refined depth.</p>', '<p>ينساب المسك فوق البتولا وطحلب البلوط ليصنع قاعدة خشبية خضراء منعشة بعمقٍ أنيق.</p>', NULL),
-(566, 213, 'top', '[\"Black Currant\",\"Pear\",\"Lemon\"]', '[\"الكشمش الأسود، الكمثرى، الليمون\"]', '<p>Black currant adds a vibrant tang, pear brings a smooth juiciness, and lemon sharpens the opening with a bright citrus sparkle.</p>', '<p>يمنح الكشمش الأسود لمسة منعشة لاذعة، وتضيف الكمثرى عصيرية ناعمة، بينما يضيء الليمون الافتتاحية ببريق حمضي واضح.</p>', NULL);
-INSERT INTO `fragrance_notes` (`id`, `product_id`, `note_type`, `ingredients_en`, `ingredients_ar`, `description_en`, `description_ar`, `image_url`) VALUES
-(567, 213, 'heart', '[\"Matcha\",\"Jasmine\",\"Freesia\"]', '[\"الماتشا، الياسمين، الفريزيا\"]', '<p>Matcha unfolds as a creamy green signature, softened by jasmine’s elegance and lifted by freesia’s airy, petal-like freshness.</p>', '<p>تتألق الماتشا كبصمة خضراء كريمية، يهدّئها الياسمين بأناقة زهرية ويمنحها الفريزيا نفَسًا شفافًا ومنعشًا.</p>', NULL),
-(568, 213, 'base', '[\"Amberwood\",\"Caramel\",\"Patchouli\"]', '[\"أمبر وود، كراميل، باتشولي\"]', '<p>Amberwood creates a smooth, modern warmth, caramel drapes a golden sweetness, and patchouli anchors it all with a clean, earthy refinement.</p>', '<p>يقدّم الأمبر وود دفئًا ناعمًا وعصريًا، ويكسو الكراميل القاعدة بحلاوة ذهبية، بينما يرسّخ الباتشولي الأثر بعمقٍ ترابي أنيق.</p>', NULL),
-(569, 214, 'top', '[\"Bergamot\",\"Juniper\",\"Pink Pepper\"]', '[\"برغموت، عرعر، فلفل وردي\"]', '<p>Bright bergamot opens clean and fresh, sharpened by juniper’s dry coolness and a sparkling pink-pepper bite.</p>', '<p>برغموت مشرِق ونظيف، يتبعه عرعر جاف بارد ولمعة فلفل وردي تمنح الافتتاحية حيوية واضحة.</p>', NULL),
-(570, 214, 'heart', '[\"Cedarwood\",\"Patchouli\",\"Lavender\"]', '[\"خشب الأرز، باتشولي، لافندر\"]', '<p>Lavender smooths the profile with aromatic clarity, while cedarwood and patchouli build a structured, woody-earthy core.</p>', '<p>يهدّئ اللافندر التركيبة بلمسة عطرية متزنة، ويضيف خشب الأرز والباتشولي قلبًا خشبيًا ترابيًا متماسكًا.</p>', NULL),
-(571, 214, 'base', '[\"Musk\",\"Guaiac Wood\",\"Vetiver\"]', '[\"مسك، خشب الغاياك، ڤيتيفر\"]', '<p>Musk brings a polished, clean finish, deepened by guaiac wood’s subtle smoky wood and vetiver’s elegant dryness.</p>', '<p>مسك ناعم يمنح نهاية مصقولة ونظيفة، يعمّقها خشب الغاياك بلمسة خشبية دخانية خفيفة وڤيتيفر بجفاف أنيق.</p>', NULL),
-(572, 215, 'top', '[\"Citrus\",\"Nectarine\",\"Apple\"]', '[\"حمضيات، نكتارين، تفاح\"]', '<p>A bright, juicy opening—citrus sparkle wrapped around ripe nectarine and crisp apple freshness.</p>', '<p>افتتاحية مشرقة وعصيرية—لمعة الحمضيات مع نضج النكتارين ونضارة التفاح.</p>', NULL),
-(573, 215, 'heart', '[\"Gardenia\",\"Magnolia\",\"Jasmine\"]', '[\"غاردينيا، ماغنوليا، ياسمين\"]', '<p>Creamy white florals bloom softly—gardenia and magnolia feel velvety, while jasmine adds a luminous floral sweetness.</p>', '<p>زهور بيضاء كريمية تتفتح بهدوء—غاردينيا وماغنوليا بملمس مخملي، والياسمين يضيف إشراقة زهرية رقيقة.</p>', NULL),
-(574, 215, 'base', '[\"Patchouli\",\"Musk\",\"Sandalwood\"]', '[\"باتشولي، مسك، خشب الصندل\"]', '<p>A smooth, elegant drydown—patchouli deepens the warmth, musk turns it silky, and sandalwood leaves a creamy woody finish.</p>', '<p>نهاية ناعمة وأنيقة—الباتشولي يمنح عمقاً دافئاً، والمسك يضفي حريراً، وخشب الصندل يترك لمسة خشبية كريمية.</p>', NULL),
-(575, 216, 'top', '[\"Citron\",\"Calabrian Bergamot\",\"Sicilian Orange\"]', '[\"سترون، برغموت كالابريا، برتقال صقلية\"]', '<p>Sunlit citrus—citron sharpened by Calabrian bergamot and rounded with Sicilian orange for a bright, clean start.</p>', '<p>حمضيات مشمسة—سترون مشدود ببرغموت كالابريا ومُدوّر ببرتقال صقلية لبدايةٍ مشرقة ونظيفة.</p>', NULL),
-(576, 216, 'heart', '[\"Rose\",\"Bulgarian Rose\",\"Neroli\"]', '[\"ورد، ورد بلغاري، نيرولي\"]', '<p>A plush rose heart where classic rose meets Bulgarian rose, lifted by the airy, luminous touch of neroli.</p>', '<p>قلب وردي مخملي يجمع بين الورد والورد البلغاري، ويعلوه لمسة نيرولي هوائية مضيئة.</p>', NULL),
-(577, 216, 'base', '[\"Agarwood Notes\",\"Ambergris\",\"Musk\"]', '[\"نفحات العود، عنبر رمادي، مسك\"]', '<p>Elegant agarwood notes deepen the scent, ambergris adds soft warmth, and musk smooths everything into a refined, lingering finish.</p>', '<p>نفحات العود تضيف عمقًا راقيًا، والعنبر الرمادي يمنح دفئًا ناعمًا، ويُكمل المسك النهاية بملمسٍ مصقول يدوم.</p>', NULL),
-(578, 217, 'top', '[\"Floral\",\"Citrus\"]', '[\"زهري، حمضي\"]', '<p>A fresh, radiant lift where citrus brightness meets a soft floral aura—clean, airy, and instantly inviting.</p>', '<p>انتعاش مضيء تلتقي فيه الحمضيات بلمسة زهرية ناعمة—نظيف، هوائي، وجاذب من أول لحظة.</p>', NULL),
-(579, 217, 'heart', '[\"Musk\",\"Amber\"]', '[\"مسك، عنبر\"]', '<p>Musk and amber create a warm, smooth core—sensual and comforting, with a gentle glow.</p>', '<p>يشكّل المسك والعنبر قلباً دافئاً وناعماً—حسيّ ومريح بوهجٍ هادئ.</p>', NULL),
-(580, 217, 'base', '[\"Woody (Ambergris\",\"Cashmere Wood)\"]', '[\"خشبي (عنبر رمادي، خشب الكشمير)\"]', '<p>Woody depth unfolds with an ambergris nuance and the velvety feel of cashmere wood for a polished, lasting finish.</p>', '<p>عمقٌ خشبي يتدرّج مع طابع العنبر الرمادي وملمس خشب الكشمير المخملي لثباتٍ أنيق يدوم.</p>', NULL),
-(581, 218, 'top', '[\"Pineapple\",\"Strawberry\",\"Raspberry\",\"Citrus\"]', '[\"أناناس،  فراولة،  توت العليق،  حمضيات\"]', '<p>A bright fruity splash—pineapple upfront, sweetened by strawberry and raspberry, with a crisp citrus lift.</p>', '<p>افتتاحية فاكهية مشرقة—أناناس في المقدمة، تُحليه الفراولة والتوت العليق، مع لمسة حمضيات منعشة</p>', NULL),
-(582, 218, 'heart', '[\"Peach\",\"Rose\"]', '[\"خوخ،  ورد\"]', '<p>Peach softens the profile while rose adds a refined floral touch—smooth, romantic, and gently luminous.</p>', '<p>الخوخ يمنح نعومة مخملية، والورد يضيف لمسة زهرية راقية—رومانسي، ناعم، ومضيء بهدوء.</p>', NULL),
-(583, 218, 'base', '[\"Sandalwood\",\"Vanilla Beans\",\"Woods\"]', '[\"خشب الصندل،  حبوب الفانيلا،  أخشاب\"]', '<p>Vanilla beans melt into warm woods, with sandalwood bringing a creamy, elegant depth that lingers beautifully.</p>', '<p>حبوب الفانيلا تذوب داخل أخشاب دافئة، ويمنح خشب الصندل عمقاً كريماً أنيقاً يدوم بأثر جميل.</p>', NULL);
-
-
---
--- Dumping data for table `products`
---
-
-INSERT INTO `products` (`id`, `fgd`, `barcode`, `slug`, `name_en`, `name_ar`, `description_en`, `description_ar`, `category_id`, `subcategory_id`, `is_active`, `is_featured`, `tags`, `attributes`, `created_at`, `updated_at`, `size_label_en`, `size_label_ar`, `media_url`, `deleted_status`) VALUES
-(1, 'FGD1111', '12213211414135', 'test', 'test', 'test ar', '', '', 23, 4, 1, 1, '[\"test 1\",\"test 2\",\"test 3\",\"test 4\"]', '{\"key\":\"value\",\"test\":\"test\"}', '2026-04-01 13:20:50', '2026-04-01 13:21:16', '50mlen', '50mlar', NULL, 'permanent'),
-(4, 'FGD123', '1111111', 'test1', 'test1', 'test', '', '', 23, 3, 1, 0, '[\"ada\",\"sfda\",\"efesfs\",\"hthf\"]', '{\"1\":\"1\",\"2\":\"2\",\"3\":\"3\"}', '2026-04-01 13:28:50', '2026-04-01 13:42:25', '11', '11', NULL, 'permanent'),
-(5, 'FGD02229', '6290360614564', 'aayah', 'Aayah', 'آية', 'Aayah unveils tropical brightness and delicate florals, gracefully layered over rich oud and musk for a fragrance that is both vibrant and timeless.\n\nAayah is a radiant journey of contrasts, opening with a lively burst of tropical fruits, sunlit tangerine, and a soft rose accent. Its heart unfolds with sandalwood’s smooth warmth, gracefully woven with rose and orange flower, creating a delicate floral-woody embrace. The fragrance settles into a profound base of Malaysian, Indian, and Vietnamese oud, enriched by musk and ambroxan, leaving a trail of depth and sensuality. Strong in presence and enduring in character, Aayah resonates with elegance and allure, designed to last 10–12 hours.', '<p>آية هي رحلة عطرية مشرقة، تبدأ بانتعاش الفواكه الاستوائية مع لمسة اليوسفي وإشراقة الورد. يتفتح قلبها بدفء الصندل المتناغم مع الورد وزهر البرتقال ليمنح لمسة زهرية خشبية راقية. أما القاعدة فتغوص في عمق العود الماليزي والهندي والفيتنامي، مدعومة بنفحات المسك والأمبروكسان، لتترك أثراً آسراً يدوم طويلاً. بفضل قوته وثباته حتى 12 ساعة، يبقى آية عطراً يفيض بالأناقة والجاذبية.<br><br>آية تكشف عن إشراقة استوائية وزهور رقيقة، تتناغم مع عبق العود والمسك لتمنح عطراً نابضاً بالحياة وخالداً.</p>', 23, 3, 1, 0, '[\"Fruity\",\"Floral\",\"Oud\",\"–\",\"bright\",\"tropical\",\"sweetness\",\"over\",\"rich\",\"oud\",\"and\",\"musk\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"10–12 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:22', '2026-04-02 12:45:33', '50ml', '50ml', NULL, 'active'),
-(6, 'FGD01440', '2646000014081', 'awfa', 'Awfa', 'اوفى', '<p>Leather meets orange blossom and powdery clary sage, deepening into labdanum, caramel, and cedar, before settling on oakmoss, musk, amber, agarwood, vetiver, vanilla.<br><br>Awfa opens with tactile leather wrapped in bright orange blossom, lifted by powdery accords and aromatic clary sage. The heart advances with resinous labdanum and a sweet touch of caramel, framed by clean cedar and the petal clarity of lily of the valley and red rose. As it dries down, earthy oakmoss threads through a velvety musk accord and amber. Agarwood adds dignified depth, while vetiver and vanilla balance the base with crisp dryness and soft sweetness.</p>', '<p>تفتتح أوفا بلمسة جلدية محسوسة تتعانق مع زهر البرتقال، وتعلوها نفحات بودرية ولمسة عطرية من كلاري ساج. في القلب يتقدم اللابدانوم بطابعه الراتنجي مع حلاوة الكراميل، مؤطَّراً بخشب الأرز ونقاء زنبقة الوادي وورد أحمر صافٍ. في الجفاف، ينسج طحلب السنديان عمقاً أرضياً عبر تناغم مسكي ولمسة عنبر. يضفي العود عمقاً وقوراً، بينما يوازن الفيتيفر والفانيلا القاعدة بين جفاف نظيف وحلاوة ناعمة.<br><br>جلد يلتقي زهر البرتقال ونفحات بودرية مع كلاري ساج، يتعمق في لابدانوم وكراميل وأرز، ويستقر على طحلب السنديان ومسك وعنبر وعود وفيتيفر وفانيلا.</p>', 23, 3, 1, 1, '[\"Oriental\",\"Leather\",\"–\",\"rich\",\"leather\",\"with\",\"sweet\",\"caramel\",\"amber\",\"and\",\"woody\",\"musk\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"12+ hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '60ml', '60ml', NULL, 'active'),
-(7, 'FGD00105', '2640500010161', 'bidun-esam', 'Bidun Esam', 'بدون إسم', '<p>Bright bergamot, grapefruit, orange, pear lead to sage, green tea, black currant, geranium, white pepper, Turkish rose, over musk, sandalwood, amber, Cambodian oud, patchouli, cedar<br><br>Bidun Esam opens with the radiance of bergamot, grapefruit, and orange, rounded by juicy pear. The heart layers aromatic sage, clear green tea, and tart black currant within a floral frame of geranium, white pepper, and Turkish rose. The base settles into musk and sandalwood, enriched by amber. Cambodian oud, patchouli, and cedar add lasting depth and structure for a smooth, enduring dry-down.</p>', '<p>يبدأ بيدون إسام بلمعة البرغموت والجريب فروت والبرتقال، وتوازنها عصيرية الكمثرى. في القلب تتناغم الميرمية مع الشاي الأخضر والكشمش الأسود ضمن إطار زهري من الجيرانيوم والفلفل الأبيض والورد التركي. يستقر الأساس على المسك وخشب الصندل مع توهج العنبر. يضيف العود الكمبودي والباتشولي والأرز عمقاً وبنيةً دائمة لجفافٍ ناعم طويل الأمد.<br><br>برغموت، جريب فروت، برتقال وكمثرى تقود إلى ميرمية، شاي أخضر، كشمش أسود، جيرانيوم، فلفل أبيض وورد تركي؛ مسك، صندل، عنبر، عود كمبودي، باتشولي، أرز.</p>', 23, 3, 1, 0, '[\"Oriental–Floral–Woody\",\"—\",\"A\",\"sophisticated\",\"blend\",\"where\",\"bright\",\"citrus\",\"and\",\"fruits\",\"meet\",\"herbal\",\"freshness\",\"unfolding\",\"into\",\"a\",\"floral\",\"spiced\",\"heart\",\"and\",\"settling\",\"into\",\"a\",\"deep\",\"musky\",\"oud\",\"base.\"]', '{\"Sillage\":\"Strong — enveloping and long-lasting\",\"Longevity\":\"8–10 hrs on skin, 24+ hrs on fabrics\",\"Dispenser\":\"spray\",\"Ingredients\":\"Turkish Rose Absolute, Premium Cambodian Oud Oil, Sandalwood Oil, Amber Resin, Patchouli\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '50ml', '50ml', NULL, 'active'),
-(8, 'FGD01740', '6290360614816', 'bin-ameer', 'Bin Ameer', 'بن أمير', '<p>Sweet black currant and honey meet lush florals of rose, jasmine, and freesia, anchored by musk, patchouli, ambroxan, and Hindi agarwood depth.<br><br>Bin Ameer begins with the juicy richness of black currant syrup, bright pear, and citrusy orange, sweetened with honey and a hint of cinnamon warmth. The heart blossoms with rose, jasmine sambac, freesia, cyclamen, and orange blossom, creating a floral core both radiant and smooth. As it settles, ambroxan and musk blend with patchouli and Hindi agarwood, adding an earthy, resinous depth that lingers elegantly.</p>', '<p>يبدأ بن أمير بغنى كشمش أسود عصيري ممزوج بكمثرى وبرتقال منعشين، محلى بلمسة عسل ودفء قرفة. يتفتح القلب بأزهار الورد والياسمين سامباك والفريزيا والسيكلامين وزهر البرتقال، ليمنح قلباً زهرياً مشرقاً وناعماً. وعند الاستقرار، يندمج الأمبروكسان والمسك مع الباتشولي والعود الهندي، مضيفين عمقاً راتنجياً وأرضياً يظل أنيقاً ومتوهجاً.<br><br>كشمش أسود وعسل حلو يلتقيان بأزهار غنية من الورد والياسمين والفريزيا، ترتكز على المسك والباتشولي والأمبروكسان وعمق العود الهندي.</p>', 23, 3, 1, 0, '[\"Fruity\",\"Oriental\",\"Floral\",\"–\",\"sweet\",\"black\",\"currant\",\"and\",\"honey\",\"with\",\"lush\",\"florals\",\"and\",\"deep\",\"oud\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"10–12 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '90ml', '90ml', NULL, 'active'),
-(9, 'FGD01263', '2640900013496', 'bin-shaikh', 'Bin Shaikh', 'بن شيخ', '<p>Lavender and saffron ignite rose and citrus; oakmoss steadies as jasmine, orchid, and bakhoor rise over patchouli, agarwood, ambroxan, white musk, and amber<br><br>Bin Shaikh opens with aromatic French lavender and vivid saffron braided with rose and bright citrus, while oakmoss lends a refined green contour. The heart unfurls a plush bouquet where jasmine and orchid glow; a touch of sugar adds crystalline sheen, and incense bakhoor drifts through with soft, smoky poise. The dry-down turns resonant: patchouli shapes structure as agarwood extends elegant woodiness. Ambroxan illuminates the trail, white musk smooths the texture, and amber resins linger with polished warmth.</p>', '<p>تنطلق بن شيخ بلافندر فرنسي عطري وزعفران نابض يتداخلان مع الورد والحمضيات، ويمنح طحلب السنديان ملامح خضراء راقية. يتفتح القلب بباقة فاخرة من الياسمين والأوركيد، وتمنح لمسة سكر بريقاً بلورياً بينما ينساب بخور البخور بدخانٍ ناعم رصين. في الجفاف، يرسم الباتشولي البنية ويتسع العود بخشبية أنيقة. يضيء الأمبروكسان الأثر، ويصقل المسك الأبيض الملمس، بينما تدوم راتنجات العنبر بدفء مصقول.<br><br>لافندر وزعفران يلهبان الورد والحمضيات؛ يثبت طحلب السنديان، ثم تتصاعد الياسمين والأوركيد والبخور فوق باتشولي وعود وأمبروكسان ومسك أبيض وكهرمان.</p>', 23, 3, 1, 1, '[\"Oriental\",\"Woody\",\"Floral\",\"–\",\"spicy\",\"lavender\",\"saffron\",\"opening\",\"with\",\"sweet\",\"florals\",\"and\",\"smoky\",\"oud\",\"base\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"12+ hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '90ml', '90ml', NULL, 'active'),
-(10, 'FGD01144', '2640500013292', 'zuraique', 'Zuraique', 'زريق', '<p>Almond blossom and cyclamen brighten clementine, blooming into peony, jasmine, and amaryllis, then melting into amber, benzoin, musk, and vanilla.<br><br>Zuraique opens with a diaphanous veil of almond blossom and cool cyclamen, lifted by the juicy sparkle of clementine. The heart blooms in generous layers: peony’s silken petals, luminous jasmine, and sculpted amaryllis form a poised bouquet that feels modern and refined. As it settles, amber’s golden glow meets benzoin’s balsamic sweetness; soft musk smooths every edge while vanilla adds a creamy, lingering caress. The composition moves from airy brightness to graceful, enveloping warmth—elegant, balanced, and effortlessly wearable.</p>', '<p>تنطلق زُرَيك بعطر رقيق من زهر اللوز وسيكلامين بارد يضيئه بريق كلمنتين العصيري. يتفتح القلب بطبقات سخية: حرير الفاوانيا، لمعة الياسمين، وحضور الأمارلس المصقول ليشكّل باقة متوازنة وعصرية. عند الاستقرار، يلتقي توهج العنبر الذهبي بحلاوة البنزوين الراتنجية؛ ينعّم المسك الحواف، وتضيف الفانيلا لمسة كريمية تبقى برفق. تتحول الرائحة من إشراق هوائي إلى دفء محتضِن—راقية ومتوازنة وسهلة الارتداء.<br><br>تزهو زهر اللوز وسيكلامين مع كلمنتين، تتفتح إلى فاوانيا وياسمين وأمارلس، ثم تستقر على عنبر وبنزوين ومسك وفانيلا.</p>', 23, 4, 1, 0, '[\"oft\",\"Floral\",\"with\",\"Warm\",\"Amber–Vanilla\",\"Dry\",\"down\"]', '{\"Sillage\":\"Moderate\",\"Longevity\":\"6–7 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '50ml', '50ml', NULL, 'active'),
-(11, 'FGD01504', '6290360613048', 'bombay-oud', 'Bombay Oud', 'بومباي عود', '<p>Orange Sicilian and rose lead to sandalwood, pear, and leather, settling into musk, amber, benzoin, and oud accords.<br><br>Bombay Oud opens with Orange Sicilian lifting rose in a bright, precise duet. The heart introduces sandalwood beside pear and leather, shaping a poised, textured center. The dry-down rests on musk and amber, with benzoin rounding the edges as oud accords extend depth. The composition moves from citrus-floral clarity to a steady woody-leathery base with lasting definition.</p>', '<p>تنطلق بومباي عود ببرتقال صقلي يرفع الورد بتناغم مشرق ودقيق. يقدم القلب خشب الصندل إلى جانب الكمثرى والجلد ليصوغ وسطاً متوازناً بملمس واضح. يستقر الجفاف على المسك والعنبر، ويصقل البنزوين الحواف بينما تضيف نوتات العود عمقاً ممتداً. تنتقل الرائحة من صفاء حمضي زهري إلى قاعدة خشبية جلدية راسخة بتحديدٍ دائم.<br><br>برتقال صقلي وورد يقودان إلى خشب الصندل والكمثرى والجلد، ثم يستقر على مسك وعنبر وبنزوين ونوتات عود.</p>', 23, 4, 1, 0, '[\"Citrus\",\"Floral\",\"Woody\",\"–\",\"a\",\"vibrant\",\"Sicilian\",\"orange\",\"and\",\"romantic\",\"rose\",\"opening\",\"moving\",\"into\",\"a\",\"creamy\",\"sandalwood–pear\",\"accord\",\"with\",\"a\",\"leathery\",\"edge\",\"settling\",\"into\",\"a\",\"warm\",\"amber–oud\",\"embrace\",\"touched\",\"by\",\"resinous\",\"benzoin.\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '80ml', '80ml', NULL, 'active'),
-(12, 'FGD02230', '6290360615738', 'thaqaf', 'Thaqaf', 'ثقف', '<p>Smoked ginger and bergamot spark black currant, peach jam, and pear; peony, Bulgarian rose, and cashmere wood flow into moss, vanilla CO₂, ambroxan, oud, vetiver.<br><br>Thaqaf opens with smoked ginger flickering through bright bergamot, while black currant, peach jam, and pear add rich, juicy dimension. Clary sage threads aromatic lift into the introduction. The heart blooms in textured balance: peony and Bulgarian rose rest on plush cashmere wood; cyclamen and lily of the valley lend cool petal clarity, as patchouli and an ambergris accord shape elegant diffusion. In the dry-down, moss and Haitian vetiver ground the composition. Vanilla CO₂ and white musk cushion the edges; sandalwood smooths the finish as an oud accord and ambroxan extend a refined, long-lasting trail.</p>', '<p>ينطلق ثَقَفُ بزنجبيلٍ مُدخَّن يومِض عبر برغموتٍ مشرق، بينما يضيف الكشمش الأسود ومربى الخوخ والكمثرى بُعداً عصيرياً غنياً. تنسج كلاري ساج ارتفاعاً عطرياً في الافتتاح. يتوازن القلب بتناسق ملموس: فاوانيا وورد بلغاري على خشب كشمير وثير، مع سيكلامين وزنبقة الوادي يمنحان صفاءً بتلياً بارداً، فيما يرسم الباتشولي وتناغم العنبر الرمادي انتشاراً أنيقاً. في الجفاف، يرسخ الطحلب وفيتيفر هايتي البناء. تُلطّف فانيلا CO₂ والمسك الأبيض الحواف، ويصقل خشب الصندل النهاية، بينما يطيل تناغم العود والأمبروكسان الأثر برقي وثبات.<br><br>زنجبيل مُدخَّن وبرغموت يشعلان كشمشاً أسود ومربى خوخ وكمثرى؛ فاوانيا وورد بلغاري وخشب كشمير تنساب إلى طحلب وفانيلا CO₂ وأمبروكسان وعود وفيتيفر.</p>', 23, 3, 1, 0, '[\"Spicy\",\"Fruity\",\"Floral\",\"Oriental\",\"Woody\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"9–11 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '50ml', '50ml', NULL, 'active'),
-(13, 'FGD01490', '2640750014100', 'gardenia', 'Gardenia', 'جاردينيا', '<p>Gardenia fuses vibrant fruits and rare florals with leather and saffron, resting on a deep oud-amber base for a fragrance of bold elegance.<br><br>Gardenia opens with a radiant burst of black currant, sweet orange, and lively fruits, lifted by the spicy brightness of pink pepper. The heart reveals a luxurious blend where supple leather meets damask rose, iris, saffron, and oakmoss, creating an opulent balance of floral depth and refined intensity. The fragrance settles into a powerful base of oud accords, amber, cedar, white musk, vanilla, patchouli, and vetiver. This bold foundation lends strength, warmth, and sophistication, making Gardenia a scent of grandeur and enduring presence. Its heavy sillage and long-lasting trail ensure unforgettable impact.</p>', '<p>يفتتح عطر غاردينيا بانتعاش الكشمش الأسود والبرتقال الحلو والفواكه النابضة، مع لمسة مشرقة من الفلفل الوردي. يكشف القلب عن مزيج فاخر يجمع بين الجلد الناعم والورد الدمشقي والسوسن والزعفران والطحلب، ليمنح توازناً أنيقاً بين العمق الزهري والقوة الراقية. أما القاعدة فتستقر على مزيج غني من العود والعنبر والأرز والمسك الأبيض والفانيلا والباتشولي والفيتيفر. قاعدة قوية دافئة وثرية تجعل غاردينيا عطراً مهيباً ذو حضور لا يُنسى، بثبات يدوم طويلاً وانتشار كثيف.<br><br>غاردينيا تجمع بين الفواكه النابضة والزهور النادرة مع الجلد والزعفران، وتستقر على قاعدة عميقة من العود والعنبر لعطر مفعم بالفخامة والجرأة.</p>', 23, 4, 1, 0, '[\"Floral\",\"Oriental\",\"Woody\"]', '{\"Sillage\":\"Heavy\",\"Longevity\":\"8-10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '75ml', '75ml', NULL, 'active'),
-(14, 'FGD01196', '2640750013523', 'hirfah', 'Hirfah', 'حرفة', '<p>Sweet lime and lavender brighten green apple; healing wood, geranium, pine, and magnolia unfold over amber, musk, sandalwood, oud, and patchouli.<br><br>Hirfah opens with sweet lime brightened by lavender and crisp green apple. The heart centers on healing wood with geranium’s aromatic lift, pine’s cool clarity, and magnolia’s smooth bloom. The base settles into amber and musk, layered with sandalwood and oud; patchouli adds depth for a composed, lasting trail.</p>', '<p>تنطلق هِرفه بليمٍ حلو ينعشه اللافندر والتفاح الأخضر الهش. يرتكز القلب على خشبٍ علاجي مع رفعٍ عطري من الجيرانيوم، ووضوحٍ بارد من الصنوبر، وتفتّحٍ ناعم للماغنوليا. تستقر القاعدة على العنبر والمسك مع طبقات من خشب الصندل والعود، ويضيف الباتشولي عمقاً لأثرٍ متزنٍ طويل.<br><br>ليمٌ حلو ولافندر يضيئان التفاح الأخضر؛ خشبٌ علاجي وجيرانيوم وصنوبر وماغنوليا تتكشف فوق عنبر ومسك وصندل وعود وباتشولي.</p>', 23, 4, 1, 0, '[\"Citrus\",\"Aromatic\",\"Woody\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"8 hrs+\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '75ml', '75ml', NULL, 'active'),
-(15, 'FGD01750', '6290360614687', 'ignite-oud', 'Ignite Oud', 'إغنايت عود', '<p>Geranium and leather ignite a bold start, deepening through cedarwood and patchouli, settling into moss, musk, amber, and silky sandalwood<br><br>Ignite Oud opens with aromatic geranium cut against a supple leather accent—the contrast feels immediate and assured. Through the heart, cedarwood structures the composition while patchouli adds rounded warmth, guiding the blend from sharp edges to smooth lines. The base settles with earthy moss, velvety musk, and glowing amber over creamy sandalwood, composing a polished, lasting trail. From crisp aromatics to deep woods, Ignite Oud delivers a modern, confident signature grounded in clarity and comfort.</p>', '<p>ينطلق إغنايت عود بجيرانيوم عطري يتقاطع مع لمسة جلد مرنة لبداية واثقة مباشرة. في القلب يرسم خشب الأرز خطوطاً واضحة، ويضيف الباتشولي دفئاً مستديراً يقود التركيبة من حدّة أنيقة إلى سلاسة متوازنة. تستقر القاعدة على طحلب أرضي ومسك مخملي وعنبر متوهج فوق خشب الصندل الكريمي، لتؤلف أثراً مصقولاً طويلاً. من نفحات عطرية نقية إلى أخشاب عميقة، يمنح إغنايت عود توقيعاً حديثاً قوياً يرتكز على الوضوح والراحة.<br><br>جيرانيوم وجلد يبدآن بقوة، يتعمقان عبر خشب الأرز والباتشولي، ويستقران على طحلب ومسك وعنبر وخشب الصندل.</p>', 23, 4, 1, 0, '[\"Woody\",\"Leather\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '60ml', '60ml', NULL, 'active'),
-(16, 'FGD01751', '6290360614595', 'ignite-rose', 'Ignite Rose', 'إغنايت روز', '<p>Bergamot, saffron, and aldehydes spark mandarin sweet, peach, praline, and honey; seaweed lifts oud and roses, finishing with tonka, sugarcane, amber, and woods.<br><br>Ignite Rose opens with brisk bergamot edged by saffron and luminous aldehydes. Mandarin sweet and peach add juicy color while praline and honey lend a gentle gourmand sheen, with a saline lift from seaweed. The heart blooms around roses—Bulgarian and Damask—joined by orange blossom; oud and vetiver give structure as water lily and frangipani trace fluid floral lines. The dry-down settles into tonka and sugarcane warmth over amber, white musk, and oakmoss, enriched by wild woods and a smooth veil of vanilla.</p>', '<p>تنطلق إغنايت روز ببرغموت حيوي يجاوره الزعفران وألدهيدات لامعة. تضيف ماندارين حلو وخوخ لوناً عصيرياً، ويمنح البرالين والعسل لمسة غورمان ناعمة مع رفعٍ مالح من طحالب البحر. يتفتح القلب حول الورود البلغارية والدمشقية مع زهر البرتقال؛ يمنح العود والفيتيفر بنيةً واضحة، ويرسم زنبق الماء والفرانجيباني خطوطاً زهرية انسيابية. تستقر القاعدة على دفء تونكا وقصب السكر فوق عنبر ومسك أبيض وطحلب السنديان، وتثريها أخشاب برية وحجاب فانيلا ناعم.<br><br>برغموت وزعفران وألدهيدات تشعل ماندارين حلو وخوخ وبرالين وعسل؛ ترفعها طحالب البحر نحو عود وورود، وتختم بتونكا وقصب السكر وعنبر وأخشاب.</p>', 23, 4, 1, 0, '[\"Floral\",\"Woody\",\"Amber\"]', '{\"Sillage\":\"Heavy\",\"Longevity\":\"9 hrs+\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '60ml', '60ml', NULL, 'active'),
-(17, 'FGD01895', 'FGD01895', 'kaaf', 'Kaaf', 'كاف', '<p>Red fruits, watermelon, lavender, and Sicilian orange brighten into sandalwood, ambroxan, and white musk, resting on lotus, jasmine, lily of the valley, and sea accord.<br><br>Kaaf opens with a refreshing burst of red fruits and watermelon, lifted by aromatic lavender and the lively sparkle of Sicilian orange. The heart transitions into the smooth elegance of sandalwood, softened by radiant ambroxan and a veil of white musk, creating refined clarity. In the base, lotus, jasmine, and lily of the valley bloom with aquatic purity, enriched by a sea accord that lingers with breezy freshness. The fragrance moves gracefully from fruity brightness to serene floral depth, leaving a modern, balanced trail.</p>', '<p>ينطلق كاف باندفاعة منعشة من الفواكه الحمراء والبطيخ، يرفعها لافندر عطري وبريق البرتقال الصقلي الحيّ. ينتقل القلب إلى أناقة خشب الصندل الناعمة، يلينها إشراق الأمبروكسان وحجاب من المسك الأبيض، ليمنح صفاءً راقياً. في القاعدة، تتفتح أزهار اللوتس والياسمين وزنابق الوادي بنقاء مائي، وتثريها نفحة البحر التي تدوم بانتعاش نسيمي. تتحرك الرائحة بسلاسة من إشراق فاكهي إلى عمق زهري هادئ، لتترك أثراً عصرياً متوازناً.<br><br>فواكه حمراء وبطيخ ولافندر وبرتقال صقلي تتألق لتستقر على خشب الصندل وأمبروكسان ومسك أبيض فوق لوتس وياسمين وزنابق البحر.</p>', 23, 4, 1, 0, '[\"Fruity\",\"Fresh\",\"Floral\",\"Woody\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"6–8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '100ml', '100ml', NULL, 'active'),
-(18, 'FGD01656', '6290360615141', 'laathani', 'Laathani', 'لاثاني', '<p>ignited by fresh notes and candied fruits with pink pepper, lifted by oud and rosemary with bakhoor accords, then grounded in white amber, vetiver, musk, leather<br><br>Laathani ignites with fresh notes and candied fruits, lifts on oud and rosemary with bakhoor accords, and settles into white amber, vetiver, musk, and leather.An energizing opening of fresh notes is brightened by candied fruits and refined with pink pepper. The heart unites oud accords with aromatic rosemary and bakhoor accords, shaping a seamless progression into depth. The dry-down radiates white amber over vetiver; soft musk smooths the edges while leather adds structure for a memorable, well-balanced finish.</p>', '<p>لاثاني يبدأ بنوتات منعشة وفواكه مسكّرة وفلفل وردي، يرتقي بلمسات العود وإكليل الجبل مع أكوردات البخور، ويستقر على عنبر أبيض وڤيتيڤر ومسك وجلد.تفتتح النسمات المنعشة بإشراقة الفواكه المسكّرة وتوازنها لمسة الفلفل الوردي. يتوسطها العود مع إكليل الجبل وأكوردات البخور ليصوغ انتقالاً متناسقاً نحو العمق. يجف العطر على عنبر أبيض فوق ڤيتيڤر، يلينه مسكٌ ناعم وتشدّه لمسة الجلد لختام متوازن ولافت.<br><br>يبدأ بنوتات منعشة وفواكه مسكّرة وفلفل وردي، يرتقي بلمسات العود وإكليل الجبل مع أكوردات البخور، ويستقر على عنبر أبيض وڤيتيڤر ومسك وجلد.</p>', 23, 3, 1, 0, '[\"Oriental\",\"Woody\",\"Leather\",\"Spicy\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '80ml', '80ml', NULL, 'active'),
-(19, 'FGD01148', '2640500013384', 'leather', 'Leather', 'ليدر', '<p>Citrus zest and raspberry spark; saffron and thyme intrigue; iris, violet leaf, and olibanum jasmine bloom; leather and suede rest on cedar, vetiver, amber woods.</p><p>A vivid prelude of citrus zest and raspberry meets saffron and thyme. The heart unites iris, violet leaf, and olibanum jasmine. Leather accord and suede then take prominence, shaped by cedar and vetiver. Amber and woody notes finalize a clean, enduring dry-down</p>', '<p>بزِست الحمضيات وتوت العليق يتقد؛ يلمع الزعفران والزعتر؛ يزهر السوسن وورقة البنفسج وأوليبانوم ياسمين؛ يستقر الجلد والشمواه على أرز، ڤيتيڤر، عنبر وخشب.مقدمة نابضة بزست الحمضيات وتوت العليق تلتقي بالزعفران والزعتر. يتآلف القلب مع السوسن وورقة البنفسج وأوليبانوم ياسمين. بعدها يتصدر أكورد الجلد والشمواه، وتشكّله لمسات الأرز والڤيتيڤر. تُكمل نوتات العنبر والخشب جفافاً ثابتاً وطويلاً.<br><br>بزِست الحمضيات وتوت العليق يتقد؛ يلمع الزعفران والزعتر؛ يزهر السوسن وورقة البنفسج وأوليبانوم ياسمين؛ يستقر الجلد والشمواه على أرز، ڤيتيڤر، عنبر وخشب.</p>', 23, 4, 1, 0, '[\"Leather–Woody–Powdery\",\"—\",\"refined\",\"masculinity\",\"with\",\"elegance\",\"enriched\",\"by\",\"a\",\"spicy\",\"fruity\",\"opening\",\"and\",\"a\",\"luxurious\",\"suede–amber–wood\",\"finish.\"]', '{\"Sillage\":\"Strong — confident and commanding\",\"Longevity\":\"8–10 hrs on skin, 24+ hrs on fabrics\",\"Dispenser\":\"spray\",\"Occasion\":\"Ideal for evening and formal settings\",\"Ingredients\":\"Leather Accord, Suede, Amber Resin, Olibanum, Saffron Threads, Iris Absolute\"}', '2026-04-01 13:46:22', '2026-04-01 13:46:22', '50ml', '50ml', NULL, 'active'),
-(20, 'FGD01151', '2640500013360', 'leen', 'Leen', 'لين', '<p>Rose and jasmine bloom; lily of the valley and violet refine the heart; sandalwood, cedarwood, and vetiver craft a smooth, enduring finish.</p><p>Leen opens with a poised duet of rose and jasmine. The heart centers on lily of the valley and violet for a finely weighted floral profile. A base of sandalwood and cedarwood provides structure, while vetiver outlines a clean, lasting trail. The progression is smooth, letting each layer appear distinctly before settling into a measured, woody finish.</p>', '<p>ورد وياسمين يتفتحان؛ زنبق الوادي وبنفسج يصوغان القلب؛ خشب الصندل وخشب الأرز والڤيتيڤر يصنعون ختاماً ناعماً وطويل الأمد.</p><p>لين يفتتح بثنائية من الورد والياسمين. يتوسطه زنبق الوادي مع البنفسج لصياغة طابع زهري متوازن. ترتكز القاعدة على خشب الصندل وخشب الأرز، ويحدد الڤيتيڤر الملامح لخط عطري نظيف وطويل الأمد. يتدرج العطر بسلاسة حتى يستقر على ختام خشبي منضبط.<br><br>ورد وياسمين يتفتحان؛ زنبق الوادي وبنفسج يصوغان القلب؛ خشب الصندل وخشب الأرز والڤيتيڤر يصنعون ختاماً ناعماً وطويل الأمد.</p>', 23, 4, 1, 0, '[\"Floral\",\"Woody\",\"Musk\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"6–8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '50ml', '50ml', NULL, 'active'),
-(21, 'FGD00407', '2640500012721', 'little-hearts', 'Little Hearts', 'ليتل هارتس', '<p>Sweet citrus lime and orange sparkle; mango, pineapple, mixed exotic fruits bloom; amber, amber resin, musk, and vanilla settle into warm, comforting depth.</p><p>Little Hearts opens with sweet citrus brilliance from lime and orange. The heart turns to tropical fruity bliss as mango and pineapple mingle with mixed exotic fruits. The base moves into warm, comforting depth: amber and amber resin glow beside musk, while vanilla rounds a smooth, lasting trail. The sequence remains clear—sweet citrus, tropical fruit, then an ambery-musk finish—shaping a well-structured signature that stays consistent from first spray to dry-down.</p>', '<p>ليمون وبرتقال بحلاوة حمضية يتألّقان؛ مانجو وأناناس وفواكه غريبة مختلطة تتفتح؛ عنبر وراتنج عنبر ومسك وفانيلا تستقرّ بعمق دافئ ومريح.يفتتح ليتل هارتس ببريق حمضي حلو من الليمون والبرتقال. يتجه القلب إلى بهجة فواكه استوائية حيث ينسجم المانجو والأناناس مع فواكه غريبة مختلطة. تنتقل القاعدة إلى عمق دافئ ومريح: يتوهّج العنبر وراتنج العنبر بجانب المسك، بينما تصقل الفانيلا أثراً ناعماً طويل البقاء. يتتابع البناء بوضوح—حمضيات حلوة، فواكه استوائية، ثم ختام عنبري-مسكي—ليرسم طابعاً متماسكاً من الرشة حتى الجفاف.<br><br>ليمون وبرتقال بحلاوة حمضية يتألّقان؛ مانجو وأناناس وفواكه غريبة مختلطة تتفتح؛ عنبر وراتنج عنبر ومسك وفانيلا يستقرّون بعمق دافئ ومريح.</p>', 23, 4, 1, 0, '[\"Citrus\",\"–\",\"Fruity\",\"–\",\"Amber\",\"–\",\"Sweet\",\"–\",\"Musky\"]', '{\"Sillage\":\"Moderate to noticeable\",\"Longevity\":\"5–7 hours\",\"Dispenser\":\"spray\",\"Occasion\":\"Daytime, casual to romantic occasions\",\"Ingredients\":\"Lime Essence, Sweet Orange Oil, Pineapple Accord, Mango Extract, Amber Resin, White Musk, Madagascar Vanilla\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '50ml', '50ml', NULL, 'active'),
-(22, 'FGD01506', 'FGD01506', 'marj', 'Marj', 'مرج', '<p>Bergamot, pink pepper, tangerine, oud, and honey ignite; patchouli, rose, saffron, and jasmine bloom; musk, amber, raspberry, leather, and sandalwood rest with depth and elegance.</p><p>Marj begins with a vivid interplay of bergamot, pink pepper, and tangerine, lifted by elemi, nutmeg, oud, and honey. The heart layers patchouli, aromatic accords, and vetiver with cashmere wood, cinnamon, rose, saffron, jasmine, and orange blossom, weaving a textured floral-spiced harmony. The base is rich and enduring, where musk and amber embrace raspberry, saffron, oakmoss, and ambrette seeds. Leather, sandalwood, violet, agarwood, and ambroxan provide a deep, sophisticated trail.</p>', '<p>برغموت وفلفل وردي ويوسفي وعود وعسل يتألقون؛ باتشولي وورد وزعفران وياسمين يزهرون؛ مسك وعنبر وتوت وجلد وصندل يستقرّون بعمق وأناقة.</p><p>يبدأ مرج بتمازج حيوي من البرغموت والفلفل الوردي واليوسفي، تدعمه نوتات الإليمي وجوزة الطيب والعود والعسل. يتوسطه الباتشولي والأكوردات العطرية والڤيتيڤر مع خشب الكشمير والقرفة والورد والزعفران والياسمين وزهر البرتقال، ليصوغ تناغماً زهرياً-متبلاً غنياً. تستقر القاعدة بعمق مع مسك وعنبر وتوت وزعفران وطحلب البلوط وبذور الأمبريت. يكمّلها الجلد وخشب الصندل والبنفسج والعود والأمبروكسان، في أثر فاخر طويل الأمد.<br><br>برغموت وفلفل وردي ويوسفي وعود وعسل يتألقون؛ باتشولي وورد وزعفران وياسمين يزهرون؛ مسك وعنبر وتوت وجلّد وصندل يستقرّون بعمق وأناقة.</p>', 23, 3, 1, 0, '[\"Spicy\",\"Woody\",\"Oriental\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"10-12 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '60ml', '60ml', NULL, 'active'),
-(23, 'FGD01143', '2640500013278', 'musk-ahmed', 'Musk Ahmed', 'مسك أحمد', '<p>A luminous blend of citrus and flowers, blooming into roses and jasmine over a soft veil of musk and amber.</p><p>Musk Ahmed opens with clean citrus brightness wrapped in delicate floral tones. The heart reveals a graceful duet of rose and jasmine, refined and romantic. Finally, a serene base of musk and amber settles close to the skin, leaving a smooth, comforting impression that feels effortlessly elegant from day to night.</p>', '<p>مزيجٌ مشرق من الحمضيات والزهور يتفتح إلى ورد وياسمين فوق حجابٍ ناعم من المسك والعنبر.</p><p>يفتتح «مسك أحمد» بلمعة حمضية نقية تتداخل مع لمسة زهرية رقيقة. ثم يتجلى قلبٌ أنيق من الورد والياسمين بطابع رومانسي متزن، قبل أن يستقر على قاعدة هادئة من المسك والعنبر تلامس البشرة بنعومة وتترك أثراً مريحاً وأناقة تدوم طوال اليوم.<br><br>مزيجٌ مشرق من الحمضيات والزهور يتفتح إلى ورد وياسمين فوق حجابٍ ناعم من المسك والعنبر</p>', 23, 4, 1, 0, '[\"Fresh\",\"Floral\",\"Musky\"]', '{\"Sillage\":\"Moderate\",\"Longevity\":\"6–8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '50ml', '50ml', NULL, 'active'),
-(24, 'FGD01809', 'FGD01809', 'musk-amp-roses', 'Musk &amp; Roses', 'مسك أند روز', '<p>Romantic roses and sensual musk, lifted by juicy pineapple–apple–citrus and softened with creamy sandalwood and vanilla.</p><p>Musk &amp; Roses opens with a bright burst of pineapple, apple, and citrus, blooming into a heart of jasmine, Rose Damas, and red fruits. It settles into a smooth, alluring base where musk, sandalwood, vanilla, and ambroxan weave a lasting trail. The signature is Fruity–Floral–Musky with an elegant aura, offering moderate to strong sillage and 6–8 hours on skin (12+ on fabrics).</p>', '<p>وردٌ رومانسي ومسكٌ آسر، ترفعه فواكه الأناناس والتفاح والحمضيات وتلطفه نعومة خشب الصندل والفانيلا.</p><p>يتلألأ «مسك آند روزز» ببداية فاكهية من الأناناس والتفاح والحمضيات، ثم يتفتح قلب عطري من الياسمين والورد الدمشقي والفواكه الحمراء، قبل أن يستقر على قاعدة ناعمة من المسك وخشب الصندل والفانيلا مع لمسة أمبروكسان. بصمة فاكهي–زهري–مسكي بحضور أنيق وثبات معتدل إلى قوي: 6–8 ساعات على البشرة ويدوم أكثر من 12 ساعة على الأقمشة.<br><br>وردٌ رومانسي ومسكٌ آسر، ترفعه فواكه الأناناس والتفاح والحمضيات وتلطفه نعومة خشب الصندل والفانيلا.</p>', 23, 4, 1, 0, '[\"Fruity–Floral–Musky\",\"—\",\"A\",\"romantic\",\"blend\",\"of\",\"lush\",\"roses\",\"and\",\"sensual\",\"musk\",\"lifted\",\"by\",\"juicy\",\"fruits\",\"and\",\"softened\",\"with\",\"creamy\",\"sandalwood\",\"and\",\"vanilla\"]', '{\"Sillage\":\"Moderate to strong — elegant and captivating aura\",\"Longevity\":\"6–8 hrs on skin, 12+ hrs on fabrics\",\"Dispenser\":\"spray\",\"Ingredients\":\"Rose Damas Absolute, White Musk, Sandalwood Oil, Vanilla Bean Extract\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '75ml', '75ml', NULL, 'active'),
-(25, 'FGD01311', '2641000013614', 'muzn', 'Muzn', 'مزن', '<p>Sea-salt freshness and juicy melon drift into musk and sandalwood, wrapped in fruity amber resins—an airy, modern Aquatic-Woody-Amber signature.<br><br>Muzn opens with a sparkling marine-salt breeze touched by ripe melon. The heart moves into a clean, cocooning blend of musk and sandalwood, then settles into a smooth base of fruity nuances and amber resins. The overall character is Aquatic–Woody–Amber with a poised presence, delivering moderate–strong sillage and around 8 hours of longevity.</p>', '<p>يتألق «مُزن» بنفحة بحرية مالحة ولمسة شمام مشرقة، ثم يتعمق قلبه بمزيج نقي دافئ من المسك وخشب الصندل، ليستقر في قاعدة ناعمة تجمع الفواكه وراتنجات العنبر. طابعه «مائي–خشبي–عنبر» مع إسقاط معتدل إلى قوي وثبات يقارب 8 ساعات.<br><br>انتعاش ملح البحر والشمام ينساب إلى مسك وخشب الصندل، تحتضنه فواكه وعنبر راتنجي — بصمة مائية خشبية عنبرية عصرية.</p>', 23, 3, 1, 0, '[\"Aquatic\",\"Woody\",\"Amber\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '100ml', '100ml', NULL, 'active'),
-(26, 'FGD01503', '6290360610214', 'oud-afghano', 'Oud Afghano', 'عود أفغانو', '<p>A dark amber-oud signature: mandarin and cypress ignite caramel, labdanum, and jasmine over vetiver, musk, cedarwood, amber, and oud accords.<br><br>Oud Afghano is an Oriental Woody Amber Oud composition that opens with brisk mandarin and evergreen cypress, then melts into a resinous heart where caramel warmth meets labdanum’s ambered depth and luminous jasmine. The base settles with grounded vetiver, soft musk, stately cedarwood, and glowing amber wrapped in rich oud accords for a commanding trail and all-day presence (sillage: strong; longevity: ~8 hours).</p>', '<p>يقدّم “عود أفغانو” تركيبة شرقية خشبية عنبرية بعطر العود تبدأ بانتعاش الماندرين وحيوية السرو، لتنساب إلى قلب دافئ يجمع حلاوة الكراميل مع كثافة اللابدانوم وأناقة الياسمين. أما القاعدة فتستقر على فيتيفر راسخ ومسك ناعم وخشب أرز نبيل وعنبر متوهّج يلفه عود فاخر، ليمنح أثراً واضحاً وثباتاً يدوم طوال اليوم (فوحان قوي؛ ثبات نحو 8 ساعات).<br><br>توقيع عنبر–عود داكن: الماندرين والسرو يشعلان الكراميل واللابدانوم والياسمين فوق نغمات الفيتيفر والمسك وخشب الأرز والعنبر وأكوردات العود.</p>', 23, 3, 1, 0, '[\"Oriental\",\"Woody\",\"Amber\",\"Oud\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '50ml', '50ml', NULL, 'active'),
-(27, 'FGD01567', '2640500014244', 'oud-amg', 'Oud AMG', 'عود ايه ايم جي', '<p>A bold Oriental Woody Oud: Indian oud sparks caramel and labdanum with jasmine, settling into ambered cedar and earthy vetiver.<br><br>Oud AMG opens on distinctive Indian oud notes, immediately enveloping the senses before melting into a caramel–labdanum heart lifted by jasmine. The dry down reveals a confident blend of amber, cedar, and vetiver for a smooth, authoritative trail. Classified Oriental Woody Oud with strong sillage and ~8 hours longevity, it delivers depth and clarity in equal measure.</p>', '<p>يتألّق عود AMG ببداية من نغمات العود الهندي، ثم ينساب إلى قلب غني يجمع حلاوة الكراميل مع دفء اللابدانوم وإشراقة الياسمين. وفي القاعدة، يرسّخ العنبر وخشب الأرز والفيتيفر أثراً واثقاً ومتجانساً. التصنيف شرقي خشبي عودي مع فوحان قوي وثبات نحو 8 ساعات.<br><br>عود شرقي خشبي جريء: نفحات عود هندي تشعل الكراميل واللابدانوم والياسمين، وتستقر على عنبر دافئ وخشب الأرز والفيتيفر الترابي.</p>', 23, 3, 1, 0, '[\"Oriental\",\"Woody\",\"Oud\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '50ml', '50ml', NULL, 'active'),
-(28, 'FGD01145', '2640500013261', 'oud-classic', 'Oud Classic', 'عود كلاسيك', '<p>Lively citrus, red fruits, and a boozy nuance lift cedar–patchouli into a warm drydown of musk, benzoin, vanilla, and bakhoor accord.<br><br>Oud Classic balances indulgence with tradition. The opening sparkles with mandarin and bergamot wrapped in juicy red fruits and a refined boozy nuance. At the heart, deep cedar wood intertwines with patchouli for unmistakable woody character. The base lands in serene warmth—musk and benzoin cushioned by creamy vanilla, finished with a timeless bakhoor accord that evokes beautifully perfumed spaces.</p>', '<p>يمزج “عود كلاسيك” بين الترف والأصالة. انطلاقة متلألئة من الماندرين والبرغموت مع عصارة الفواكه الحمراء ولمسة عطرية كحولية أنيقة. في القلب، يتعانق خشب الأرز مع الباتشولي ليمنح عمقاً خشبياً واضحاً. أما القاعدة فتهدأ على دفء هادئ من المسك والبنزوين تتكفله نعومة الفانيلا، ويكتمل المشهد بأكورد بخور يعيد أجواء التعطير الشرقي الأصيل.<br><br>حيوية حمضيات وفواكه حمراء ولمسة كحولية تعلو على أرز–باتشولي، لتستقر في قاعدة دافئة من مسك وبنزوين وفانيلا وأكورد بخور.</p>', 23, 4, 1, 0, '[\"Fruity\",\"–\",\"Boozy\",\"–\",\"Woody\",\"–\",\"Amber\",\"–\",\"Smoky\",\"–\",\"Sweet\"]', '{\"Sillage\":\"Moderate to strong\",\"Longevity\":\"8+ hours with deep lingering base\",\"Dispenser\":\"spray\",\"Occasion\":\"Evenings, special gatherings, winter &amp\",\"Ingredients\":\"Bergamot Oil, Mandarin Essence, Red Fruits Accord, Cedarwood Oil, Patchouli Oil, Benzoin Resin, Natural Vanilla, Bakhoor Smoke Accord\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '50ml', '50ml', NULL, 'active'),
-(29, 'FGD01994', '2640750013660', 'oud-lavender', 'Oud Lavender', 'عود لا فندر', '<p>Fresh lavender and hyacinth brighten juicy apple–pineapple, layered with iris, jasmine and pink pepper, resting on vetiver, ambroxan, oud and soft musk.<br><br>Oud Lavender opens with a luminous floral–fruity lift: airy hyacinth and soothing lavender cradle apple and pineapple for a crisp, modern start. The heart turns refined as buttery iris and soft jasmine bloom, animated by a gentle sparkle of pink pepper. The dry down settles into poised depth—vetiver and oud giving structure, ambroxan adding clean ambery radiance, and musk caressing the finish with smooth comfort.</p>', '<p>تبدأ “عود لافندر” بانتعاش زهري-فاكهي: الهياسينث مع الخزامى يحتضنان التفاح والأناناس لافتتاحية عصرية نابضة. في القلب يتقدّم السوسن المخملي والياسمين الناعم وتوقظهما لمسة فلفل وردي رشيقة. ثم يستقر العطر على عمق متوازن من الفيتيفر والعود، مع وهج نقي من الأمبروكسان ولمسة المسك الملساء لختام أنيق.<br><br>خزامى وسنبل منعشان يضيئهما تفاح وأناناس، يتبعهما سوسن وياسمين وفلفل وردي على قاعدة فيتيفر وأمبروكسان وعود ومسك.</p>', 23, 4, 1, 0, '[\"Floral\",\"Woody\",\"Musky\",\"Oud\",\"ambery\"]', '{\"Sillage\":\"Moderate to Strong\",\"Longevity\":\"10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '75ml', '75ml', NULL, 'active'),
-(30, 'FGD01999', 'FGD01999', 'oud-amp-roses', 'Oud &amp; Roses', 'عودأندروز', '<p>A modern oud–rose duet: Turkish rose and peony over lavender and citrus, deepening into sandalwood and frankincense with ambroxan, musk, guaiac wood and oakmoss.<br><br>Oud &amp; Roses opens in luminous contrast: dewy Turkish rose and plush peony lifted by soothing lavender and sparkling citruses. The heart turns contemplative as rose is wrapped in creamy sandalwood, a halo of white flowers, and dignified frankincense (olibanum). The dry down is poised and modern—an elegant weave of oud accord and guaiac wood, textured with oakmoss, then polished by radiant ambroxan and soft musk for a graceful, lingering trail.</p>', '<p>يبدأ “عود آند روزز” بتباين متألق: ورد تركي ندي وفاوانيا (بيوني) مخملية تعلوهما خزامى مهدّئ ولمعان حمضيات. في القلب يتعمّق العطر مع ورد محتضن بـ خشب الصندل وزهور بيضاء وهالة لبان (أوليبانوم) وقورة. أما القاعدة فتتوازن بثقة بين أكورد العود وخشب غواياك مع لمسة طحلب السنديان، ويصقلها أمبروكسان متوهّج ومسك ناعم لأثرٍ أنيق طويل الحضور.<br><br>ثنائية عود–ورد عصرية: ورد تركي وبيوني فوق لافندر وحمضيات، تتعمّق إلى صندل ولبان، وتختم بأمبروكسان ومسك وخشب غواياك وطحلب السنديان.</p>', 23, 4, 1, 0, '[\"Floral–Oriental–Woody\",\"—\",\"opens\",\"with\",\"a\",\"romantic\",\"rose\",\"bouquet\",\"and\",\"soft\",\"lavender\",\"warmed\",\"by\",\"citrus\",\"peony;\",\"the\",\"core\",\"blooms\",\"with\",\"creamy\",\"florals\",\"over\",\"deep\",\"sandalwood\",\"and\",\"frankincense;\",\"finally\",\"a\",\"woody\",\"musk\",\"amber\",\"base\",\"layers\",\"in\",\"rich\",\"oud\",\"guaiac\",\"wood\"]', '{\"Sillage\":\"Strong — powerful projection\",\"Longevity\":\"Excellent — lasting 12+ hours on skin, with notable sticking power on fabrics\",\"Dispenser\":\"spray\",\"Occasion\":\"Ideal for evening wear, romantic or ceremonial occasions.\",\"Ingredients\":\"Turkish Rose Absolute, Frankincense Resin, Sandalwood Oil, Oud aaccord, Guaiac Wood Oil, Amber Accord\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '60ml', '60ml', NULL, 'active'),
-(31, 'FGD01757', '6290360614571', 'oulil-amr', 'Oulil Amr', 'أولي الأمر', '<p>Cardamom-kissed peony blooms into rose over Laos and Cambodian oud, settling in tolu balsam, amber, musk, and noble Indian oud.<br><br>Oulil Amr opens with a poised contrast: the cool spice of cardamom meeting the silky bloom of peony. At the heart, a classic rose unfurls, framed by the depth of Laos oud and Cambodian oud for a refined oud signature. The drydown is quietly opulent—resinous tolu balsam and glowing amber softened by musk, then crowned with the gravitas of Indian oud for a serene, enduring aura.</p>', '<p>يفتتح “أوليـل عمر” بتباين متناسق بين بهار الهيل البارد ونعومة الفاوانيا الزهرية. في القلب يتألّق الورد الكلاسيكي محتضَناً بعمق العود اللاوسي والعود الكمبودي ليمنح بصمة عودية راقية. أما القاعدة فتسكن في فخامة هادئة من بلسم تولو وعنبر دافئين، يلطّفهما المسك وتتوّجهما هيبة العود الهندي لأثرٍ متوازن طويل الحضور.<br><br>فاوانيا يلامسها الهيل تتفتح فوق وردٍ يعانقه عود لاوسي وعود كمبودي، وتستقر على بلسم تولو وعنبر ومسك وعود هندي نبيل.</p>', 23, 3, 1, 0, '[\"Oriental\",\"Woody\",\"Amber\",\"Oud\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"10–12 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '60ml', '60ml', NULL, 'active'),
-(32, 'FGD01233', '2640750013530', 'pearl-oud', 'Pearl Oud', 'بيرل عود', '<p>Pear-sparkled fruits and pink pepper lead to white floral richness over agarwood, finishing in amber, musk, and patchouli glow.<br><br>Pearl Oud opens with an inviting fruity radiance where pear shines, lifted by a delicate tickle of pink pepper. The heart unfolds into a luxuriant white-floral bouquet—tuberose, jasmine, and ylang-ylang—woven around dignified agarwood for a refined, modern oud signature. The drydown settles into poised warmth: glowing amber, caressing musk, and elegant patchouli that together leave a smooth, memorable trail.</p>', '<p>تبدأ “بيرل عود” بإشراقة فاكهية يتلألأ فيها الإجاص وتمنحها لمسة فلفل وردي رشيقة حيويةً أنيقة. ثم يتفتح القلب على باقة زهرية بيضاء فاخرة من التوبروز والياسمين والإيلنغ-إيلنغ، تنتظم حول العود لبصمة عودية راقية وعصرية. وفي القاعدة يهدأ العطر على عنبر دافئ ومسك ناعم وباتشولي أنيق يترك أثراً مصقولاً لا يُنسى.<br><br>فاكهة وإجاص وفلفل وردي تسبق ثراء الزهور البيضاء فوق العود، وتستقر على عنبر ومسك وباتشولي.</p>', 23, 4, 1, 0, '[\"Fruity\",\"Floral\",\"Oud\",\"Amber\"]', '{\"Sillage\":\"Moderate to Strong\",\"Longevity\":\"8–9 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '75ml', '75ml', NULL, 'active'),
-(33, 'FGD00177', '2640400012531', 'dehn-al-oud-qadeem', 'Dehn Al Oud Qadeem', 'دهن العود قديم', 'A timeless oud oil: Indian oud opens to a Cambodi heart, finishing in a sweet, noble Indian oud trail.<br><br>Dehn Al Oud Qadeem is a concentrated ode to pure oud. It begins with the dignified presence of Indian oud, unfolding into a rounded Cambodi blend that brings depth and character. The dry down returns to a sweet Indian oud signature—smooth, resonant, and quietly opulent. Worn on pulse points, this oil offers an intimate, close-to-skin aura that is ideal for layering or solitary wear, celebrating the classic beauty of oud in its most authentic form.', 'يقدّم دهن العود قديم تحية مركّزة للعود الخالص. تبدأ الرائحة بحضور عود هندي واثق، ثم تنساب إلى مزيج كمبودي متكامل يمنح عمقاً وطباعاً واضحاً. أما النفحات الأخيرة فتعود إلى عود هندي حلو ببصمة ناعمة رصينة ورفاهية هادئة. يُوضع على نقاط النبض ليمنح هالة حميمة قريبة من البشرة، مثالية للتعطير المنفرد أو للتعطير التراكبي، احتفاءً بجمال العود الأصيل.<br><br>زيت عود خالد: عود هندي يفتتح بقلب كمبودي ويختم بأثر عود هندي حلو نبيل.', 23, 3, 1, 0, NULL, '{\"Sillage\":\"Strong – radiates heritage oud character.\",\"Longevity\":\"12+ hrs on skin, multiple days on fabrics.\",\"Dispenser\":\"dabber_stick\",\"Occasion\":\"Majlis, royal events, heritage gatherings, ceremonial wear.\",\"Ingredients\":\"Key Ingredients: • Pure Indian Oud Oil • Premium Cambodian Oud Blend R&amp\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '40ml', '40ml', NULL, 'active'),
-(34, 'FGD01749', 'FGD01749', 'rawdha-by-ahmed-50ml', 'Rawdha by Ahmed 50ml', 'روضة باي احمد 50مل', '<p>A luminous powdery rose: aldehydes sparkle into dry woods and patchouli with geranium and orange blossom, resting on musk accord and sandalwood.<br><br>Rawdha by Ahmed reveals a refined, powdery rose wrapped in shimmering aldehydes for a bright, airy opening. The heart deepens with dry woods and patchouli, where geranium, orange blossom, and additional roses add floral nuance and structure. As it settles, a gentle musk accord and smooth sandalwood anchor the composition, while dry woods maintain a graceful, contemporary poise. The result is an elegant signature that moves effortlessly from fresh polish to tender warmth.</p>', '<p>يكشف “روضة باي أحمد” عن ورد بودري مصقول يسطع مع ألديهيدات متلألئة لافتتاحية مشرقة وهوائية. يتعمّق القلب عبر أخشاب جافة وباتشولي، وتضيف جيرانيوم وزهر البرتقال وورود مزيداً من الرهافة والبنية. وعند الاستقرار، يرسّخ أكورد المسك وخشب الصندل الحضور الناعم، فيما تبقى الأخشاب الجافة خيطاً أنيقاً يوازن بين الصفاء والدفء لعلامة عطريّة معاصرة راقية.<br><br>وردٌ بودري متألّق: ألديهيدات لامعة تعلو أخشاباً جافة وباتشولي مع جيرانيوم وزهر البرتقال، وتستقر على أكورد مسك وخشب الصندل.</p>', 23, 3, 1, 0, '[\"Floral\",\"–\",\"Woody\",\"–\",\"Oriental\",\"|\",\"Elegant\",\"aldehydic\",\"floral\",\"opening\",\"with\",\"a\",\"warm\",\"spicy\",\"heart\",\"finishing\",\"in\",\"a\",\"rich\",\"resinous\",\"oud\",\"&\",\"leather\",\"base.\"]', '{\"Sillage\":\"Strong – noticeable aura around the wearer\",\"Longevity\":\"8–12 hrs on skin | Longer on fabrics\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '50ml', '50ml', NULL, 'active'),
-(35, 'FGD01755', '6290360614649', 'rose-noir', 'Rose Noir', 'روز نوير', '<p>A modern powdery bouquet: Sicilian orange, jasmine, lily and apple drift to vanilla and sea notes over musk, cashmeran, sandalwood and ambroxan.<br><br>Rose Noir opens with a luminous contrast—sunlit Sicilian orange sparkling around dewy jasmine and lily, cushioned by crisp apple. The heart turns silken and addictive with a powdery accord and real vanilla bean, brushed by cool sea notes for airy freshness. The drydown is quietly addictive: glowing ambroxan, caressing musk, and plush cashmeran laid over creamy sandalwood for a smooth, modern trail.</p>', '<p>يبدأ “روز نوار” بتباين مشرق—برتقال صقلي يلمع حول ياسمين وزنبق ندِيَّيْن، تحيط بهما نضارة تفاح هشّة. في القلب يتجلّى أكورد بودري مخملي مع حبة فانيلا أصيلة ولمسة نفحات بحرية تمنح خفة وهواء. أما القاعدة فتهدأ على أمبروكسان متوهّج ومسك ناعم وكاشميرن دافئ فوق خشب صندل كريمي لأثرٍ مصقول معاصر.<br><br>باقة بودرية عصرية: برتقال صقلي وياسمين وزنابق وتفاح تنساب إلى فانيلا ونفحات بحر فوق مسك وكاشميرن وخشب صندل وأمبروكسان.</p>', 23, 4, 1, 0, '[\"Floral–Oriental–Powdery\",\"—\",\"a\",\"luminous\",\"dance\",\"of\",\"orange\",\"and\",\"jasmine\",\"softened\",\"by\",\"powder\",\"sailing\",\"into\",\"a\",\"warm\",\"woody\",\"amber\",\"base\",\"with\",\"sea\",\"like\",\"freshness.\"]', '{\"Sillage\":\"Moderate to strong — elegant and enveloping\",\"Longevity\":\"5–7 hrs on skin, 10–12 hrs on fabrics\",\"Dispenser\":\"spray\",\"Occasion\":\"Ideal for both day and night.\",\"Ingredients\":\"Sicilian Orange, Jasmine Absolute, apple Accord, Vanilla Bean, Cashmeran, Sandalwood, Ambergris\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '75ml', '75ml', NULL, 'active'),
-(36, 'FGD01152', '2640500013377', 'saif', 'Saif', 'سيف', '<p>Citrus and rose ignite juniper and rosemary, opening to a herbaceous heart and an amber–tobacco base with sandalwood, patchouli, tonka, musk, and vetiver.<br><br>Saif unfolds with bright bergamot and bitter orange threaded through rose, juniper berries, rosemary, and tart black currant. The heart turns confidently aromatic as lavender and eucalyptus meet cedarwood, artemisia, violet, sage, chamomile, jasmine, and a spice duet of nutmeg and pepper. It settles into poised warmth—glowing amber and nuanced tobacco over sandalwood, patchouli, tonka bean, white musk, and grounded vetiver.</p>', '<p>يتفتّح “سيف” بلمعان البرغموت والبرتقال المر حول ورد ونفحات توت العرعر وإكليل الجبل ولمسة كشمش أسود. في القلب يبرز الطابع العطري بثقة حيث يلتقي الخزامى والأوكالبتوس مع خشب الأرز والشيح والبنفسج والمريمية والبابونج والياسمين، وتدعمهما توابل جوزة الطيب والفلفل. أما القاعدة فتستقر على عنبر دافئ وتبغ أنيق فوق خشب الصندل والباتشولي وتونكا ومسك أبيض وفيتيفر راسخ.<br><br>حمضيات وورد تُشعلان العرعر وإكليل الجبل، بقلبٍ عشبيّ، وقاعدة من عنبر وتبغ مع خشب الصندل والباتشولي وتونكا ومسك وفيتيفر.</p>', 23, 4, 1, 0, '[\"Aromatic\",\"Woody\",\"Spicy\",\"Oriental\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"10–12 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '50ml', '50ml', NULL, 'active');
-INSERT INTO `products` (`id`, `fgd`, `barcode`, `slug`, `name_en`, `name_ar`, `description_en`, `description_ar`, `category_id`, `subcategory_id`, `is_active`, `is_featured`, `tags`, `attributes`, `created_at`, `updated_at`, `size_label_en`, `size_label_ar`, `media_url`, `deleted_status`) VALUES
-(37, 'FGD01870', '6290360615196', 'scentique-white', 'Scentique White', 'سينتك وايت', 'Crisp bergamot and pink pepper lift black currant into luminous jasmine, melting into vanilla-warmed cashmeran and guaiac wood.<br><br>Scentique White opens with a chic contrast: sparkling bergamot and a gentle tickle of pink pepper brighten the tart juiciness of black currant. At the heart, a single bloom—jasmine—unfurls with clean radiance, giving the composition elegant focus. The drydown is serene and polished as vanilla softens into plush cashmeran over smooth guaiac wood, leaving a refined, comforting trail.', 'تبدأ “سنتيك وايت” بتباين أنيق: لمعان البرغموت ولمسة فلفل وردي رشيقة يضيئان عصارة الكشمش الأسود. في القلب تتفتح زهرة واحدة بصفاء—الياسمين—فتمنح التركيبة تركيزاً راقياً. أما القاعدة فتستقر على فانيلا ناعمة تحتضن كاشميرن وثيراً فوق خشب غواياك الملساء، لتترك أثراً مصقولاً مريحاً.<br><br>برغموت نقي وفلفل وردي يرفعان الكشمش الأسود نحو ياسمين مضيء، يذوب في فانيلا دافئة وكاشميرن وخشب غواياك.', 28, NULL, 1, 0, '[\"Fruity\",\"Floral\",\"Woody\",\"Musky\"]', '{\"Sillage\":\"Moderate\",\"Longevity\":\"7–9 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '100ml', '100ml', NULL, 'active'),
-(38, 'FGD00792', '2640500011199', 'al-shaikha-hind', 'Al Shaikha Hind', 'الشيخة هند', '<p>A regal symphony of oud, leather, and florals, crowned with sensual musk and amber. Al Shaikha Hind is a fragrance that exudes sophistication and strength.<br><br>The scent opens with a luscious burst of black currant, cassia, grapes, and red berries, enriched with Indian oud and smooth leather. At its heart, an opulent bouquet of peony, violet, lily of the valley, jasmine, rose, and saffron blossoms with radiant elegance. Finally, the base unfolds into a deep trail of agarwood, musk, and amber, leaving behind a lasting aura of royal allure.</p>', '<p>تبدأ الرائحة بلمسة غنية من الكشمش الأسود والكاسيا والعنب والتوت الأحمر، يزينها العود الهندي والجلد الناعم. وفي القلب، تتفتح باقة فاخرة من الفاوانيا والبنفسج وزنبق الوادي والياسمين والورد مع لمسة زعفران دافئة. أما القاعدة فتأسر الحواس بنفحات العود والمسك والعنبر، لتترك هالة ملكية آسرة.<br><br>سيمفونية ملكية من العود والجلد والزهور، تتوجها نفحات المسك والعنبر. عطر الشيخة هند يعكس الفخامة والقوة مع لمسة من الرقي الأنثوي.</p>', 23, 3, 1, 0, '[\"Fruity\",\"Floral\",\"Oud\",\"Musky\",\"–\",\"leather\",\"ambery.\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"12+hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:23', '2026-04-01 13:46:23', '50ml', '50ml', NULL, 'active'),
-(39, 'FGD01150', '2640500013391', 'sheukh', 'Sheukh', 'شيوخ', '<p>A noble balance of citrus freshness, floral depth, and warm amber-vanilla elegance. Sheukh is a fragrance crafted for timeless sophistication and refined presence.<br><br>The journey begins with the crisp brightness of bergamot touched by aromatic clary sage. At its heart, rose and jasmine bloom with romantic charm, enriched by earthy patchouli. The base reveals a lasting embrace of creamy vanilla, tonka beans, and sensual ambergris—an unforgettable dry down that leaves a signature of grace and authority.</p>', '<p>تتفتح الرائحة بانتعاش البرغموت ولمسة عطرية من الميرمية. في القلب، تتألق الوردة والياسمين بسحر رومانسي تعززه نغمات الباتشولي الترابية. أما القاعدة فتنكشف عن حضن دافئ من الفانيلا وحبوب التونكا والعنبر الرمادي، لتترك أثراً مميزاً من الرقي والهيبة.<br><br>توازن نبيل يجمع بين انتعاش الحمضيات وعمق الزهور ودفء العنبر والفانيلا. عطر شيخ هو ابتكار يعكس الأناقة الخالدة والحضور الراقي.</p>', 23, 4, 1, 0, '[\"Fresh\",\"Floral\",\"Oriental\",\"Woody\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '50ml', '50ml', NULL, 'active'),
-(40, 'FGD01576', '6290360612973', 'shy', 'Shy', 'شاي', '<p>A delicate dance of fruity blossoms, deep woods, and a sensual musky-amber embrace. Shy is a fragrance that speaks softly yet leaves a lasting impression of allure.<br><br>The opening reveals a tender harmony of peach, apple blossom, lavender, and precious saffron, radiating freshness with a hint of elegance. At its heart, pineapple blossom mingles with cedarwood and agarwood, creating a sophisticated woody-floral depth. Finally, the base settles into a lingering trail of musk, wild rose, patchouli, amber, vanilla beans, and mossy notes—an enchanting dry down that balances warmth, sweetness, and earthiness.</p>', '<p>تبدأ الرائحة بتناغم ناعم من الخوخ وزهر التفاح والخزامى مع الزعفران الثمين، لتمنح انتعاشاً ممزوجاً بالأناقة. في القلب، تتداخل أزهار الأناناس مع خشب الأرز والعود لتضفي عمقاً خشبياً زهرياً راقياً. أما القاعدة فتستقر على مسك وورد بري وباتشولي وعنبر وفانيلا مع لمسات طحلبية، لتكشف عن جاذبية آسرة تجمع بين الدفء والحلاوة والعمق الترابي.<br><br>رقصة رقيقة تجمع بين أزهار الفواكه والأخشاب العميقة واحتضان المسك والعنبر الحسي. عطر شاي يهمس برقة لكنه يترك أثراً دائماً من السحر والجاذبية.</p>', 23, 4, 1, 0, '[\"Fruity\",\"Floral\",\"Oud\",\"Musky\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '60ml', '60ml', NULL, 'active'),
-(41, 'FGD01403', '2646000014043', 'silk-oud', 'Silk Oud', 'سيلك عود', '<p>A luminous blend of fruits, florals, and oud, wrapped in silky amber-vanilla warmth. Silk Oud is crafted to embody elegance with a sensual oriental charm.<br><br>It opens with sparkling mandarin, bergamot, pineapple, and apple, creating a fresh and juicy first impression. At the heart, orange blossom and rose accords bloom gracefully, lending timeless floral sophistication. The base settles into a velvety trail of amber, sandalwood, vanilla, musk, and oud accords, enveloping the wearer in a rich and silky aura that lingers beautifully.</p>', '<p>تبدأ الرائحة بتألق البرغموت واليوسفي والأناناس والتفاح، لتمنح انطباعاً أولياً منعشاً وعصيرياً. في القلب، تتفتح أزهار البرتقال ونغمات الورد برشاقة، لتضفي لمسة زهرية خالدة. أما القاعدة فتستقر على عنبر وخشب الصندل وفانيلا ومسك ولمسات العود، فتغلف مرتديه بهالة غنية حريرية تدوم طويلاً.<br><br>مزيج مشرق من الفواكه والزهور والعود، يتألق بدفء العنبر والفانيلا الحريري. عطر سيلك عود صُمم ليجسد الأناقة بسحر شرقي حسي.</p>', 23, 4, 1, 0, '[\"Fruity\",\"Floral\",\"Oud\",\"Woody\"]', '{\"Sillage\":\"Moderate to Strong\",\"Longevity\":\"7-9 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '60ml', '60ml', NULL, 'active'),
-(42, 'FGD01762', '6290360614731', 'summer-oud', 'Summer Oud', 'سمر عود', '<p>A radiant oud creation where fresh citrus, florals, and spices melt into a warm, leathery-woody embrace. Summer Oud is designed for those who seek depth, richness, and modern freshness in perfect balance.<br><br>The fragrance opens with the zesty brightness of mandarin wrapped in saffron, incense, and cypriol for a spicy-smoky edge. At its heart, rose and amber glow with sensuality, deepened by patchouli, cashmere wood, and a touch of caramel warmth. The base anchors the composition with an intense oud accord, musk, oak moss, vetiver, and refined leather—creating a trail that is both powerful and irresistibly elegant.</p>', '<p>تبدأ الرائحة بانتعاش اليوسفي الممزوج بالزعفران والبخور والسبرول، ليمنح لمسة حارة مدخنة. في القلب، يتألق الورد والعنبر بحسية آسرة، يعمقها الباتشولي وخشب الكشمير مع لمسة دافئة من الكراميل. أما القاعدة فتستقر على نفحات العود والمسك والطحالب والفيتيفر والجلد الراقي، لتشكل أثراً قوياً وأنيقاً لا يُقاوم.<br><br>إبداع عطري مشرق يجمع بين الحمضيات والتوابل والزهور، ليتوج بدفء جلدي خشبي مع نفحات العود. صُمم عطر سمر عود لعشاق العمق والفخامة مع لمسة انتعاش عصرية متوازنة.</p>', 23, 4, 1, 0, '[\"Oriental\",\"Oud\",\"Woody\",\"with\",\"Gourmand\",\"Touch\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"9–11 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '60ml', '60ml', NULL, 'active'),
-(43, 'FGD01732', '6290360614854', 'oud-amp-roses-body-gel', 'Oud &amp; Roses Body Gel', 'عود أند روز (بودي جل)', 'A modern oud–rose duet: Turkish rose and peony over lavender and citrus, deepening into sandalwood and frankincense with ambroxan, musk, guaiac wood and oakmoss.<br><br>Oud & Roses opens in luminous contrast: dewy Turkish rose and plush peony lifted by soothing lavender and sparkling citruses. The heart turns contemplative as rose is wrapped in creamy sandalwood, a halo of white flowers, and dignified frankincense (olibanum). The dry down is poised and modern—an elegant weave of oud accord and guaiac wood, textured with oakmoss, then polished by radiant ambroxan and soft musk for a graceful, lingering trail.', 'يبدأ “عود آند روزز” بتباين متألق: ورد تركي ندي وفاوانيا (بيوني) مخملية تعلوهما خزامى مهدّئ ولمعان حمضيات. في القلب يتعمّق العطر مع ورد محتضن بـ خشب الصندل وزهور بيضاء وهالة لبان (أوليبانوم) وقورة. أما القاعدة فتتوازن بثقة بين أكورد العود وخشب غواياك مع لمسة طحلب السنديان، ويصقلها أمبروكسان متوهّج ومسك ناعم لأثرٍ أنيق طويل الحضور.<br><br>ثنائية عود–ورد عصرية: ورد تركي وبيوني فوق لافندر وحمضيات، تتعمّق إلى صندل ولبان، وتختم بأمبروكسان ومسك وخشب غواياك وطحلب السنديان.', 29, 10, 1, 0, NULL, NULL, '2026-04-01 13:46:24', '2026-04-01 13:46:24', '30ml', '30ml', NULL, 'active'),
-(44, 'FGD01761', '6290360614892', 'supreme-body-gel', 'Supreme Body Gel', 'سبريم (بودي جل)', 'A vibrant fruity-floral creation with a smooth musky-woody base for effortless elegance. Supreme is a fragrance that celebrates lightness, refinement, and modern charm.<br><br>The opening sparkles with juicy red fruits, pear, and melon for a refreshing and playful start. At its heart, delicate rose, freesia, and magnolia bloom, lifted by the airy radiance of hedione. The base then reveals a soft and sensual blend of ambroxan, white musk, patchouli, and sandalwood—leaving a sophisticated trail that is both bright and enduring.', 'تتألق البداية بلمسة منعشة من التوت الأحمر والإجاص والبطيخ، فتمنح انطلاقة مرحة وعصيرية. في القلب، تتفتح الوردة والفريزيا والماغنوليا برقة، وتضيئها لمسة الهيديون الشفافة. أما القاعدة فتبوح بمزيج ناعم حسي من الأمبروكسان والمسك الأبيض والباتشولي وخشب الصندل، تاركة أثراً أنيقاً مشرقاً يدوم طويلاً.<br><br>إبداع زهري فاكهي نابض بالحيوية مع قاعدة مسكية خشبية ناعمة لأناقة بلا مجهود. عطر سوبريم يحتفي بالخفة والرقي وسحر العصر الحديث.', 29, 10, 1, 0, '[\"Fruity–Floral–Musky\",\"—\",\"a\",\"juicy\",\"pear\",\"and\",\"melon\",\"sparkle\",\"meet\",\"delicate\",\"freesia\",\"and\",\"rose\",\"all\",\"resting\",\"on\",\"a\",\"warm\",\"patchouli–amber–musk\",\"base\",\"for\",\"an\",\"elegantly\",\"smooth\",\"dry\",\"down.\"]', '{\"Sillage\":\"Moderate — softly radiates a clean yet vibrant aura\",\"Dispenser\":\"serum\",\"Occasion\":\"Perfect for day-to-evening elegance\",\"Ingredients\":\"Pear Essence, Melon Accord, Rose Absolute, Freesia Petals, Patchouli Oil, Amber, White Musk\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '30ml', '30ml', NULL, 'active'),
-(45, 'FGD01644', '6290360614885', 'little-hearts-body-gel', 'Little Hearts Body Gel', 'ليتل هارتس (بودي جل)', 'Sweet citrus lime and orange sparkle; mango, pineapple, mixed exotic fruits bloom; amber, amber resin, musk, and vanilla settle into warm, comforting depth.Little Hearts opens with sweet citrus brilliance from lime and orange. The heart turns to tropical fruity bliss as mango and pineapple mingle with mixed exotic fruits. The base moves into warm, comforting depth: amber and amber resin glow beside musk, while vanilla rounds a smooth, lasting trail. The sequence remains clear—sweet citrus, tropical fruit, then an ambery-musk finish—shaping a well-structured signature that stays consistent from first spray to dry-down.', 'ليمون وبرتقال بحلاوة حمضية يتألّقان؛ مانجو وأناناس وفواكه غريبة مختلطة تتفتح؛ عنبر وراتنج عنبر ومسك وفانيلا تستقرّ بعمق دافئ ومريح.يفتتح ليتل هارتس ببريق حمضي حلو من الليمون والبرتقال. يتجه القلب إلى بهجة فواكه استوائية حيث ينسجم المانجو والأناناس مع فواكه غريبة مختلطة. تنتقل القاعدة إلى عمق دافئ ومريح: يتوهّج العنبر وراتنج العنبر بجانب المسك، بينما تصقل الفانيلا أثراً ناعماً طويل البقاء. يتتابع البناء بوضوح—حمضيات حلوة، فواكه استوائية، ثم ختام عنبري-مسكي—ليرسم طابعاً متماسكاً من الرشة حتى الجفاف.<br><br>ليمون وبرتقال بحلاوة حمضية يتألّقان؛ مانجو وأناناس وفواكه غريبة مختلطة تتفتح؛ عنبر وراتنج عنبر ومسك وفانيلا يستقرّون بعمق دافئ ومريح.', 29, 10, 1, 0, '[\"Citrus\",\"–\",\"Fruity\",\"–\",\"Amber\",\"–\",\"Sweet\",\"–\",\"Musky\"]', '{\"Sillage\":\"Moderate to noticeable\",\"Dispenser\":\"serum\",\"Occasion\":\"Daytime, casual to romantic occasions\",\"Ingredients\":\"Lime Essence, Sweet Orange Oil, Pineapple Accord, Mango Extract, Amber Resin, White Musk, Madagascar Vanilla\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '30ml', '30ml', NULL, 'active'),
-(46, 'FGD01794', 'FGD01794', 'hirfah-body-gel', 'Hirfah Body Gel', 'حرفة (بودي جل)', 'Sweet lime and lavender brighten green apple; healing wood, geranium, pine, and magnolia unfold over amber, musk, sandalwood, oud, and patchouli.<br><br>Hirfah opens with sweet lime brightened by lavender and crisp green apple. The heart centers on healing wood with geranium’s aromatic lift, pine’s cool clarity, and magnolia’s smooth bloom. The base settles into amber and musk, layered with sandalwood and oud; patchouli adds depth for a composed, lasting trail.', 'تنطلق هِرفه بليمٍ حلو ينعشه اللافندر والتفاح الأخضر الهش. يرتكز القلب على خشبٍ علاجي مع رفعٍ عطري من الجيرانيوم، ووضوحٍ بارد من الصنوبر، وتفتّحٍ ناعم للماغنوليا. تستقر القاعدة على العنبر والمسك مع طبقات من خشب الصندل والعود، ويضيف الباتشولي عمقاً لأثرٍ متزنٍ طويل.<br><br>ليمٌ حلو ولافندر يضيئان التفاح الأخضر؛ خشبٌ علاجي وجيرانيوم وصنوبر وماغنوليا تتكشف فوق عنبر ومسك وصندل وعود وباتشولي.', 29, 10, 1, 0, '[\"Citrus\",\"Aromatic\",\"Woody\"]', '{\"Sillage\":\"Moderate–Strong\",\"Dispenser\":\"serum\",\"Occasion\":\"Daytime, casual to romantic occasions\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '30ml', '30ml', NULL, 'active'),
-(47, 'FGD01851', 'FGD01851', 'marj-body-gel', 'Marj Body Gel', 'مرج (بودي جل)', 'Bergamot, pink pepper, tangerine, oud, and honey ignite; patchouli, rose, saffron, and jasmine bloom; musk, amber, raspberry, leather, and sandalwood rest with depth and elegance.Marj begins with a vivid interplay of bergamot, pink pepper, and tangerine, lifted by elemi, nutmeg, oud, and honey. The heart layers patchouli, aromatic accords, and vetiver with cashmere wood, cinnamon, rose, saffron, jasmine, and orange blossom, weaving a textured floral-spiced harmony. The base is rich and enduring, where musk and amber embrace raspberry, saffron, oakmoss, and ambrette seeds. Leather, sandalwood, violet, agarwood, and ambroxan provide a deep, sophisticated trail.', 'برغموت وفلفل وردي ويوسفي وعود وعسل يتألقون؛ باتشولي وورد وزعفران وياسمين يزهرون؛ مسك وعنبر وتوت وجلد وصندل يستقرّون بعمق وأناقة.يبدأ مرج بتمازج حيوي من البرغموت والفلفل الوردي واليوسفي، تدعمه نوتات الإليمي وجوزة الطيب والعود والعسل. يتوسطه الباتشولي والأكوردات العطرية والڤيتيڤر مع خشب الكشمير والقرفة والورد والزعفران والياسمين وزهر البرتقال، ليصوغ تناغماً زهرياً-متبلاً غنياً. تستقر القاعدة بعمق مع مسك وعنبر وتوت وزعفران وطحلب البلوط وبذور الأمبريت. يكمّلها الجلد وخشب الصندل والبنفسج والعود والأمبروكسان، في أثر فاخر طويل الأمد.<br><br>برغموت وفلفل وردي ويوسفي وعود وعسل يتألقون؛ باتشولي وورد وزعفران وياسمين يزهرون؛ مسك وعنبر وتوت وجلّد وصندل يستقرّون بعمق وأناقة.', 29, 10, 1, 0, '[\"Floral–Oriental–Woody\",\"—\",\"opens\",\"with\",\"a\",\"romantic\",\"rose\",\"bouquet\",\"and\",\"soft\",\"lavender\",\"warmed\",\"by\",\"citrus\",\"peony;\",\"the\",\"core\",\"blooms\",\"with\",\"creamy\",\"florals\",\"over\",\"deep\",\"sandalwood\",\"and\",\"frankincense;\",\"finally\",\"a\",\"woody\",\"musk\",\"amber\",\"base\",\"layers\",\"in\",\"rich\",\"oud\",\"guaiac\",\"wood\",\"and\",\"mossy\",\"depth\",\"for\",\"an\",\"enchanting\",\"dry\",\"down.\"]', '{\"Sillage\":\"Strong — powerful projection\",\"Dispenser\":\"serum\",\"Ingredients\":\"Turkish Rose Absolute, Frankincense Resin, Sandalwood Oil, Oud aaccord, Guaiac Wood Oil, Amber Accord\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '30ml', '30ml', NULL, 'active'),
-(48, 'FGD01679', '6290360613932', 'rose-noir-hair-mist', 'Rose Noir Hair Mist', 'روز نوير (عطرللشعر)', 'A modern powdery bouquet: Sicilian orange, jasmine, lily and apple drift to vanilla and sea notes over musk, cashmeran, sandalwood and ambroxan.<br><br>Rose Noir opens with a luminous contrast—sunlit Sicilian orange sparkling around dewy jasmine and lily, cushioned by crisp apple. The heart turns silken and addictive with a powdery accord and real vanilla bean, brushed by cool sea notes for airy freshness. The drydown is quietly addictive: glowing ambroxan, caressing musk, and plush cashmeran laid over creamy sandalwood for a smooth, modern trail.', 'يبدأ “روز نوار” بتباين مشرق—برتقال صقلي يلمع حول ياسمين وزنبق ندِيَّيْن، تحيط بهما نضارة تفاح هشّة. في القلب يتجلّى أكورد بودري مخملي مع حبة فانيلا أصيلة ولمسة نفحات بحرية تمنح خفة وهواء. أما القاعدة فتهدأ على أمبروكسان متوهّج ومسك ناعم وكاشميرن دافئ فوق خشب صندل كريمي لأثرٍ مصقول معاصر.<br><br>باقة بودرية عصرية: برتقال صقلي وياسمين وزنابق وتفاح تنساب إلى فانيلا ونفحات بحر فوق مسك وكاشميرن وخشب صندل وأمبروكسان.', 29, 11, 1, 0, '[\"Floral–Oriental–Powdery\",\"—\",\"a\",\"luminous\",\"dance\",\"of\",\"orange\",\"and\",\"jasmine\",\"softened\",\"by\",\"powder\",\"sailing\",\"into\",\"a\",\"warm\",\"woody\",\"amber\",\"base\",\"with\",\"sea\",\"like\",\"freshness.\"]', '{\"Sillage\":\"Moderate to strong — elegant and enveloping\",\"Dispenser\":\"spray\",\"Occasion\":\"Ideal for both day and night\",\"Ingredients\":\"Sicilian Orange, Jasmine Absolute, apple Accord, Vanilla Bean, Cashmeran, Sandalwood, Ambergris\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '50ml', '50ml', NULL, 'active'),
-(49, 'FGD01619', '6290360613437', 'oud-amp-roses-hair-mist', 'Oud &amp; Roses Hair Mist', 'عود إند روز (عطرللشعر)', 'A modern oud–rose duet: Turkish rose and peony over lavender and citrus, deepening into sandalwood and frankincense with ambroxan, musk, guaiac wood and oakmoss.<br><br>Oud & Roses opens in luminous contrast: dewy Turkish rose and plush peony lifted by soothing lavender and sparkling citruses. The heart turns contemplative as rose is wrapped in creamy sandalwood, a halo of white flowers, and dignified frankincense (olibanum). The dry down is poised and modern—an elegant weave of oud accord and guaiac wood, textured with oakmoss, then polished by radiant ambroxan and soft musk for a graceful, lingering trail.', 'يبدأ “عود آند روزز” بتباين متألق: ورد تركي ندي وفاوانيا (بيوني) مخملية تعلوهما خزامى مهدّئ ولمعان حمضيات. في القلب يتعمّق العطر مع ورد محتضن بـ خشب الصندل وزهور بيضاء وهالة لبان (أوليبانوم) وقورة. أما القاعدة فتتوازن بثقة بين أكورد العود وخشب غواياك مع لمسة طحلب السنديان، ويصقلها أمبروكسان متوهّج ومسك ناعم لأثرٍ أنيق طويل الحضور.<br><br>ثنائية عود–ورد عصرية: ورد تركي وبيوني فوق لافندر وحمضيات، تتعمّق إلى صندل ولبان، وتختم بأمبروكسان ومسك وخشب غواياك وطحلب السنديان.', 29, 11, 1, 0, '[\"Floral–Oriental–Woody\",\"—\",\"opens\",\"with\",\"a\",\"romantic\",\"rose\",\"bouquet\",\"and\",\"soft\",\"lavender\",\"warmed\",\"by\",\"citrus\",\"peony;\",\"the\",\"core\",\"blooms\",\"with\",\"creamy\",\"florals\",\"over\",\"deep\",\"sandalwood\",\"and\",\"frankincense;\",\"finally\",\"a\",\"woody\",\"musk\",\"amber\",\"base\",\"layers\",\"in\",\"rich\",\"oud\",\"guaiac\",\"wood\",\"and\",\"mos\"]', '{\"Sillage\":\"Strong — powerful projection\",\"Longevity\":\"Excellent\",\"Dispenser\":\"spray\",\"Ingredients\":\"Turkish Rose Absolute, Frankincense Resin, Sandalwood Oil, Oud aaccord, Guaiac Wood Oil, Amber Accord\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '50ml', '50ml', NULL, 'active'),
-(50, 'FGD01620', '6290360613444', 'bidun-esam-hair-mist', 'Bidun Esam Hair Mist', 'بدون إسم (عطرللشعر)', 'Bright bergamot, grapefruit, orange, pear lead to sage, green tea, black currant, geranium, white pepper, Turkish rose, over musk, sandalwood, amber, Cambodian oud, patchouli, cedar<br><br>Bidun Esam opens with the radiance of bergamot, grapefruit, and orange, rounded by juicy pear. The heart layers aromatic sage, clear green tea, and tart black currant within a floral frame of geranium, white pepper, and Turkish rose. The base settles into musk and sandalwood, enriched by amber. Cambodian oud, patchouli, and cedar add lasting depth and structure for a smooth, enduring dry-down.', 'يبدأ بيدون إسام بلمعة البرغموت والجريب فروت والبرتقال، وتوازنها عصيرية الكمثرى. في القلب تتناغم الميرمية مع الشاي الأخضر والكشمش الأسود ضمن إطار زهري من الجيرانيوم والفلفل الأبيض والورد التركي. يستقر الأساس على المسك وخشب الصندل مع توهج العنبر. يضيف العود الكمبودي والباتشولي والأرز عمقاً وبنيةً دائمة لجفافٍ ناعم طويل الأمد.<br><br> برغموت، جريب فروت، برتقال وكمثرى تقود إلى ميرمية، شاي أخضر، كشمش أسود، جيرانيوم، فلفل أبيض وورد تركي؛ مسك، صندل، عنبر، عود كمبودي، باتشولي، أرز.', 29, 11, 1, 0, '[\"Oriental–Floral–Woody\",\"—\",\"A\",\"sophisticated\",\"blend\",\"where\",\"bright\",\"citrus\",\"and\",\"fruits\",\"meet\",\"herbal\",\"freshness\",\"unfolding\",\"into\",\"a\",\"floral\",\"spiced\",\"heart\",\"and\",\"settling\",\"into\",\"a\",\"deep\",\"musky\",\"oud\",\"base.\"]', '{\"Sillage\":\"Strong — enveloping and long-lasting\",\"Dispenser\":\"spray\",\"Ingredients\":\"Turkish Rose Absolute, Premium Cambodian Oud Oil, Sandalwood Oil, Amber Resin, Patchouli\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '50ml', '50ml', NULL, 'active'),
-(51, 'FGD01680', '6290360613949', 'shaikha-hind-hair-mist', 'Shaikha Hind Hair Mist', 'شيخة هند (عطرللشعر)', 'A regal symphony of oud, leather, and florals, crowned with sensual musk and amber. Al Shaikha Hind is a fragrance that exudes sophistication and strength.<br><br>The scent opens with a luscious burst of black currant, cassia, grapes, and red berries, enriched with Indian oud and smooth leather. At its heart, an opulent bouquet of peony, violet, lily of the valley, jasmine, rose, and saffron blossoms with radiant elegance. Finally, the base unfolds into a deep trail of agarwood, musk, and amber, leaving behind a lasting aura of royal allure.', 'تبدأ الرائحة بلمسة غنية من الكشمش الأسود والكاسيا والعنب والتوت الأحمر، يزينها العود الهندي والجلد الناعم. وفي القلب، تتفتح باقة فاخرة من الفاوانيا والبنفسج وزنبق الوادي والياسمين والورد مع لمسة زعفران دافئة. أما القاعدة فتأسر الحواس بنفحات العود والمسك والعنبر، لتترك هالة ملكية آسرة.<br><br>سيمفونية ملكية من العود والجلد والزهور، تتوجها نفحات المسك والعنبر. عطر الشيخة هند يعكس الفخامة والقوة مع لمسة من الرقي الأنثوي.', 29, 11, 1, 0, '[\"Fruity\",\"Floral\",\"Oud\",\"Musky\",\"–\",\"leather\",\"ambery.\"]', '{\"Sillage\":\"Strong\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '50ml', '50ml', NULL, 'active'),
-(52, 'FGD01768', '6290360615004', 'supreme-hair-mist', 'Supreme Hair Mist', 'سبريم (عطرللشعر)', 'A vibrant fruity-floral creation with a smooth musky-woody base for effortless elegance. Supreme is a fragrance that celebrates lightness, refinement, and modern charm.<br><br>The opening sparkles with juicy red fruits, pear, and melon for a refreshing and playful start. At its heart, delicate rose, freesia, and magnolia bloom, lifted by the airy radiance of hedione. The base then reveals a soft and sensual blend of ambroxan, white musk, patchouli, and sandalwood—leaving a sophisticated trail that is both bright and enduring.', 'تتألق البداية بلمسة منعشة من التوت الأحمر والإجاص والبطيخ، فتمنح انطلاقة مرحة وعصيرية. في القلب، تتفتح الوردة والفريزيا والماغنوليا برقة، وتضيئها لمسة الهيديون الشفافة. أما القاعدة فتبوح بمزيج ناعم حسي من الأمبروكسان والمسك الأبيض والباتشولي وخشب الصندل، تاركة أثراً أنيقاً مشرقاً يدوم طويلاً.<br><br>إبداع زهري فاكهي نابض بالحيوية مع قاعدة مسكية خشبية ناعمة لأناقة بلا مجهود. عطر سوبريم يحتفي بالخفة والرقي وسحر العصر الحديث.', 29, 11, 1, 0, '[\"Fruity–Floral–Musky\",\"—\",\"a\",\"juicy\",\"pear\",\"and\",\"melon\",\"sparkle\",\"meet\",\"delicate\",\"freesia\",\"and\",\"rose\",\"all\",\"resting\",\"on\",\"a\",\"warm\",\"patchouli–amber–musk\",\"base\",\"for\",\"an\",\"elegantly\",\"smooth\",\"dry\",\"down.\"]', '{\"Sillage\":\"Moderate — softly radiates a clean yet vibrant aura\",\"Dispenser\":\"spray\",\"Occasion\":\"Perfect for day-to-evening elegance\",\"Ingredients\":\"Pear Essence, Melon Accord, Rose Absolute, Freesia Petals, Patchouli Oil, Amber, White Musk\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '50ml', '50ml', NULL, 'active'),
-(53, 'FGD00553', '2640010012648', 'dehn-al-oudh-mubakhar', 'Dehn Al Oudh Mubakhar', 'دهن العود مبخر', '<p>A smooth yet powerful oud oil, uniting sweet Indian brightness with Cambodian depth. Dehn Al Oudh Mubakhar is a true expression of Arabian heritage, crafted for connoisseurs who value authenticity and richness.<br><br>It opens with a sweet Indian oud accord, introducing warmth and a touch of brightness. At the heart, pure Indian oud unfolds with earthy, leathery intensity, embodying noble tradition. The journey concludes with the resinous richness of Cambodian oud, leaving behind a lasting trail that is deep, warm, and irresistibly elegant.</p>', '<p>تتفتح البداية بتناغم العود الهندي الحلو الذي يمنح دفئاً ولمسة مشرقة. في القلب يتجلى العود الهندي النقي بعمقه الترابي الجلدي، ليجسد الأصالة النبيلة. أما الختام فيبوح بغنى العود الكمبودي الراتنجي، تاركاً أثراً دافئاً وعميقاً بلمسة من الأناقة الخالدة.<br><br>دهن عود ناعم وقوي يجمع بين إشراقة العود الهندي الحلو وعمق العود الكمبودي. دهن العود مبخر هو تعبير أصيل عن التراث العربي، صُمم لعشاق العود الذين يقدرون الأصالة والفخامة.</p>', 24, 6, 1, 0, '[\"A\",\"pure\",\"and\",\"rich\",\"oud\",\"oil\",\"with\",\"a\",\"warm\",\"sweetness\",\"up\",\"top\",\"the\",\"depth\",\"of\",\"Indian\",\"oud\",\"at\",\"heart\",\"and\",\"the\",\"resinous\",\"slightly\",\"fruity\",\"warmth\",\"of\",\"Cambodian\",\"oud\",\"in\",\"the\",\"base.\",\"Smooth\",\"yet\",\"powerful.\"]', '{\"Sillage\":\"Strong – lingers in the air and leaves a distinct trail.\",\"Longevity\":\"12+ hrs on skin, days on fabric.\",\"Dispenser\":\"dabber_stick\",\"Occasion\":\"Traditional gatherings, majlis, ceremonial events, layering with bakhoor.\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '3ml', '3ml', NULL, 'active'),
-(54, 'FGD01322', '2640010014000', 'dehn-al-oud-hindi-seufi', 'Dehn Al Oud Hindi Seufi', 'دهن العود هندي سيوفي', '<p>A pure Indian oud masterpiece, bold yet refined, with earthy sweetness and noble depth. Dehn Al Oud Hindi Seufi captures the soul of traditional oud, offering an authentic experience for true connoisseurs.<br><br>It opens with the commanding presence of Indian Super Oud oil, rich and powerful. The heart reveals sweet, earthy Indian oud nuances, bringing warmth and balance. The base settles into enduring Indian oud notes—deep, leathery, and dignified—leaving behind a trail of heritage and timeless elegance.</p>', '<p>تبدأ الرائحة بحضور قوي من زيت العود الهندي الفاخر، الغني والمكثف. في القلب، تتكشف نغمات العود الهندي الترابية الحلوة لتمنح دفئاً وتوازناً. أما القاعدة فتستقر على نفحات العود الهندي العميقة الجلدية النبيلة، تاركة أثراً يعكس التراث والأناقة الخالدة.<br><br>تحفة من العود الهندي النقي، جريئة وراقية، تجمع بين الحلاوة الترابية والعمق النبيل. دهن العود هندي صوفي يجسد روح العود الأصيل، ليمنح تجربة حقيقية لعشاق العود.</p>', 24, 6, 1, 0, '[\"Opens\",\"with\",\"the\",\"bold\",\"presence\",\"of\",\"Indian\",\"Super\",\"Oud\",\"transitions\",\"to\",\"sweet\",\"earthy\",\"richness\",\"and\",\"settles\",\"into\",\"a\",\"dignified\",\"pure\",\"oud\",\"base\",\"—\",\"a\",\"true\",\"collector’s\",\"oil\",\"for\",\"oud\",\"connoisseurs.\"]', '{\"Sillage\":\"Strong – projects a pure, noble oud aura.\",\"Longevity\":\"12+ hrs on skin, several days on fabrics.\",\"Dispenser\":\"dabber_stick\",\"Occasion\":\"Heritage gatherings, winter evenings, royal events, ceremonial wear.\",\"Ingredients\":\"\\\"100% Natural Premium Indian Super Oud Oil\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '3ml', '3ml', NULL, 'active'),
-(55, 'FGD01323', '2640010012808', 'dehn-al-oud-maliki-qadeem', 'Dehn Al Oud Maliki Qadeem', 'دهن العود ملكي قديم', '<p>A timeless oud creation, blending noble Indian depth with Cambodian warmth and sweet heritage richness. Dehn Al Oud Maliki Qadeem is a heritage masterpiece, cherished for its authenticity and refined power.<br><br>It begins with the commanding essence of Indian oud—earthy, leathery, and dignified. At the heart lies a rich Cambodian blend, warm and resinous, adding layers of complexity. The journey concludes with sweet Indian oud, leaving behind a comforting, refined aura that embodies tradition and elegance. A fragrance oil that resonates with oud lovers across generations.</p>', '<p>تبدأ الرائحة بجوهر العود الهندي المهيب، بعمقه الترابي الجلدي النبيل. في القلب، يسطع مزيج كمبودي غني دافئ راتنجي يمنح العطر طبقات من التعقيد والفخامة. أما الختام فيبوح بحلاوة العود الهندي، ليترك هالة مريحة راقية تجسد التراث والأناقة. إنه زيت عطر يتوارثه عشاق العود جيلاً بعد جيل.<br><br>إبداع عطري خالد يجمع بين عمق العود الهندي وفخامة العود الكمبودي وحلاوة العود التراثي. دهن العود مالكي قديم هو تحفة تراثية عريقة، محبوبة لأصالتها وقوتها الراقية.</p>', 24, 6, 1, 0, NULL, '{\"Sillage\":\"Strong – radiates heritage oud character.\",\"Longevity\":\"12+ hrs on skin, multiple days on fabrics.\",\"Dispenser\":\"dabber_stick\",\"Occasion\":\"Majlis, royal events, heritage gatherings, ceremonial wear.\",\"Ingredients\":\"Key Ingredients: • Pure Indian Oud Oil • Premium Cambodian Oud Blend R&amp\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '3ml', '3ml', NULL, 'active'),
-(56, 'FGD01876', 'FGD01876', 'dehn-al-oud-kalakasi', 'Dehn Al Oud Kalakasi', 'دهن العود كلاكاسي', '<p>A rare Indian oud, smooth and woody, with gentle sweetness and refined leathery depth. Dehn Al Oud Kalakasi captures the prestige of one of the most prized oud grades from Assam, India.<br><br>This oil embodies balance and sophistication—its opening unveils a smooth woody sweetness, never harsh, yet filled with character. As it evolves, subtle leathery undertones emerge, lending depth and dignity. The result is a noble oud signature: elegant, enduring, and highly collectible, designed for connoisseurs of true heritage oud.</p>', '<p>يعكس هذا الزيت التوازن والرقي—تتفتح بدايته بخشبية ناعمة مع لمسة حلاوة رقيقة، بعيداً عن أي قسوة، لكنه غني بالشخصية. ومع تطوره تظهر إيحاءات جلدية خفية تمنحه عمقاً وهيبة. النتيجة توقيع عطري نبيل: أنيق، باقٍ، ونفيس يليق بجامعي العود الأصيل.<br><br>عود هندي نادر، ناعم وخشبي، يتألق بحلاوة رقيقة وعمق جلدي راقٍ. يجسد دهن العود كلكاسي مكانة واحدة من أرقى درجات العود المستخرجة من آسام في الهند.</p>', 24, 6, 1, 0, '[\"A\",\"refined\",\"Indian\",\"oud\",\"oil\",\"that\",\"captures\",\"the\",\"essence\",\"of\",\"Kalakasi\",\"grade\",\"oud\",\"—\",\"known\",\"for\",\"its\",\"smoother\",\"rounder\",\"profile\",\"compared\",\"to\",\"harsher\",\"Hindi\",\"ouds\",\"yet\",\"still\",\"retaining\",\"that\",\"regal\",\"depth.\"]', '{\"Sillage\":\"Very strong – fills the air with noble oud presence.\",\"Longevity\":\"12+ hrs on skin, several days on fabrics.\",\"Dispenser\":\"dabber_stick\",\"Occasion\":\"Heritage gatherings, winter nights, royal events, ceremonial wear.\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '3ml', '3ml', NULL, 'active'),
-(57, 'FGD01396', 'FGD01396', 'musk-hareer', 'Musk Hareer', 'مسك حرير', '<p>A silky-soft musk creation blending floral brightness, creamy vanilla, and warm amber-powder elegance. Musk Hareer is crafted for those who desire subtle sophistication and enduring sensuality.<br><br>The fragrance opens with a delicate touch of lily of the valley and fresh notes, airy and luminous. At its heart, smooth vanilla emerges, adding sweetness and warmth. Finally, the base settles into a comforting cocoon of amber, powdery notes, and musk—enveloping the skin with a refined aura that lingers like soft silk.</p>', '<p>تتفتح الرائحة بلمسة رقيقة من زنبق الوادي والنفحات المنعشة، هوائية ومضيئة. وفي القلب، تظهر الفانيلا الناعمة لتضيف حلاوة ودفئاً. أما القاعدة فتستقر على عنبر ونغمات بودرية ومسك، تغلف البشرة بهالة أنيقة تدوم كالحرير الناعم.<br><br>ابتكار مسكي ناعم كالحرير يجمع بين إشراقة الأزهار وكريمية الفانيلا ودفء العنبر والبودرة. عطر مسك حرير صُمم لعشاق الرقي الهادئ والجاذبية الدائمة.</p>', 24, 5, 1, 0, '[\"Floral\",\"–\",\"Powdery\",\"–\",\"Musky\",\"–\",\"Amber\"]', '{\"Sillage\":\"Soft yet persistent, airy powder musk\",\"Longevity\":\"8–9 hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '12ml', '12ml', NULL, 'active'),
-(58, 'FGD01108', '2640120013245', 'bidun-esam-parfum-oil', 'Bidun Esam Parfum Oil', 'زيت مركز بدون اسم', '<p>Bright bergamot, grapefruit, orange, pear lead to sage, green tea, black currant, geranium, white pepper, Turkish rose, over musk, sandalwood, amber, Cambodian oud, patchouli, cedar<br><br>Bidun Esam opens with the radiance of bergamot, grapefruit, and orange, rounded by juicy pear. The heart layers aromatic sage, clear green tea, and tart black currant within a floral frame of geranium, white pepper, and Turkish rose. The base settles into musk and sandalwood, enriched by amber. Cambodian oud, patchouli, and cedar add lasting depth and structure for a smooth, enduring dry-down.</p>', '<p>يبدأ بيدون إسام بلمعة البرغموت والجريب فروت والبرتقال، وتوازنها عصيرية الكمثرى. في القلب تتناغم الميرمية مع الشاي الأخضر والكشمش الأسود ضمن إطار زهري من الجيرانيوم والفلفل الأبيض والورد التركي. يستقر الأساس على المسك وخشب الصندل مع توهج العنبر. يضيف العود الكمبودي والباتشولي والأرز عمقاً وبنيةً دائمة لجفافٍ ناعم طويل الأمد.<br><br>برغموت، جريب فروت، برتقال وكمثرى تقود إلى ميرمية، شاي أخضر، كشمش أسود، جيرانيوم، فلفل أبيض وورد تركي؛ مسك، صندل، عنبر، عود كمبودي، باتشولي، أرز.</p>', 24, 5, 1, 0, '[\"Oriental–Floral–Woody\",\"—\",\"A\",\"sophisticated\",\"blend\",\"where\",\"bright\",\"citrus\",\"and\",\"fruits\",\"meet\",\"herbal\",\"freshness\",\"unfolding\",\"into\",\"a\",\"floral\",\"spiced\",\"heart\",\"and\",\"settling\",\"into\",\"a\",\"deep\",\"musky\",\"oud\",\"base\"]', '{\"Sillage\":\"Strong — enveloping and long-lasting\",\"Longevity\":\"8–10 hrs on skin, 24+ hrs on fabrics\",\"Dispenser\":\"dabber_stick\",\"Ingredients\":\"Turkish Rose Absolute, Premium Cambodian Oud Oil, Sandalwood Oil, Amber Resin, Patchouli\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '12ml', '12ml', NULL, 'active'),
-(59, 'FGD01215', '2640120013542', 'zukhruf', 'Zukhruf', 'زخرف', '<p>A rich oriental harmony of spices, florals, and woods, crowned with velvety musk and amber. Zukhruf is a fragrance oil that embodies both opulence and depth, perfect for moments of refined distinction.<br><br>It begins with a lively fusion of black pepper, saffron, peppermint, chamomile, and ginger, offering a spicy-fresh opening full of character. The heart blossoms with a floral bouquet of rose, jasmine, and geranium, enriched by the warmth of tolu balm and the juicy sweetness of litchi. Finally, the base unfolds into a smooth blend of white musk, amber, cedar, sandalwood, and cashmere wood—creating a sensual, elegant dry down that lingers with sophistication.</p>', '<p>تبدأ الرائحة بمزيج حيوي من الفلفل الأسود والزعفران والنعناع البري والبابونج والزنجبيل، لتمنح افتتاحية حارة منعشة مفعمة بالشخصية. في القلب، تتفتح باقة زهرية من الورد والياسمين والجرانيوم، يغنيها دفء بلسم التولو وحلاوة الليتشي العصيرية. أما القاعدة فتستقر على خليط ناعم من المسك الأبيض والعنبر والأرز وخشب الصندل وخشب الكشمير، لتصوغ ختاماً أنيقاً آسراً يدوم برقي.<br><br>تناغم شرقي فاخر يجمع بين التوابل والزهور والأخشاب، يتوج بالمسك والعنبر المخملي. عطر زخرف هو زيت عطري يجسد الفخامة والعمق، ليمنح لحظات مميزة من الرقي.</p>', 24, 5, 1, 0, '[\"Spicy\",\"–\",\"Floral\",\"–\",\"Musky\",\"–\",\"Woody\"]', '{\"Sillage\":\"Warm spice with a smooth musk-wood finish\",\"Longevity\":\"9 hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:24', '2026-04-01 13:46:24', '12ml', '12ml', NULL, 'active'),
-(60, 'FGD01563', '6290360612881', 'enaque', 'Enaque', 'عناق', '<p>A sophisticated fusion of vanilla, florals, and woods, crowned with oud, amber, and sensual musk. Enaque is a fragrance that reflects elegance with depth, offering a journey that is both radiant and enduring.<br><br>The opening blends creamy vanilla with the brightness of bergamot, touched by saffron’s spice and the juicy sweetness of peach. At its heart, cedarwood anchors delicate violet and jasmine, creating a floral-woody harmony. The base then reveals a lasting trail of white musk, amber, patchouli, sandalwood, and agarwood—rich, warm, and irresistibly refined.</p>', '<p>تبدأ الرائحة بمزيج من الفانيلا الكريمية مع إشراقة البرغموت ولمسة زعفران حارة وحلاوة الخوخ العصيرية. في القلب، يرتكز خشب الأرز على البنفسج والياسمين الرقيقين ليمنح انسجاماً زهرياً خشبياً. أما القاعدة فتفصح عن أثر باقٍ من المسك الأبيض والعنبر والباتشولي وخشب الصندل والعود، في هالة دافئة غنية آسرة.<br><br>مزيج راقٍ من الفانيلا والزهور والأخشاب، يتوج بالعود والعنبر والمسك الحسي. إنك عطر يعكس الأناقة بعمق، مقدماً رحلة تجمع بين الإشراقة والدوام.</p>', 24, 5, 1, 0, '[\"Gourmand\",\"–\",\"Floral\",\"–\",\"Woody\",\"–\",\"Oriental\"]', '{\"Sillage\":\"Strong and warm, sweet yet woody finish\",\"Longevity\":\"10+ hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', '15ml', '15ml', NULL, 'active'),
-(61, 'FGD01709', 'FGD01709', 'rawdha-by-ahmed-oil', 'Rawdha by Ahmed Oil', 'روضة باي احمد زيت مركز', '<p>A graceful rose-centered oud oil, blending powdery freshness, refined woods, and soft musky warmth. Rawdha by Ahmed Oil embodies timeless beauty, delicacy, and refinement.<br><br>The opening reveals aldehydes with powdery rose, airy and luminous. At its heart, a noble bouquet of roses blooms, enriched by patchouli, geranium, orange blossom, and dry woods—balancing floral elegance with woody strength. Finally, the base settles into a velvety blend of musk accord, sandalwood, and dry woods, creating a long-lasting, comforting aura that is both sophisticated and serene.</p>', '<p>تبدأ الرائحة بالألدهيدات مع ورد بودَري ناعم وهوائي. وفي القلب، تتفتح باقة الورد النبيلة تغنيها نغمات الباتشولي والجرانيوم وزهر البرتقال والأخشاب الجافة، لتوازن بين الأناقة الزهرية والقوة الخشبية. أما القاعدة فتستقر على مزيج مخملي من المسك وخشب الصندل والأخشاب الجافة، لتصوغ هالة مريحة راقية تدوم طويلاً.<br><br>زيت عودي أنيق يتمحور حول الورد، يجمع بين النعومة البودَرية والأخشاب الراقية ودفء المسك. يجسد عطر روضة من أحمد أويل جمالاً خالداً ورقة وفخامة.</p>', 24, 5, 1, 0, '[\"Floral\",\"–\",\"Woody\",\"–\",\"Oriental\",\"|\",\"Elegant\",\"aldehydic\",\"floral\",\"opening\",\"with\",\"a\",\"warm\",\"spicy\",\"heart\",\"finishing\",\"in\",\"a\",\"rich\",\"resinous\",\"oud\",\"&\",\"leather\",\"base.\"]', '{\"Sillage\":\"Strong – noticeable aura around the wearer\",\"Longevity\":\"8–12 hrs on skin | Longer on fabrics\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', '10ml', '10ml', NULL, 'active'),
-(62, 'FGD01564', '6290360612898', 'obab', 'Obab', 'عباب', '<p>A bold yet elegant fragrance blending citrus, fruits, florals, and musk with warm woody-amber depth. Obab is a modern creation designed for those who seek both freshness and intensity in a single signature.<br><br>The journey begins with a lively opening of bergamot, crisp apple, and pink peppercorn, enhanced by intriguing animalic notes. At its heart, romantic rose and magnolia unfold, sweetened by strawberry and softened with musk tones. The base reveals a refined blend of white musk, dry woods, amber, moss, and cedarwood—creating a sophisticated and lasting trail of sensuality and strength.</p>', '<p>تبدأ الرحلة بانتعاش البرغموت والتفاح مع لمسة حارة من الفلفل الوردي، تتعانق مع نفحات حيوانية آسرة. في القلب، يتألق الورد والماغنوليا بسحر رومانسي، محلاة بالفراولة ومرهفة بنغمات مسكية. أما القاعدة فتستقر على مسك أبيض وأخشاب جافة وعنبر وطحالب وخشب الأرز، لتترك أثراً راقياً دائماً يجمع بين الحسية والقوة.<br><br>عطر جريء وأنيق يجمع بين الحمضيات والفواكه والزهور والمسك مع دفء الأخشاب والعنبر. عطر عُبَاب ابتكار عصري صُمم لعشاق الانتعاش والقوة في توقيع عطري واحد.</p>', 24, 5, 1, 0, '[\"Fruity\",\"–\",\"Floral\",\"–\",\"Musky\",\"–\",\"Woody\"]', '{\"Sillage\":\"Balanced fruity-floral with animalic depth\",\"Longevity\":\"9–10 hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', '15ml', '15ml', NULL, 'active'),
-(63, 'FGD01710', '6290360614380', 'kiswah-by-ahmed', 'Kiswah By Ahmed', 'كسوة باي أحمد', '<p>A deep oriental blend where honeyed florals meet rich musk, amber, and noble oud. Kiswah by Ahmed is a fragrance woven with elegance and devotion, evoking timeless Arabian luxury.<br><br>It opens with luminous orange blossom sweetened by golden honey, creating a radiant yet comforting start. The heart reveals a bold black musk accord, enveloping the senses in mystery and sensuality. The base then settles into a majestic harmony of amber, soft musk, and the grandeur of Cambodian and Hindi oud—leaving behind a powerful and unforgettable trail.</p>', '<p>تتفتح البداية بزهر البرتقال المضيء المحلى بالعسل الذهبي ليمنح انطلاقة مشرقة ومريحة. في القلب، يتجلى تناغم المسك الأسود ليغمر الحواس بالغموض والحسية. أما القاعدة فتستقر على تناغم مهيب من العنبر والمسك الناعم وعظمة العود الكمبودي والهندي، لتترك أثراً قوياً لا يُنسى.<br><br>مزيج شرقي عميق تتناغم فيه الزهور الممزوجة بالعسل مع عبير المسك والعنبر والعود الفاخر. كسوة من أحمد عطر منسوج بالأناقة والروحانية ليعكس فخامة عربية خالدة.</p>', 24, 5, 1, 0, '[\"Sweet\",\"–\",\"Musky\",\"–\",\"Oriental\",\"–\",\"Oud\"]', '{\"Sillage\":\"Deep musky honeyed oud\",\"Longevity\":\"12 hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', '10ml', '10ml', NULL, 'active'),
-(64, 'FGD01566', '6290360612911', 'hulwah', 'Hulwah', 'حلوة', '<p>A luxurious oriental blend of honeyed florals, deep musk, and noble oud wrapped in amber warmth. Kiswah by Ahmed is a fragrance inspired by heritage and devotion, crafted to embody grace and reverence.<br><br>The journey opens with luminous orange blossom softened by golden honey, offering sweetness and light. At its heart lies a bold black musk accord, adding intensity and sensual depth. The base completes the composition with amber, musk, and a majestic fusion of Cambodian and Hindi oud—leaving behind a lasting aura of spirituality, elegance, and regal power.</p>', '<p>تبدأ الرحلة بتألق زهر البرتقال الممزوج بعسل ذهبي، ليمنح العطر حلاوة ونوراً. في القلب، يسطع المسك الأسود العميق ليضيف قوة وحسية آسرة. أما القاعدة فتستقر على العنبر والمسك وتناغم مهيب من العود الكمبودي والهندي، ليترك أثراً دائماً يفيض بالروحانية والأناقة والفخامة الملكية.<br><br>مزيج شرقي فاخر يجمع بين الزهور بالعسل وعمق المسك وفخامة العود في دفء العنبر. كسوة من أحمد عطر مستوحى من التراث والروحانية، صُمم ليجسد النعمة والوقار.</p>', 24, 5, 1, 0, '[\"Floral\",\"–\",\"Woody\",\"–\",\"Resinous\",\"–\",\"Musky\"]', '{\"Sillage\":\"Soft yet lasting oriental warmth\",\"Longevity\":\"8 hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', '15ml', '15ml', NULL, 'active'),
-(65, 'FGD01565', '6290360612904', 'hayyin', 'Hayyin', 'هين', '<p>A bold oriental signature where fresh fruits and herbs meet oud, florals, and a deep gourmand base. Hayyin is a fragrance that balances radiance with intensity, designed for those who seek both freshness and depth in one creation.<br><br>The opening bursts with bergamot, orange, sage, apple, and star anise, offering a citrusy-spiced freshness. At the heart, oud and patchouli entwine with ylang-ylang, rose, vetiver, and violet—an opulent floral-woody core. The base reveals a rich, sensual blend of tonka bean, amber, leather, benzoin, and chocolate, leaving behind a powerful and unforgettable trail.</p>', '<p>تتفجر البداية بالبرغموت والبرتقال والمريمية والتفاح واليانسون النجمي، لتمنح انتعاشاً حمضياً متبلاً. في القلب، يتداخل العود والباتشولي مع الإيلنغ-إيلنغ والورد والفيتيفر والبنفسج، ليصوغوا قلباً زهرياً خشبياً فاخراً. أما القاعدة فتبوح بمزيج غني حسي من التونكا والعنبر والجلد واللبان الحلو والشوكولاتة، تاركة أثراً قوياً لا يُنسى.<br><br>توقيع شرقي جريء يلتقي فيه انتعاش الفواكه والأعشاب مع العود والزهور وقاعدة غورماند عميقة. حيِّن عطر يجمع بين الإشراقة والعمق، صُمم لعشاق العطور الذين يبحثون عن التوازن بين الانتعاش والقوة.</p>', 24, 5, 1, 0, '[\"Spicy\",\"–\",\"Woody\",\"–\",\"Gourmand\",\"–\",\"Oriental\"]', '{\"Sillage\":\"Bold and complex, sweet leather finish\",\"Longevity\":\"10+ hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', '15ml', '15ml', NULL, 'active'),
-(66, 'FGD01980', 'FGD01980', 'firdaus-by-ahmed', 'Firdaus By Ahmed', 'فردوس باي أحمد', '<p>A vibrant chypre-oriental blend of citrus, green herbs, and florals resting on mossy-incense depth. Firdaus by Ahmed is a fragrance that evokes harmony and refinement, balancing freshness with timeless oriental richness.<br><br>The fragrance opens with sparkling bergamot, crisp peppermint, and aromatic artemisia, creating a green-citrus brightness. At the heart, geranium and exotic ylang-ylang bloom, softened by luminous aldehydic notes. The base grounds the composition with patchouli, oakmoss, labdanum, and incense—leaving behind a profound and elegant trail that is both classic and spiritual.</p>', '<p>تتألق البداية ببرغموت متلألئ مع نعناع هش وأرتميسيا عطرية، لتمنح إشراقة خضراء حمضية. في القلب، يزهو الجيرانيوم مع الإيلنغ-إيلنغ الغريب، تعانقها لمسات ألدهيدية مضيئة. أما القاعدة فتستقر على الباتشولي والطحالب واللابدانوم والبخور، لتترك أثراً عميقاً راقياً يجمع بين الكلاسيكية والروحانية.<br><br>مزيج شيبري شرقي نابض يجمع بين الحمضيات والأعشاب الخضراء والزهور على قاعدة طحلبية بخورية. عطر فردوس من أحمد يستحضر الانسجام والرقي، بموازنة بين الانتعاش والغنى الشرقي الخالد.</p>', 24, 5, 1, 0, '[\"Fresh\",\"–\",\"Green\",\"–\",\"Chypre\",\"–\",\"Resinous\"]', '{\"Sillage\":\"Crisp opening, deep resinous dry-down\",\"Longevity\":\"8–9 hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', '15ml', '15ml', NULL, 'active'),
-(67, 'FGD01918', 'FGD01918', 'qeyafah', 'Qeyafah', 'قيافة', '<p>A bold oriental signature of smoky cypriol, warm woods, and deep leather-musk elegance. Qeyafah is a fragrance that embodies strength, refinement, and timeless allure.<br><br>The opening fuses cypriol with resinous labdanum and spicy cardamom, creating a smoky yet vibrant start. At its heart, woody notes, amber, and sandalwood reveal warmth and complexity. The base unfolds into leather enriched with musk and tonka bean—an enduring, sensual dry down that leaves a mark of power and sophistication.</p>', '<p>تتألق البداية بمزيج من السبرول واللابدانوم الراتنجي مع الهيل الحار، ليمنح افتتاحية مدخنة نابضة بالحيوية. في القلب، تكشف الأخشاب والعنبر وخشب الصندل عن دفء وتعقيد راقٍ. أما القاعدة فتستقر على الجلد الغني بالمسك وحبوب التونكا، لتمنح خاتمة حسيّة باقية تفيض بالقوة والأناقة.<br><br>توقيع شرقي جريء يجمع بين السبرول الدخاني والأخشاب الدافئة وأناقة الجلد والمسك. قيافة عطر يجسد القوة والرقي والجاذبية الخالدة.</p>', 24, 5, 1, 0, '[\"Spicy\",\"–\",\"Woody\",\"–\",\"Leather\",\"–\",\"Oriental\"]', '{\"Sillage\":\"Rich leather-spice accord\",\"Longevity\":\"10+ hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', '15ml', '15ml', NULL, 'active'),
-(68, 'FGD01917', 'FGD01917', 'wesaf', 'Wesaf', 'وصاف', '<p>A rich oriental-woody blend where spices meet resinous woods and smoky oud-incense depth. Wesaf is a fragrance crafted for those who value strength, tradition, and timeless sophistication.<br><br>It opens with labdanum infused with the warmth of ginger and nutmeg, creating a spicy-resinous brightness. At its heart, gurjum resin merges with sandalwood and patchouli, adding earthy elegance and depth. The base completes the journey with incense, oud, cedarwood, and gaiacwood, leaving behind a smoky, majestic trail of refined power.</p>', '<p>تتفتح البداية باللابدانوم ممزوجاً مع دفء الزنجبيل وجوزة الطيب، ليمنح إشراقة حارة راتنجية. في القلب، يتداخل راتنج الغرجم مع خشب الصندل والباتشولي، مضيفاً أناقة ترابية وعمقاً مميزاً. أما القاعدة فتختتم بالبخور والعود وخشب الأرز وخشب الغاياك، لتترك أثراً مدخناً مهيباً يعكس القوة والرقي.<br><br>مزيج شرقي خشبي فاخر تلتقي فيه التوابل مع الأخشاب الراتنجية وعمق العود والبخور. وصاف عطر صُمم لعشاق القوة والأصالة والفخامة الخالدة.</p>', 24, 5, 1, 0, '[\"Oriental\",\"Woody\",\"Incense\"]', '{\"Sillage\":\"Moderate to Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', '15ml', '15ml', NULL, 'active'),
-(69, 'FGD01469', '2640130130499', 'the-dukhoon-collection', 'The Dukhoon Collection', 'دخون كوليكشن', '<p>\"Enhancing leisure with a range of traditional blended Dukhoons.</p><p>The Dukhoon collection contains:</p><p>Oud Ma’attar Majalis, Mariya Oud Mubakhar 36 Grams, Bakhoor Ahmed 20 Tabs and Khashab Al Oud.\"</p>', '<p>تعزيز أوقات الفراغ مع مجموعة” دخون كوليكشن ” الممزوجة التقليدية.</p><p><br><br>&nbsp;</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', NULL, NULL, NULL, 'active'),
-(70, 'FGD01470', '2640130130512', 'atri-giftset', 'Atri Giftset', 'طقم هدايا عطري', '<p>The Giftset contains ( Tanuf Oil e12 ml , Malyoon Oil e12 ml , Lamees Oil e12 ml , D/oud AMG Oil e12 ml )</p>', '<p>” مجموعة عطري ” تحتوي على ( زيت تنوف 12 مل , زيت مليون 12 مل , زيت مسك لميس 12 مل , زيت دهن العود ايه ، ايم ، جي . 12 مل )</p><p><br><br>&nbsp;</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', NULL, NULL, NULL, 'active'),
-(71, 'FGD01156', '2640130130222', 'bidun-esam-gift-set', 'Bidun Esam Gift Set', 'طقم هدايا بدون إسم', '<p>The Gift Set contains Bidun Esam 50ml, Bidun Esam 12ml &amp; Bidun Esam Gel</p>', '<p>تحتوي مجموعه الهدايا على (عطر بدون اسم 50 مل , جل بدون اسم , زيت مركز بدون اسم )</p><p><br><br>&nbsp;</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', NULL, NULL, NULL, 'active');
-INSERT INTO `products` (`id`, `fgd`, `barcode`, `slug`, `name_en`, `name_ar`, `description_en`, `description_ar`, `category_id`, `subcategory_id`, `is_active`, `is_featured`, `tags`, `attributes`, `created_at`, `updated_at`, `size_label_en`, `size_label_ar`, `media_url`, `deleted_status`) VALUES
-(72, 'FGD01513', '6290360611303', 'hubb-o-salam', 'Hubb-O-Salam', 'حبٌ و سلام', '<p>A beautiful balance of musky and breezy fragrance of Muzn, an enchanting aura of Cashmere Wood with the Rose Noir, Bakhoor Khayali with its unique enchanting fragrant that add significance to your moments and impress those around you, a prayer mat &amp; Oud Merauke super Indonesian agarwood with a rich natural aroma to refresh oneself.</p>', '<p>مجموعة الهدايا تحتوي على ( عطر روز نوير جديد بخاخ 75 مل و عطر “مزن ” بخاخ 100 مل , بخور خيالي 10 حبات , عود مروكي اندوسي 12 غرام مع سجادة الصلاة )</p><p><br><br>&nbsp;</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', NULL, NULL, NULL, 'active'),
-(73, 'FGD01693', '6290360614045', 'saadah-gift-set', 'Sa\'adah Gift Set', 'طقم هدايا سعادة', '<p>The Gift Set Contains (OUD CLASSIC 50ML , OUD COUTURE 100ML , MTR MAJALIS 3TL)</p>', '<p>تحتوي المجموعه على ( عود كلاسيك , عطر زريق , عود معطر مجالس)</p><p><br><br>&nbsp;</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', NULL, NULL, NULL, 'active'),
-(74, 'FGD01066', '6290360610405', 'little-heart-gift-set', 'Little Heart Gift Set', 'طقم هدايا ليتل هارتس', '<p>\"Little Hearts is a melody of untouched emotions in a delicate vial that speaks directly to your soul.</p><p>Depicting the rustic innocence of a sunlit clearing in the heart of a dense forest, the Little Hearts fragrance shall help you find your true nirvana.</p><p>The gift set is a combination of Little Hearts perfume and Little Hearts body gel.\"</p>', '<p>مجموعة هدية عبارة من عطر ليتل هارتس و جل لليدين والجسم ليتل هارتش.</p><p><br><br>&nbsp;</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', NULL, NULL, NULL, 'active'),
-(75, 'FGD02181', 'FGD02181', 'oud-amp-roses-gift-set', 'Oud &amp; Roses Gift Set', 'طقم هدايا عود أند روز', '<p>At the heart of this ensemble lies a 60ml bottle of Oud &amp; Roses perfume, exuding an alluring blend of rich, woody oud notes intertwined with the soft, floral essence of roses. Accompanying this signature scent is a 30ml Body Gel.</p><p>To enrich your surroundings, the set includes 10 tabs of Oud &amp; Roses Bakhoor, designed to infuse any space with warmth and sophistication. Pair this with the 180ml Oud &amp; Roses Airfreshner, and let the captivating aroma envelop your home with tranquility.</p><p>Elevate your personal grooming routine with the 50ml Oud &amp; Roses Hair Mist, leaving a subtle yet captivating scent lasting in your locks. As a thoughtful addition, a prayer mat is included, offering moments of quiet reflection and spiritual connection.</p><p>Embrace the allure of Oud &amp; Roses, enveloping yourself or a loved one in an experience of luxury, serenity, and timeless elegance</p>', '<p>افتحوا أمامكم قمة الفخامة مع مجموعة عود اند روزز، مزيج متناغم من العود الفاخر والورد الرقيق. تدعوكم هذه المجموعة المنتقاة بعناية للغمر في عالم من الرقي والتدليل.</p><p><br><br>&nbsp;</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', NULL, NULL, NULL, 'active'),
-(76, 'FGD01756', 'FGD01756', 'antee-gift-set-05', 'Antee Gift Set 05', 'طقم هدايا أنتي 05', '<p>The Antee Giftset Contains: Rose noir 75ml, Bidun Esam 50ml, Rose noir 50ml Hair Mist &amp; Bakhoor Antee 10 Tabs</p>', '<p>تحتوي مجموعة هدايا أنتي على:روز نوير 75 ملبدون اسم 50 ملروز نوير 50 مل رذاذ شعربخور أنتي 10 أقراص</p><p><br><br>&nbsp;</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', NULL, NULL, NULL, 'active'),
-(77, 'FGD01811', '6290360615042', 'ihdaa-khaas', 'Ihdaa Khaas', 'إهداء خاص', '<p>Introducing the Ihdaa Khaas Giftset—a pinnacle of luxury and elegance. This special gift set features a curated selection of premium fragrances designed to enchant the senses and elevate every moment. Discover the essence of sophistication with Oud Lavender, Couture Noir, and the rich aroma of Oud Arian Super. Complete the ambiance with the soothing Oud Lavender air freshener.</p>', '<p>تتميز هذه المجموعة الخاصة باختيار منتقى من العطور الفاخرة المصممة لسحر الحواس ورفع كل لحظة إلى مستوى جديد.</p><p><br><br>&nbsp;</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', NULL, NULL, NULL, 'active'),
-(78, 'FGD01675', '6290360613956', 'hayyakum-gift-set', 'Hayyakum Gift Set', 'طقم هدايا حياكم', '<p>\"Inside the beautifully presented gift box, you\'ll find a carefully curated selection of premium perfumes, each with its own unique scent profile and notes. There\'s something here to suit every mood and occasion.</p><p>The set includes (Oud Couture 100ml, Rose Noir 75ml, Mariya Oud Mubakhar 36 Grams, Supreme Bodygel 30ml &amp; Enaque 15ml), so your loved ones can explore each fragrance in-depth and find their new signature scent.</p><p>It\'s a thoughtful and luxurious way to show someone how much you care and make their special day even more memorable.</p><p>So why wait? Treat your loved one to this exquisite perfume giaft set today!\"</p>', '<p>ستجد داخل صندوق الهدايا ” حياكم ” المقدم بشكل جميل مجموعة مختارة بعناية من العطور الفاخرة،</p><p><br><br>&nbsp;</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', NULL, NULL, NULL, 'active'),
-(79, 'FGD01671', '6290360614007', 'shamekh-gift-set', 'Shamekh Gift set', 'طقم هدايا شامخ', '<p>Shamekh Gift set contains ( Tanuf 50 ml , Tanuf oil 12 ml &amp; Oud Arian Tiger 12 grams)</p>', '<p>طقم هدايا ” شامخ ” يحتوي على ( تنوف 50 مل و زيت تنوف 12 مل و عود أريان تايجر 12 جرام)</p><p><br><br>&nbsp;</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', NULL, NULL, NULL, 'active'),
-(80, 'FGD01874', 'FGD01874', 'qarnain', 'Qarnain', 'قرنين', '<p>Elevate your EID festivities with our exquisite Qarnain Giftset, crafted with love and designed to capture the spirit of this joyous occasion.</p>', '<p>رفعوا احتفالات عيدكم مع مجموعة قِرنين الفاخرة، المصممة بحب والمصنوعة لالتقاط روح هذه المناسبة السعيدة.</p><p><br><br>&nbsp;</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:25', '2026-04-01 13:46:25', NULL, NULL, NULL, 'active'),
-(81, 'FGD00398', 'FGD00398', 'air-freshener-oud-amp-roses', 'Air Freshener Oud &amp; Roses', 'عود أند روز (ملطف للمنزل)', '<p>A modern oud–rose duet: Turkish rose and peony over lavender and citrus, deepening into sandalwood and frankincense with ambroxan, musk, guaiac wood and oakmoss.<br><br>Oud &amp; Roses opens in luminous contrast: dewy Turkish rose and plush peony lifted by soothing lavender and sparkling citruses. The heart turns contemplative as rose is wrapped in creamy sandalwood, a halo of white flowers, and dignified frankincense (olibanum). The dry down is poised and modern—an elegant weave of oud accord and guaiac wood, textured with oakmoss, then polished by radiant ambroxan and soft musk for a graceful, lingering trail.</p>', '<p>يبدأ “عود آند روزز” بتباين متألق: ورد تركي ندي وفاوانيا (بيوني) مخملية تعلوهما خزامى مهدّئ ولمعان حمضيات. في القلب يتعمّق العطر مع ورد محتضن بـ خشب الصندل وزهور بيضاء وهالة لبان (أوليبانوم) وقورة. أما القاعدة فتتوازن بثقة بين أكورد العود وخشب غواياك مع لمسة طحلب السنديان، ويصقلها أمبروكسان متوهّج ومسك ناعم لأثرٍ أنيق طويل الحضور.<br><br>ثنائية عود–ورد عصرية: ورد تركي وبيوني فوق لافندر وحمضيات، تتعمّق إلى صندل ولبان، وتختم بأمبروكسان ومسك وخشب غواياك وطحلب السنديان.</p>', 29, 9, 1, 0, '[\"Floral–Oriental–Woody\",\"—\",\"opens\",\"with\",\"a\",\"romantic\",\"rose\",\"bouquet\",\"and\",\"soft\",\"lavender\",\"warmed\",\"by\",\"citrus\",\"peony;\",\"the\",\"core\",\"blooms\",\"with\",\"creamy\",\"florals\",\"over\",\"deep\",\"sandalwood\",\"and\",\"frankincense;\",\"finally\",\"a\",\"woody\",\"musk\",\"amber\",\"base\",\"layers\",\"in\",\"rich\",\"oud\",\"guaiac\",\"wood\",\"and\",\"mos\"]', '{\"Sillage\":\"Strong — powerful projection\",\"Dispenser\":\"other\",\"Ingredients\":\"Turkish Rose Absolute, Frankincense Resin, Sandalwood Oil, Oud aaccord, Guaiac Wood Oil, Amber Accord\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '300ml', '300ml', NULL, 'active'),
-(82, 'FGD00080', '2640040040222', 'bakhoor-ahmed-20-tabs', 'Bakhoor Ahmed (20 Tabs)', 'بخور احمد (20 قرص)', '<p>A luxurious bakhoor of radiant florals, warm spices, and rich woods, leaving homes wrapped in timeless elegance. Bakhoor Ahmed (20 Tabs) is a ceremonial blend crafted to enrich every gathering with beauty and refinement.<br><br>The experience begins with bright notes of lemon, bergamot, and galbanum, softened by rose absolute and saffron. At its heart, an opulent floral bouquet of hyacinth, violet, tuberose, jasmine, ylang-ylang, rose, carnation, and orris blooms in harmony, highlighted by subtle spices. The base settles into sandalwood, amber, oakmoss, musk, patchouli, and vetiver—creating an atmosphere of warmth, richness, and majesty that lingers in every corner.</p>', '<p>تبدأ التجربة بنفحات مشرقة من الليمون والبرغموت والجالبانوم، يلينها عطر الورد الخالص والزعفران. في القلب، تتفتح باقة زهرية فاخرة من الياقوتية والبنفسج والبردي والياسمين والإيلنغ-إيلنغ والورد والقرنفل والسوسن، تتألق بلمسات التوابل. أما القاعدة فتستقر على خشب الصندل والعنبر والطحالب والمسك والباتشولي والفيتيفر، لتخلق أجواءً دافئة غنية مهيبة تدوم في كل زاوية.<br><br>بخور فاخر يزهو بالأزهار المشرقة والتوابل الدافئة والأخشاب الغنية ليغمر البيوت بأناقة خالدة. بخور أحمد (20 قرص) مزيج احتفالي صُمم ليزين كل مناسبة بجمال ورقي.</p>', 25, 7, 1, 0, '[\"Fresh\",\"Woody\",\"–\",\"citrus\",\"sparkle\",\"rich\",\"florals\",\"warm\",\"amber\",\"base\"]', '{\"Sillage\":\"Strong – fills the room quickly\",\"Longevity\":\"2–3 hrs in the air\",\"Dispenser\":\"solid_incense\",\"Ingredients\":\"Bulgarian Rose Absolute, Natural Saffron, Premium Sandalwood, Amber Resin\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '20 Tab', '20 Tab', NULL, 'active'),
-(83, 'FGD00399', 'FGD00399', 'air-freshener-oud-lavender', 'Air Freshener Oud Lavender', 'عود لافندر (ملطف للمنزل)', '<p>Fresh lavender and hyacinth brighten juicy apple–pineapple, layered with iris, jasmine and pink pepper, resting on vetiver, ambroxan, oud and soft musk.<br><br>Oud Lavender opens with a luminous floral–fruity lift: airy hyacinth and soothing lavender cradle apple and pineapple for a crisp, modern start. The heart turns refined as buttery iris and soft jasmine bloom, animated by a gentle sparkle of pink pepper. The dry down settles into poised depth—vetiver and oud giving structure, ambroxan adding clean ambery radiance, and musk caressing the finish with smooth comfort.</p>', '<p>تبدأ “عود لافندر” بانتعاش زهري-فاكهي: الهياسينث مع الخزامى يحتضنان التفاح والأناناس لافتتاحية عصرية نابضة. في القلب يتقدّم السوسن المخملي والياسمين الناعم وتوقظهما لمسة فلفل وردي رشيقة. ثم يستقر العطر على عمق متوازن من الفيتيفر والعود، مع وهج نقي من الأمبروكسان ولمسة المسك الملساء لختام أنيق.<br><br>خزامى وسنبل منعشان يضيئهما تفاح وأناناس، يتبعهما سوسن وياسمين وفلفل وردي على قاعدة فيتيفر وأمبروكسان وعود ومسك.</p>', 29, 9, 1, 0, '[\"Floral\",\"Woody\",\"Musky\",\"Oud\",\"ambery\"]', '{\"Sillage\":\"Moderate\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '300ml', '300ml', NULL, 'active'),
-(84, 'FGD00081', '2640040040017', 'bakhoor-ahmed-40-tabs', 'Bakhoor Ahmed (40 Tabs)', 'بخور احمد (40 قرص)', '<p>A luxurious bakhoor of radiant florals, warm spices, and rich woods, leaving homes wrapped in timeless elegance. Bakhoor Ahmed (40 Tabs) is a ceremonial blend crafted to enrich every gathering with beauty and refinement.<br><br>The experience begins with bright notes of lemon, bergamot, and galbanum, softened by rose absolute and saffron. At its heart, an opulent floral bouquet of hyacinth, violet, tuberose, jasmine, ylang-ylang, rose, carnation, and orris blooms in harmony, highlighted by subtle spices. The base settles into sandalwood, amber, oakmoss, musk, patchouli, and vetiver—creating an atmosphere of warmth, richness, and majesty that lingers in every corner.</p>', '<p>تبدأ التجربة بنفحات مشرقة من الليمون والبرغموت والجالبانوم، يلينها عطر الورد الخالص والزعفران. في القلب، تتفتح باقة زهرية فاخرة من الياقوتية والبنفسج والبردي والياسمين والإيلنغ-إيلنغ والورد والقرنفل والسوسن، تتألق بلمسات التوابل. أما القاعدة فتستقر على خشب الصندل والعنبر والطحالب والمسك والباتشولي والفيتيفر، لتخلق أجواءً دافئة غنية مهيبة تدوم في كل زاوية.<br><br>بخور فاخر يزهو بالأزهار المشرقة والتوابل الدافئة والأخشاب الغنية ليغمر البيوت بأناقة خالدة. بخور أحمد (40 قرص) مزيج احتفالي صُمم ليزين كل مناسبة بجمال ورقي.</p>', 25, 7, 1, 0, '[\"Fresh\",\"Woody\",\"–\",\"citrus\",\"sparkle\",\"rich\",\"florals\",\"warm\",\"amber\",\"base\"]', '{\"Longevity\":\"2–3 hrs in the air\",\"Dispenser\":\"jar\",\"Ingredients\":\": Bulgarian Rose Absolute, Natural Saffron, Premium Sandalwood, Amber Resin\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '40 Tab', '40 Tab', NULL, 'active'),
-(85, 'FGD01190', 'FGD01190', 'air-freshener-little-hearts', 'Air Freshener Little Hearts', 'ليتل هارتس (ملطف للمنزل)', '<p>Sweet citrus lime and orange sparkle; mango, pineapple, mixed exotic fruits bloom; amber, amber resin, musk, and vanilla settle into warm, comforting depth.Little Hearts opens with sweet citrus brilliance from lime and orange. The heart turns to tropical fruity bliss as mango and pineapple mingle with mixed exotic fruits. The base moves into warm, comforting depth: amber and amber resin glow beside musk, while vanilla rounds a smooth, lasting trail. The sequence remains clear—sweet citrus, tropical fruit, then an ambery-musk finish—shaping a well-structured signature that stays consistent from first spray to dry-down.</p>', '<p>ليمون وبرتقال بحلاوة حمضية يتألّقان؛ مانجو وأناناس وفواكه غريبة مختلطة تتفتح؛ عنبر وراتنج عنبر ومسك وفانيلا تستقرّ بعمق دافئ ومريح.يفتتح ليتل هارتس ببريق حمضي حلو من الليمون والبرتقال. يتجه القلب إلى بهجة فواكه استوائية حيث ينسجم المانجو والأناناس مع فواكه غريبة مختلطة. تنتقل القاعدة إلى عمق دافئ ومريح: يتوهّج العنبر وراتنج العنبر بجانب المسك، بينما تصقل الفانيلا أثراً ناعماً طويل البقاء. يتتابع البناء بوضوح—حمضيات حلوة، فواكه استوائية، ثم ختام عنبري-مسكي—ليرسم طابعاً متماسكاً من الرشة حتى الجفاف.<br><br>ليمون وبرتقال بحلاوة حمضية يتألّقان؛ مانجو وأناناس وفواكه غريبة مختلطة تتفتح؛ عنبر وراتنج عنبر ومسك وفانيلا يستقرّون بعمق دافئ ومريح.</p>', 29, 9, 1, 0, '[\"Citrus\",\"–\",\"Fruity\",\"–\",\"Amber\",\"–\",\"Sweet\",\"–\",\"Musky\"]', '{\"Sillage\":\"Moderate to noticeable\",\"Dispenser\":\"spray\",\"Occasion\":\"Daytime, casual to romantic occasions\",\"Ingredients\":\"Lime Essence, Sweet Orange Oil, Pineapple Accord, Mango Extract, Amber Resin, White Musk, Madagascar Vanilla\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '300ml', '300ml', NULL, 'active'),
-(86, 'FGD01095', '2640040040260', 'bakhoor-ahmed-10-tabs', 'Bakhoor Ahmed (10 Tabs)', 'بخور احمد (10 قرص)', '<p>A luxurious bakhoor of radiant florals, warm spices, and rich woods, leaving homes wrapped in timeless elegance. Bakhoor Ahmed (10 Tabs) is a ceremonial blend crafted to enrich every gathering with beauty and refinement.<br><br>The experience begins with bright notes of lemon, bergamot, and galbanum, softened by rose absolute and saffron. At its heart, an opulent floral bouquet of hyacinth, violet, tuberose, jasmine, ylang-ylang, rose, carnation, and orris blooms in harmony, highlighted by subtle spices. The base settles into sandalwood, amber, oakmoss, musk, patchouli, and vetiver—creating an atmosphere of warmth, richness, and majesty that lingers in every corner.</p>', '<p>تبدأ التجربة بنفحات مشرقة من الليمون والبرغموت والجالبانوم، يلينها عطر الورد الخالص والزعفران. في القلب، تتفتح باقة زهرية فاخرة من الياقوتية والبنفسج والبردي والياسمين والإيلنغ-إيلنغ والورد والقرنفل والسوسن، تتألق بلمسات التوابل. أما القاعدة فتستقر على خشب الصندل والعنبر والطحالب والمسك والباتشولي والفيتيفر، لتخلق أجواءً دافئة غنية مهيبة تدوم في كل زاوية.<br><br>بخور فاخر يزهو بالأزهار المشرقة والتوابل الدافئة والأخشاب الغنية ليغمر البيوت بأناقة خالدة. بخور أحمد (10 قرص) مزيج احتفالي صُمم ليزين كل مناسبة بجمال ورقي.</p>', 25, 7, 1, 0, '[\"Fresh\",\"Woody\",\"–\",\"citrus\",\"sparkle\",\"rich\",\"florals\",\"warm\",\"amber\",\"base\"]', '{\"Sillage\":\"Strong – fills the room quickly\",\"Longevity\":\"2–3 hrs in the air\",\"Dispenser\":\"other\",\"Ingredients\":\": Bulgarian Rose Absolute, Natural Saffron, Premium Sandalwood, Amber Resin\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '10 Tabs', '10 Tabs', NULL, 'active'),
-(87, 'FGD01441', '2640040040321', 'bakhoor-baiti-10-tabs', 'Bakhoor Baiti 10 tabs', 'بخور بيتي 10 قرص', '<p>A warm, smoky bakhoor blending shamama, florals, and musk to fill homes with heritage elegance.<br><br>It begins with the earthy richness of shamama accords intertwined with rose. At its heart, jasmine blooms against smoky bakhoor accords, adding depth and ceremonial charm. The base settles on patchouli and musk, leaving a lingering aura of comfort, refinement, and homely sophistication.</p>', '<p>تبدأ الرائحة بثراء الشمامة الترابي المتناغم مع الورد. في القلب، يتفتح الياسمين مع نفحات البخور المدخنة ليضفيا عمقاً وسحراً احتفالياً. أما القاعدة فتستقر على الباتشولي والمسك، لتترك هالة مريحة راقية تجسد الألفة والأناقة.<br><br>بخور دافئ مدخن يمزج بين الشمامة والزهور والمسك ليغمر البيوت بأصالة وأناقة</p>', 25, 7, 1, 0, '[\"Smoky\",\"–\",\"Floral\",\"–\",\"Oriental\",\"—\",\"a\",\"rich\",\"blend\",\"of\",\"shamama\",\"warmth\",\"deep\",\"florals\",\"and\",\"classic\",\"bakhoor\",\"smokiness\",\"settling\",\"into\",\"earthy\",\"patchouli\",\"and\",\"soft\",\"musk.\"]', '{\"Sillage\":\"Strong — fills the space with luxurious aroma\",\"Longevity\":\"Long-lasting\",\"Dispenser\":\"other\",\"Occasion\":\"perfect for extended gatherings &amp\",\"Ingredients\":\"Shamama Attar, Rose, Patchouli Oil, Musk Accord.\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '10 Tabs', '10 Tabs', NULL, 'active'),
-(88, 'FGD00087', '2640040040062', 'bakhoor-bushra-box', 'Bakhoor Bushra (Box)', 'بخور بشرى (بوكس)', '<p>A refined bakhoor of white musk, exotic florals, and oud, leaving homes adorned with elegance and serenity.<br><br>The aroma opens with the softness of white musk blended with jasmine sambac, roses, and exotic flowers for a radiant floral aura. Iris then adds powdery refinement, while dehn al oudh and amber anchor the composition with depth and richness. The result is a lingering, welcoming atmosphere that envelops the space in timeless beauty.</p>', '<p>تتفتح الرائحة بنعومة المسك الأبيض الممتزج مع الياسمين السامباك والورد والأزهار الغريبة ليمنح هالة زهرية مشرقة. يضيف السوسن لمسة بودَرية راقية، بينما يرسخ دهن العود والعنبر التركيبة بالعمق والغنى. النتيجة أجواء مضيافة دافئة تغمر المكان بجمال خالد.<br><br>بخور راقٍ يجمع بين المسك الأبيض والأزهار الغريبة والعود ليزين البيوت بالأناقة والسكينة.</p>', 25, 7, 1, 0, '[\"Oriental–Musky\",\"–\",\"soft\",\"floral\",\"and\",\"warm\"]', '{\"Sillage\":\"Moderate to strong\",\"Longevity\":\"2–3 hrs in the air\",\"Dispenser\":\"solid_incense\",\"Occasion\":\"creates a comforting aura\",\"Ingredients\":\"White Musk Crystals, Iris Butter, Indian Rose, Amber Resin\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '25 Tabs', '25 Tabs', NULL, 'active'),
-(89, 'FGD00095', '2640040040192', 'bakhoor-oud-amp-roses', 'Bakhoor Oud &amp; Roses', 'بخور عود أند روز', '<p>A graceful fusion of roses, white florals, and oud, wrapped in musk, amber, and soft woods.<br><br>The aroma opens with radiant aldehydes, roses, and lily of the valley, enhanced by delicate white flowers for a luminous floral start. At the heart, soft oud accords blend with guaiac wood and sandalwood, creating depth and richness. The base completes the journey with musk and amber, leaving behind an atmosphere that is sensual, inviting, and timeless.</p>', '<p>تتفتح الرائحة بألدهيدات متألقة مع الورد وزنبق الوادي والزهور البيضاء الناعمة، لتمنح بداية مشرقة زهرية. في القلب، يتناغم العود مع خشب الغاياك وخشب الصندل ليمنح عمقاً وغنى. أما القاعدة فتكتمل بالمسك والعنبر، لتترك أجواءً حسية مضيافة خالدة.<br><br>مزيج أنيق من الورد والزهور البيضاء والعود، يتألق بالمسك والعنبر والأخشاب الناعمة.</p>', 25, 7, 1, 0, '[\"Oriental–Musky\",\"Woody\",\"–\",\"floral\",\"depth\",\"with\",\"oud\",\"warmth\"]', '{\"Sillage\":\"Strong – romantic and luxurious trail\",\"Longevity\":\"3+ hrs in air\",\"Dispenser\":\"jar\",\"Ingredients\":\"Oud notes, Turkish Rose Absolute, Sandalwood Oil, Amber Resin\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '10 Tabs', '10 Tabs', NULL, 'active'),
-(90, 'FGD01094', '2640040040277', 'bakhoor-bushra-10-tabs', 'Bakhoor Bushra 10 Tabs', 'بخور بشرى 10 قرص', '<p>A luminous bakhoor of white musk, roses, and exotic florals, enriched with oud and amber. Bakhoor Bushra (10 Tabs) is designed to create an atmosphere of elegance, serenity, and timeless hospitality.<br><br>It opens with the softness of white musk blended with jasmine sambac, roses, and exotic flowers, offering a radiant floral impression. At its heart, iris adds powdery refinement, while the base deepens into the richness of dehn al oudh and amber. Together, they leave a lingering aura of warmth, grace, and sophistication throughout the space.</p>', '<p>تتفتح الرائحة بنعومة المسك الأبيض الممزوج بالياسمين السامباك والورد والأزهار الغريبة ليمنح انطباعاً زهرياً مشرقاً. في القلب، يضيف السوسن لمسة بودَرية راقية، بينما تغوص القاعدة في غنى دهن العود والعنبر. النتيجة هالة دافئة أنيقة تملأ الأرجاء بالفخامة والرقي.<br><br>بخور مشرق من المسك الأبيض والورد والأزهار الغريبة، تغنيه لمسات العود والعنبر. بخور بشرى (10 أقراص) صُمم ليمنح المكان أجواءً من الأناقة والسكينة والضيافة الخالدة.</p>', 25, 7, 1, 0, '[\"Oriental–Musky\",\"–\",\"soft\",\"floral\",\"and\",\"warm\"]', '{\"Sillage\":\"Moderate to strong\",\"Longevity\":\"2–3 hrs in air\",\"Dispenser\":\"jar\",\"Occasion\":\"creates a comforting aura\",\"Ingredients\":\"White Musk Crystals, Iris Butter, Indian Rose, Amber Resin\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '10 Tabs', '10 Tabs', NULL, 'active'),
-(91, 'FGD01105', '2641000013232', 'anab', 'Anab', 'أناب', '<p>Playful fruity-gourmand florals over a soft musky–woody base.<br><br>Anab opens in a bright splash of kiwi, litchi, and red fruits—juicy and uplifting. The heart melts into delectable chocolate and creamy vanilla, wrapped in the satin elegance of orchid and jasmine. As it settles, orris lends a powder-soft sheen while white musk and gentle woody accords embrace the skin, leaving a cozy, refined trail that feels inviting from day to evening.</p>', '<p>يفتتح أناب بلمعان منعش من الكيوي والليتشي والفواكه الحمراء—عصيري ومبهج. ثم يذوب القلب في شوكولاتة لذيذة وفانيلا كريمية تتعانقان مع أناقة السحلبية والياسمين. وعند الاستقرار، يضفي السوسن لمسة بودَرية ناعمة بينما تحتضن القاعدة بنفحات المسك الأبيض والأخشاب الرقيقة، لتترك أثراً مريحاً راقياً مناسباً من النهار إلى المساء.<br><br>تناغم زهري غورماندي مرح فوق قاعدة مسكية خشبية ناعمة.</p>', 23, 3, 1, 0, '[\"Fruity\",\"Gourmand\",\"Floral\",\"–\",\"playful\",\"and\",\"sweet\",\"with\",\"soft\",\"woody\",\"base\"]', '{\"Sillage\":\"Moderate to Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '100ml', '100ml', NULL, 'active'),
-(92, 'FGD01199', '2640040040284', 'bakhoor-ghair-aadi-15-tabs', 'Bakhoor Ghair Aadi (15 Tabs)', 'بخور غير عادي 15 قرص', '<p>A majestic bakhoor where saffron and jasmine bloom over cedar, rose, and oud with warm ambered depth.<br><br>The experience begins with a radiant blend of saffron and jasmine. At its heart, cedarwood, iris, rose, and patchouli create a refined woody-floral harmony. The base deepens into amber, sandalwood, musk, and oud—leaving behind a rich, inviting aura that lingers beautifully, perfect for gatherings, celebrations, and serene evenings.</p>', '<p>تبدأ التجربة بمزيج مشرق من الزعفران والياسمين. في القلب، يجتمع خشب الأرز والسوسن والورد والباتشولي في انسجام زهري خشبي راقٍ. أما القاعدة فتغوص في العنبر وخشب الصندل والمسك والعود، لتترك أثراً غنياً مضيافاً يدوم طويلاً، مثالي للجلسات والمناسبات واللحظات الهادئة.<br><br>بخور مهيب يتألق بالزعفران والياسمين فوق الأرز والورد والعود بعمق كهرماني دافئ. بخور غير عادي صُمم ليحوّل الأماكن إلى ملاذات من الأناقة والاحتفالية.</p>', 25, 7, 1, 0, '[\"Floral\",\"–\",\"Woody\",\"–\",\"Oriental\",\"—\",\"a\",\"luxurious\",\"blend\",\"of\",\"saffron\",\"and\",\"jasmine\",\"with\",\"a\",\"warm\",\"woody\",\"heart\",\"finishing\",\"in\",\"an\",\"opulent\",\"oud\",\"and\",\"amber\",\"embrace.\"]', '{\"Sillage\":\"Strong — fills large spaces with elegance\",\"Longevity\":\"Long-lasting — perfect for all-day ambiance\",\"Dispenser\":\"jar\",\"Ingredients\":\"Saffron, Jasmine Rose, Sandalwood, Musk\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '15 Tabs', '15 Tabs', NULL, 'active'),
-(93, 'FGD01442', '2640040040314', 'bakhoor-khayali-10-tabs', 'Bakhoor Khayali 10 Tabs', 'بخور خيالي 10 قرص', '<p>Citrus-bright florals over a creamy sandal–oud heart, drifting into musky white amber and shamama warmth for an elegant, ceremonial aura.<br><br>Bakhoor Khayali opens with sparkling bergamot and neroli lifted by airy aldehydes, instantly brightening the room. The heart blooms in a refined bouquet of rose, violet, and orris, cushioned by a smooth sandal–oud accord that adds graceful depth. As the smoke lingers, musk and white amber meld with shamama accords, wrapping spaces in a welcoming, dignified warmth—perfect for majlis, guest hospitality, and serene evening rituals.</p>', '<p>يبدأ بخور خيالي بتألّق البرغموت والنيرولي مع نفحات ألدهيدية هوائية تُنير المكان فوراً. يتفتح القلب بباقة راقية من الورد والبنفسج والسوسن، يحتضنها تناغم صندل–عود يمنح عمقاً ناعماً. ومع امتداد الدخان، يتعانق المسك والعنبر الأبيض مع نغمات الشمامة ليغلف الأرجاء بدفء مضياف رفيع—مثالي للمجالس واستقبال الضيوف والطقوس المسائية الهادئة.<br><br>أزهار مضيئة بحمضيات تعلو قلباً ناعماً من صندل–عود، وتنتهي بدفء المسك والعنبر الأبيض والشمامة لهالة احتفالية أنيقة.</p>', 25, 7, 1, 0, '[\"Floral\",\"–\",\"Citrus\",\"–\",\"Powdery\",\"–\",\"Woody\",\"–\",\"Oriental\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"Strong\",\"Dispenser\":\"jar\",\"Occasion\":\"ideal for deep, traditional aroma lovers\",\"Ingredients\":\"Bergamot Oil, Neroli, Rose, Sandalwood Accord, White Amber, Shamama Attar Blend.\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '10 Tabs', '10 Tabs', NULL, 'active'),
-(94, 'FGD01745', '6290360614670', 'joud-100ml', 'Joud 100ML', 'جود 100 مل', '<p>A rich gourmand-spiced signature of saffron and vanilla wrapped in ambered musk and tonka warmth. Joud is a fragrance that embodies generosity and depth, leaving a trail as memorable as its name.<br><br>The opening greets with a lavish blend of saffron, cinnamon, clove, and nutmeg—spicy, warm, and inviting. The heart unfolds into ambrette and creamy vanilla, enriched by subtle nutty notes for an indulgent gourmand nuance. Finally, the base rests on musk, amber facets, and tonka beans, creating a sensual, lasting aura that is both comforting and irresistibly elegant.</p>', '<p>تستقبلك البداية بمزيج فاخر من الزعفران والقرفة والقرنفل وجوزة الطيب—حار، دافئ وجذاب. يتفتح القلب على نغمات الأمبريت والفانيلا الكريمية تغنيها لمسات جوزية رقيقة تمنح طابعاً غورماندياً مترفاً. أما القاعدة فتستقر على المسك وظلال العنبر وحبوب التونكا، لتصوغ هالة حسية باقية تجمع بين الراحة والأناقة الساحرة.<br><br>توقيع غورماندي غني يتألق بالزعفران والفانيلا، يلفه عبق المسك والعنبر وحبوب التونكا الدافئة. جود عطر يجسد الكرم والعمق، تاركاً أثراً لا يُنسى مثل اسمه.</p>', 28, NULL, 1, 0, '[\"Oriental\",\"Amber\",\"boozy\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '100ml', '100ml', NULL, 'active'),
-(95, 'FGD00436', '2641000013560', 'malyoon', 'Malyoon', 'مليون', '<p>A radiant fruity-floral bouquet draped in honeyed amber, patchouli, and sensual leather-chocolate depth. Malyoon is a fragrance that embodies luxury, richness, and unforgettable presence.<br><br>It begins with a luminous sparkle of raspberry, neroli, and Amalfi lemon—fresh and juicy. The heart blossoms into jasmine, orange flower, and gardenia, weaving an elegant floral harmony. Finally, the base melts into golden honey, earthy patchouli, warm amber bean, resinous benzoin, leather, and chocolate—creating an indulgent, opulent trail that lingers with irresistible sophistication.</p>', '<p>تتفتح البداية بتألق التوت والبرغموت والليمون الأمالفي—منعشة وعصيرية. في القلب، يزهو الياسمين وزهر البرتقال والغاردينيا ليصيغوا تناغماً زهرية راقياً. أما القاعدة فتذوب في عسل ذهبي وباتشولي ترابي وفول العنبر الدافئ مع البنزوين والجلد والشوكولاتة، لتصوغ أثراً مترفاً باقياً لا يُقاوم.<br><br>باقة زهرية فاكهية متألقة تتزين بالعسل والعنبر والباتشولي مع عمق جلدي–شوكولاتي حسي. مليون عطر يجسد الفخامة والغنى والحضور الآسر.</p>', 23, 3, 1, 0, '[\"Fruity\",\"Floral\",\"Oriental\",\"Gourmand\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '100ml', '100ml', NULL, 'active'),
-(96, 'FGD01529', '6290360611396', 'bakhoor-ghair-aadi-10-tabs', 'Bakhoor Ghair A’adi (10 tabs)', 'بخور غير عادي (10 قرص)', '<p>A majestic bakhoor where saffron and jasmine bloom over cedar, rose, and oud with warm ambered depth.<br><br>The experience begins with a radiant blend of saffron and jasmine. At its heart, cedarwood, iris, rose, and patchouli create a refined woody-floral harmony. The base deepens into amber, sandalwood, musk, and oud—leaving behind a rich, inviting aura that lingers beautifully, perfect for gatherings, celebrations, and serene evenings.</p>', '<p>تبدأ التجربة بمزيج مشرق من الزعفران والياسمين. في القلب، يجتمع خشب الأرز والسوسن والورد والباتشولي في انسجام زهري خشبي راقٍ. أما القاعدة فتغوص في العنبر وخشب الصندل والمسك والعود، لتترك أثراً غنياً مضيافاً يدوم طويلاً، مثالي للجلسات والمناسبات واللحظات الهادئة.<br><br>بخور مهيب يتألق بالزعفران والياسمين فوق الأرز والورد والعود بعمق كهرماني دافئ. بخور غير عادي صُمم ليحوّل الأماكن إلى ملاذات من الأناقة والاحتفالية.</p>', 25, 7, 1, 0, '[\"Floral\",\"–\",\"Woody\",\"–\",\"Oriental\",\"—\",\"a\",\"luxurious\",\"blend\",\"of\",\"saffron\",\"and\",\"jasmine\",\"with\",\"a\",\"warm\",\"woody\",\"heart\",\"finishing\",\"in\",\"an\",\"opulent\",\"oud\",\"and\",\"amber\",\"embrace.\"]', '{\"Sillage\":\"Strong — fills large spaces with elegance\",\"Longevity\":\"Long-lasting — perfect for all-day ambiance\",\"Dispenser\":\"jar\",\"Ingredients\":\"Saffron, Jasmine Rose, Sandalwood, Musk\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '10 Tabs', '10 Tabs', NULL, 'active'),
-(97, 'FGD01505', '6290360612874', 'mauzoon', 'Mauzoon', 'موزون', '<p>A luminous balance of vanilla, florals, and woods, crowned with oud, amber, and musk<br><br>The opening shines with creamy vanilla uplifted by bergamot, saffron, and peach, creating a sweet-spicy radiance. In the heart, cedarwood anchors soft violet and jasmine, blending florals with woody strength. Finally, the base unveils an enduring trail of white musk, amber, patchouli, sandalwood, and agarwood—wrapping the wearer in warmth, richness, and sophistication.</p>', '<p>تتألق البداية بالفانيلا الكريمية مع البرغموت والزعفران والخوخ، لتمنح إشراقة حلوة متبلة. في القلب، يرتكز خشب الأرز على البنفسج والياسمين الناعمين، ليجمع بين الزهور وقوة الأخشاب. أما القاعدة فتكشف عن أثر باقٍ من المسك الأبيض والعنبر والباتشولي وخشب الصندل والعود، لتغمر مرتديه بالدفء والغنى والفخامة.<br><br>توازن مشرق من الفانيلا والزهور والأخشاب، يتوج بالعود والعنبر والمسك.</p>', 23, 3, 1, 0, '[\"Woody\",\"Amber\",\"Floral\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"7-9 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '100ml', '100ml', NULL, 'active'),
-(98, 'FGD01645', '6290360613925', 'meezah', 'Meezah', 'ميزة', '<p>A radiant blend of jasmine and citrus, deepened with saffron, cedar, oud, and glowing amber.<br><br>It begins with luminous jasmine paired with the zesty freshness of blood orange. The heart unfolds into the warmth of saffron and cedar, lending spice and woody elegance. Finally, the base reveals a majestic fusion of oud, resins, and amber—an enduring, sensual trail that lingers with refinement and power.</p>', '<p>تتفتح البداية بتألق الياسمين مع انتعاش البرتقال الدموي العصري. في القلب، يزهو الزعفران مع خشب الأرز ليضفيا دفئاً وأناقة خشبية. أما القاعدة فتفصح عن مزيج مهيب من العود والراتنجات والعنبر، لتترك أثراً حسياً باقياً يغمر المكان بالقوة والرقي.<br><br>مزيج متألق من الياسمين والحمضيات يتعمق بالزعفران والأرز والعود والعنبر المضيء.</p>', 28, NULL, 1, 0, '[\"Spicy\",\"Woody\",\"Oriental\"]', '{\"Sillage\":\"Moderate\",\"Longevity\":\"6–8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '75ml', '75ml', NULL, 'active'),
-(99, 'FGD00085', '2640040040208', 'bakhoor-asari', 'Bakhoor Asari', 'بخور عصري\"', '<p>A refreshing citrus-marine bakhoor with florals, warm woods, amber, and a hint of tobacco elegance.<br><br>It opens with mandarin and sparkling citrus notes mingled with sea water freshness. At its heart, lavender, geranium, rose, and jasmine bloom in harmony, adding floral softness. The base settles into sandalwood, musk, amber, and a refined touch of tobacco, leaving an atmosphere that is warm, inviting, and elegantly layered.</p>', '<p>تتفتح البداية باليوسفي والحمضيات المتلألئة مع انتعاش نفحات البحر. في القلب، تتناغم أزهار اللافندر والجرانيوم والورد والياسمين لتمنح نعومة زهرية راقية. أما القاعدة فتستقر على خشب الصندل والمسك والعنبر مع لمسة تبغ أنيقة، لتترك أجواءً دافئة مضيافة متدرجة الطبقات.<br><br>بخور منعش من الحمضيات والبحر يزهو بالزهور ويتوج بالأخشاب والعنبر ولمسة تبغ أنيقة.</p>', 25, 7, 1, 0, '[\"Citrusy\",\"Floral\",\"–\",\"uplifting\",\"romantic\",\"and\",\"elegant\",\"with\",\"a\",\"marine\",\"twist\"]', '{\"Sillage\":\"Strong – diffuses with a clean floral-marine brightness\",\"Longevity\":\"2–3 hrs in the air\",\"Dispenser\":\"jar\",\"Ingredients\":\"Rose Absolute, Jasmine Sambac, Sandalwood Oil, Amber Resin\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', NULL, NULL, NULL, 'active'),
-(100, 'FGD02217', 'FGD02217', 'bakhoor-tabakhkhar-10-tabs', 'Bakhoor Tabakhkhar (10 Tabs)', 'بخور تبخر', '<p>A refined bakhoor of aldehydes, florals, and citrus over noble oud, musk, and amber warmth.<br><br>It begins with aldehydic sparkles, lily of the valley, white flowers, and fresh citrus for a radiant, uplifting start. At the heart, roses bloom alongside sandalwood, patchouli, and vetiver, creating floral-woody sophistication. The base reveals oud essentials blended with musk, amber, and oud accords, leaving an aura of depth, tradition, and graceful warmth that lingers beautifully in any setting.</p>', '<p>تتفتح البداية بشرارة ألدهيدية مع زنبق الوادي والزهور البيضاء والحمضيات المنعشة لتمنح انطلاقة مشرقة باعثة على البهجة. في القلب، يتألق الورد جنباً إلى جنب مع خشب الصندل والباتشولي والفيتيفر ليصوغوا تناغماً زهرياً خشبياً راقياً. أما القاعدة فتفصح عن أسس العود ممزوجة بالمسك والعنبر وتناغمات العود، لتترك أثراً عميقاً أصيلاً ودافئاً يبقى في كل مكان.<br><br>بخور راقٍ من الألدهيدات والزهور والحمضيات يتوج بالعود النبيل والمسك والعنبر الدافئ.</p>', 25, 7, 1, 0, '[\"Oriental–Fresh\",\"Flowery\",\"–\",\"bright\",\"yet\",\"grounded\"]', '{\"Sillage\":\"Very strong – energizing yet sophisticated\",\"Longevity\":\"3–4 hrs in air\",\"Dispenser\":\"jar\",\"Ingredients\":\"Oud accord, Rose, Patchouli Oil, Sandalwood Oil, Vetiver\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '20 Tab', '20 Tab', NULL, 'active'),
-(101, 'FGD01880', 'FGD01880', 'bakhoor-ghars-40-tabs', 'Bakhoor Ghars 40 Tabs', 'بخور غرس 40 قرص', '<p>A refined floral-woody bakhoor where saffron and jasmine meet rose, iris, and patchouli over warm cedar<br><br>The opening sparkles with the golden spice of saffron, softened by radiant jasmine. At its heart, rose and iris bloom gracefully, enriched with earthy patchouli for depth. The base rests on cedarwood, adding warmth and stability, leaving behind a fragrant veil that lingers beautifully in the home.</p>', '<p>تتألق البداية ببهار الزعفران الذهبي يلينه إشراق الياسمين. في القلب، يزهو الورد والسوسن برشاقة، تغنيهما لمسات الباتشولي الترابية لعمق مميز. أما القاعدة فتستقر على خشب الأرز ليمنح دفئاً وثباتاً، تاركاً ستاراً عطرياً يملأ المكان بجمال باقٍ.<br><br>بخور زهري خشبي راقٍ يجمع بين الزعفران والياسمين مع الورد والسوسن والباتشولي فوق عبق الأرز الدافئ.</p>', 25, 7, 1, 0, '[\"Floral\",\"–\",\"Woody\",\"–\",\"Oriental\",\"—\",\"a\",\"luxurious\",\"blend\",\"of\",\"saffron\",\"and\",\"jasmine\",\"with\",\"a\",\"warm\",\"woody\",\"heart\",\"finishing\",\"in\",\"an\",\"opulent\",\"oud\",\"and\",\"amber\",\"embrace.\"]', '{\"Sillage\":\"Strong — fills large spaces with elegance\",\"Longevity\":\"Long-lasting — perfect for all-day ambiance\",\"Dispenser\":\"jar\",\"Ingredients\":\"Saffron, Jasmine Rose, Sandalwood, Musk\"}', '2026-04-01 13:46:26', '2026-04-01 13:46:26', '40 Tab', '40 Tab', NULL, 'active'),
-(102, 'FGD01093', '2640070070251', 'maria-oud-mubakhar-36-grams', 'Maria Oud Mubakhar 36 Grams', 'مارية عود مبخر 36 غرام', '<p>A luxurious oud bakhoor blending warm spices, saffron, and leather with noble Cambodian and Indian oud, wrapped in ambered woods and musk.<br><br>It begins with a radiant opening of saffron and warm spices, enhanced by subtle leathery undertones. At its heart, rich Cambodian oud blends with a touch of Indian oud and delicate floral nuances, weaving depth with refinement. The base lingers on deep sandalwood, amber, soft musk, and resinous agarwood undertones—leaving a smoky, dignified trail of timeless luxury.</p>', '<p>تتفتح البداية بتوابل دافئة مع الزعفران تتألق فوق نفحات جلدية ناعمة. في القلب، يندمج العود الكمبودي الغني مع لمسة من العود الهندي وأنفاس زهرية رقيقة ليمنح العمق والرقي. أما القاعدة فتستقر على خشب الصندل العميق والعنبر والمسك الناعم مع لمسات عود راتنجية، لتترك أثراً مدخناً مهيباً من الفخامة الخالدة.<br><br>بخور عود فاخر يمزج بين التوابل الدافئة والزعفران ونفحات الجلد مع العود الكمبودي والهندي النبيل، يتوج بالعنبر والأخشاب والمسك.</p>', 25, 8, 1, 0, '[\"A\",\"lavish\",\"woody\",\"oud\",\"masterpiece.\",\"Expected\",\"to\",\"be\",\"deep\",\"and\",\"smoky\",\"built\",\"with\",\"a\",\"foundation\",\"of\",\"aged\",\"Indian\",\"Agarwood\",\"and\",\"enriched\",\"with\",\"Cambodian/Indian\",\"oud\",\"oils.\",\"The\",\"addition\",\"of\",\"amber\",\"musk\",\"and\",\"soft\",\"spice\",\"gives\",\"it\",\"a\",\"refined\",\"yet\",\"potent\",\"Arabian\",\"signature.\"]', '{\"Sillage\":\"Very strong — designed to make a statement.\",\"Longevity\":\"Likely 10–12 hours on skin, longer on fabrics based on the brand’s performance\",\"Dispenser\":\"solid_incense\",\"Occasion\":\"Winter evenings, bridal ceremonies, heritage-inspired events, festive nights\",\"Ingredients\":\"Oud Chips Origin: Merauke – rich, resinous oud with smoky undertones\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '36g', '36g', NULL, 'active'),
-(103, 'FGD01261', '2640070070305', 'maria-oud-mubakhar-58-grams', 'Maria Oud Mubakhar 58 Grams', 'مارية عود مبخر 58 غرام', '<p>A luxurious oud bakhoor blending warm spices, saffron, and leather with noble Cambodian and Indian oud, wrapped in ambered woods and musk.<br><br>It begins with a radiant opening of saffron and warm spices, enhanced by subtle leathery undertones. At its heart, rich Cambodian oud blends with a touch of Indian oud and delicate floral nuances, weaving depth with refinement. The base lingers on deep sandalwood, amber, soft musk, and resinous agarwood undertones—leaving a smoky, dignified trail of timeless luxury.</p>', '<p>تتفتح البداية بتوابل دافئة مع الزعفران تتألق فوق نفحات جلدية ناعمة. في القلب، يندمج العود الكمبودي الغني مع لمسة من العود الهندي وأنفاس زهرية رقيقة ليمنح العمق والرقي. أما القاعدة فتستقر على خشب الصندل العميق والعنبر والمسك الناعم مع لمسات عود راتنجية، لتترك أثراً مدخناً مهيباً من الفخامة الخالدة.<br><br>بخور عود فاخر يمزج بين التوابل الدافئة والزعفران ونفحات الجلد مع العود الكمبودي والهندي النبيل، يتوج بالعنبر والأخشاب والمسك.</p>', 25, 8, 1, 0, '[\"A\",\"lavish\",\"woody\",\"oud\",\"masterpiece.\",\"Expected\",\"deep\",\"and\",\"smoky\",\"built\",\"with\",\"a\",\"foundation\",\"of\",\"aged\",\"Indian\",\"Agarwood\",\"and\",\"enriched\",\"with\",\"Cambodian/Indian\",\"oud\",\"oils.\",\"The\",\"addition\",\"of\",\"amber\",\"musk\",\"and\",\"soft\",\"spice\",\"gives\",\"it\",\"a\",\"refined\",\"yet\",\"potent\",\"Arabian\",\"signature.\"]', '{\"Sillage\":\"Very strong — designed to make a statement.\",\"Longevity\":\"Likely 10–12 hours on skin, longer on fabrics based on the brand’s performance\",\"Dispenser\":\"other\",\"Occasion\":\"Winter evenings, bridal ceremonies, heritage-inspired events, festive nights\",\"Ingredients\":\"Oud Chips Origin: Merauke – rich, resinous oud with smoky undertones\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '58g', '58g', NULL, 'active'),
-(104, 'FGD00543', '2640070070046', 'oud-maattar-majalis-omani', 'Oud Maattar Majalis (Omani)', 'عود معطر مجالس (عماني)', '<p>Ceremonial rose–oud smoke with aldehydic sparkle and saffron warmth, settling into musky, resinous depth.<br><br>Oud Maattar Majalis (Omani) is composed to grace gatherings with poised luxury. Bright aldehydes and saffron lift the first waft, before a heart of rose absolute, jasmine, shamama, and rose essence unfurls with velvety, ritual elegance. As the embers glow, a dignified base of musk and Arian-region oud rises through warm resinous notes, wrapping the space in a smooth, welcoming aura made for majlis, hospitality, and celebratory moments.</p>', '<p>صيغ بخور عود معطّر مجالس (عُماني) ليزين المجالس برفاهية رصينة. تتلألأ الألدهيدات وتتوهج نفحات الزعفران أولاً، ثم يتفتح قلب من مطلق الورد والياسمين و«شمامة» وخلاصة الورد بأناقة طقسية مخملية. ومع توهج الجمر، يرتقي أساس مسكي مع عود من منطقة أريان ونغمات راتنجية دافئة ليغمر المكان بهالة ناعمة مضيافة تناسب الضيافة والاحتفالات.<br><br>دخان عود احتفالي بلمعة الألدهيدات ودفء الزعفران، يستقر على عمق مسكي راتنجي.</p>', 25, 8, 1, 0, '[\"A\",\"refined\",\"moattar\",\"(perfumed\",\"oud\",\"chips)\",\"infused\",\"with\",\"a\",\"luxurious\",\"blend\",\"of\",\"florals\",\"spices\",\"and\",\"musky–oud\",\"warmth.\",\"The\",\"aldehydic\",\"brightness\",\"contrasts\",\"beautifully\",\"with\",\"rich\",\"roses\",\"exotic\",\"shamama\",\"and\",\"deep\",\"Arian\",\"oud\",\"smokiness.\"]', '{\"Sillage\":\"Very strong – ideal for creating an enveloping aromatic atmosphere\",\"Longevity\":\"Hours in the air\",\"Dispenser\":\"solid_incense\",\"Occasion\":\"Majlis gatherings, guest welcoming, religious and ceremonial events.\",\"Ingredients\":\"Oud Chips: Arian region oud chips – resinous, smoky, and long-lasting.\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '3TL', '3TL', NULL, 'active'),
-(105, 'FGD01447', '2640070070350', 'oud-maattar-tayyeb', 'Oud Maattar Tayyeb', 'عود معطر طيب\"', '<p>A graceful oud bakhoor where mint and rose meet Cambodi oud, shamama, and leather, wrapped in amber, musk, and patchouli warmth.<br><br>The opening greets with the brightness of mint and the elegance of rose. The heart then reveals a bold accord of rich Cambodi oud, earthy shamama, and smooth leather, adding ceremonial richness. Finally, the base settles into white amber, amber resin, musk, patchouli, and tonka—leaving a lingering trail of warmth, sophistication, and oriental grandeur.</p>', '<p>تستقبلك البداية بانتعاش النعناع ورقي الورد. ثم يكشف القلب عن تناغم جريء من العود الكمبودي الغني والشمامة الترابية والجلد الناعم ليمنح فخامة احتفالية. أما القاعدة فتستقر على العنبر الأبيض وراتنج العنبر والمسك والباتشولي والتونكا، لتترك أثراً دافئاً أنيقاً يفيض بالعظمة الشرقية.<br><br>بخور عود أنيق يجمع بين النعناع والورد مع عود كمبودي وشمامة وجلد، يتوج بالعنبر والمسك والباتشولي الدافئ.</p>', 25, 8, 1, 0, '[\"Oriental\",\"Woody\",\"–\",\"cooling\",\"mint\",\"touch\",\"over\",\"rich\",\"oud\",\"amber\",\"base\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"10–12 hrs\",\"Dispenser\":\"solid_incense\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '36g', '36g', NULL, 'active'),
-(106, 'FGD01265', '2640070070312', 'oud-maattar-maliki-3-tola', 'Oud MaAttar Maliki 3 Tola', 'عود معطر ملكي 3 تولة', '<p>A regal oud bakhoor infused with saffron, florals, and shamama, settling into musk, amber, and earthy woods.<br><br>It opens with the grandeur of oud blended with saffron and aromatic herbs for a noble beginning. At its heart, jasmine and rose bloom gracefully, enriched with the depth of shamama qadeem, adding an earthy ceremonial character. Finally, the base anchors the composition with patchouli, oud, musk, amber, vetiver, and ambroxan—leaving an enduring aura of warmth, sophistication, and royal gravitas.</p>', '<p>تتفتح البداية بفخامة العود الممتزج مع الزعفران والأعشاب العطرية لبداية نبيلة. في القلب، يتألق الياسمين والورد برشاقة، تغنيهما شمامة قديم بعمقها الترابي وطقسها الاحتفالي. أما القاعدة فتستقر على الباتشولي والعود والمسك والعنبر والفيتيفر والأمبروكسان، لتترك هالة باقية من الدفء والرقي والعظمة الملكية.<br><br>بخور عود ملكي ممزوج بالزعفران والزهور والشمامة، يستقر على المسك والعنبر والأخشاب الترابية.</p>', 25, 8, 1, 0, '[\"Oriental\",\"Woody\",\"Ambery\",\"–\",\"bold\",\"oud\",\"with\",\"floral\",\"warmth\",\"grounded\",\"in\",\"musky–amber\",\"depth\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8–10 hrs in closed environment (like majlis)\",\"Dispenser\":\"solid_incense\",\"Ingredients\":\"Oud Chips Used: Pakambaro Jura.\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '3TL', '3TL', NULL, 'active'),
-(107, 'FGD01577', '6290360613000', 'saadaik', 'Saadaik', 'سعديك', '<p>A vibrant symphony of fruits, florals, and spices resting on a warm base of vanilla, musk, woods, and amber<br><br>The opening dazzles with a kaleidoscope of cardamom, bergamot, lemon, plum, lavender, angelica, juniper, pink pepper, incense, jasmine, pear, lily of the valley, peach, and melon—an uplifting and lively burst. At the heart, ylang-ylang, orange blossom, rose, violet, cedar, orris, coconut, and white flowers weave a refined floral harmony. The base leaves a lasting signature of vanilla, musk, patchouli, tobacco, apple, amber, and sandalwood—warm, sensual, and sophisticated.</p>', '<p>تتألق البداية بمزيج نابض من الهيل والبرغموت والليمون والبرقوق واللافندر والأنجليكا والعرعر والفلفل الوردي والبخور والياسمين والإجاص وزنبق الوادي والدراق والبطيخ—انطلاقة مبهجة زاخرة بالحيوية. في القلب، يزهو الإيلنغ–إيلنغ وزهر البرتقال والورد والبنفسج مع الأرز والسوسن وجوز الهند والزهور البيضاء ليصيغوا تناغماً زهيرياً راقياً. أما القاعدة فتستقر على الفانيلا والمسك والباتشولي والتبغ والتفاح والعنبر وخشب الصندل لتترك توقيعاً دافئاً حسيّاً راقياً.<br><br>سيمفونية نابضة من الفواكه والزهور والتوابل تستقر على قاعدة دافئة من الفانيلا والمسك والأخشاب والعنبر.</p>', 23, 3, 1, 0, '[\"Spicy\",\"Floral\",\"Oriental\",\"Woody\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '90ml', '90ml', NULL, 'active'),
-(108, 'FGD01159', '2641000013409', 'shay-jadeed', 'Shay Jadeed', 'شئ جديد', '<p>A vibrant citrus–floral oud, balancing fresh lemon, soft lavender–vanilla, and a rich frankincense–oud base.<br><br>Shay Jadeed opens with a burst of fresh lemon, immediately uplifting and crisp. This brightness flows seamlessly into a floral–gourmand heart of lavender and vanilla, creating a soft, aromatic warmth. Finally, it settles into a deep, resinous dry down of frankincense and oud — balancing tradition with modern elegance. Strong in sillage and long-lasting, it is perfect for those who want a fragrance that speaks freshness and sophistication throughout the day.</p>', '<p>يفتتح شاي جديد بانطلاقة منعشة من الليمون تعكس الحيوية والانتعاش. ثم يتدرج نحو قلب عطري غني يجمع بين اللافندر والفانيليا ليمنح لمسة ناعمة دافئة. وأخيراً، يستقر على قاعدة راتنجية من العود واللبان، تمزج بين الأصالة والحداثة في توازن راقٍ. بعطر قوي الأثر وطويل الثبات، هو الخيار الأمثل لمن يبحث عن لمسة من الانتعاش والأناقة تدوم طوال اليوم.<br><br>عطر حمضي زهري فاخر، يجمع بين انتعاش الليمون، نعومة اللافندر والفانيلا، وقاعدة عميقة من العود والبخور.</p>', 23, 3, 1, 0, '[\"Fresh–Citrusy–Floral–Woody\",\"—\",\"a\",\"crisp\",\"lemon\",\"opening\",\"unfolds\",\"into\",\"a\",\"soft\",\"lavender–vanilla\",\"heart\",\"settling\",\"into\",\"a\",\"rich\",\"oud\",\"and\",\"frankincense\",\"base\",\"that\",\"balances\",\"modern\",\"warmth\",\"with\",\"tradition.\"]', '{\"Sillage\":\"Strong — vibrant projection that lasts\",\"Longevity\":\"Long-lasting — consistent performance throughout the day and beyond\",\"Dispenser\":\"spray\",\"Occasion\":\"Perfect for daytime sophistication or any occasion where freshness matters.\",\"Ingredients\":\"Lemon Essential Oil, Lavender Absolute, Vanilla Essence, Frankincense Resin, Oud (Agarwood) Extract\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '100ml', '100ml', NULL, 'active');
-INSERT INTO `products` (`id`, `fgd`, `barcode`, `slug`, `name_en`, `name_ar`, `description_en`, `description_ar`, `category_id`, `subcategory_id`, `is_active`, `is_featured`, `tags`, `attributes`, `created_at`, `updated_at`, `size_label_en`, `size_label_ar`, `media_url`, `deleted_status`) VALUES
-(109, 'FGD01444', '2640070070343', 'oud-maattar-subaat', 'Oud Maattar Subaat', 'عود معطر سبات', '<p>A powerful smoky oriental Dakhoon blending rose, patchouli, and Bangladeshi oud with bakhoor warmth.<br><br>Oud Maʽattar Subaat begins with a floral–earthy sparkle of rose, jasmine, and patchouli. At its core lies the richness of Bangladeshi oud intertwined with exotic shamama accords, unfolding into layers of depth and tradition. The dry down embraces a smoky bakhoor trail fused with soft musk, creating an atmosphere that is both opulent and enveloping—perfect for gatherings, hospitality, or moments of reflection.</p>', '<p>يبدأ عود معطر سباة بتألق زهري–ترابي من الورد والياسمين والباتشولي. وفي قلبه يسطع عمق العود البنغالي الغني ممزوجاً بعبق الشمامة الفريد، لينسج طبقات من الفخامة والأصالة. أما القاعدة فتتجلى في أثر بخوري دخاني ممزوج بالمسك الناعم، ليمنح أجواء مترفة وغامرة مثالية للمجالس والضيافة أو لحظات الصفاء.<br><br>بخور شرقي قوي يمزج بين الورد والباتشولي وعود بنغلاديش مع دفء البخور الأصيل.</p>', 25, 8, 1, 0, '[\"Smoky\",\"Oriental\",\"–\",\"intense\",\"resinous\",\"spicy\",\"oud\",\"with\",\"bakhoor\",\"warmth\"]', '{\"Sillage\":\"Heavy\",\"Longevity\":\"12+ hrs\",\"Dispenser\":\"solid_incense\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '36g', '36g', NULL, 'active'),
-(110, 'FGD00550', '2640070070022', 'oud-maattar-maliki-6tl', 'Oud Maattar Maliki 6TL', 'عود معطر ملكي 6 تولة', '<p>Majestic oud ma’attar: saffron and herbs crown a floral–shamama heart, settling into an opulent oud–amber trail with musky, ambroxan brilliance.<br><br>Crafted for grand gatherings and refined hospitality, Oud Maʽattar Maliki opens with a noble oud presence brightened by golden saffron and aromatic herbs. The heart blooms with jasmine and rose, enriched by the vintage character of Shamama Qadeem for deep, traditional warmth. As it settles, patchouli and oud fuse with amber, musk, vetiver, and modern ambroxan to cloak spaces and garments in a luxurious, long-lived aura—perfect for majlis, welcoming guests, and ceremonial moments.</p>', '<p>صُمّم للمجالس والضيافة الراقية؛ يبدأ Oud Maʽattar Maliki بحضور فخم للعود يزدان بخيوط الزعفران الذهبية ونفحات الأعشاب العطرية. يتفتح القلب بعبير الياسمين والورد، وتعمّقه شخصية “الشمامة القديمة” بدفء تراثي أصيل. وفي القاعدة، يمتزج الباتشولي والعود مع العنبر والمسك والفيتيفر والأمبروكسان ليغمر الأجواء والملابس بهالة مترفة تدوم وتُحفر في الذاكرة، مثالية للمجالس واستقبال الضيوف واللحظات الاحتفالية.<br><br>عود معطّر “ملكي” يجمع الزعفران والأعشاب مع قلب زهري–شمامة، وينتهي بأثر فاخر من العود والعنبر مع مسك ولمسة أمبروكسان.</p>', 25, 8, 1, 0, '[\"Oriental\",\"Woody\",\"Ambery\",\"–\",\"bold\",\"oud\",\"with\",\"floral\",\"warmth\",\"grounded\",\"in\",\"musky–amber\",\"depth\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8–10 hrs in closed environment (like majlis)\",\"Dispenser\":\"solid_incense\",\"Ingredients\":\"Oud Chips Used: Pakambaro Jura.\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '6TL', '6TL', NULL, 'active'),
-(111, 'FGD01276', '2640070070299', 'oud-maattar-majalis-58-grams', 'Oud Maattar Majalis 58 Grams', 'عود معطر مجالس 58 غرام', '<p>A refined mo’attar crafted for majlis gatherings, blending saffron brightness, luxurious roses, and deep Arian oud smoke.<br><br>Oud Maʽattar Majalis opens with the sparkling clarity of aldehydes uplifted by the golden warmth of saffron. At its heart, a bouquet of rose absolute, rose essence, jasmine, and shamama weaves layers of floral depth and oriental character. The base settles into a regal dry down where smoky Arian oud fuses with musk and resinous warmth, creating an enveloping aura designed to perfume spaces, garments, and gatherings with sophistication.</p>', '<p>تتجلى افتتاحية العطر بنفحات ألدهيد متلألئة تتناغم مع دفء الزعفران الذهبي. في القلب، تتداخل روائح الورد المطلق وخلاصة الورد والياسمين والشمامة في مزيج عطري غني يحمل طابعاً شرقياً أصيلاً. أما القاعدة فتستوطنها هيبة عود الأريان الدخاني مع عبق المسك والنفحات الراتنجية الدافئة، لتمنح الأجواء والمجالس عبيراً مترفاً يفيض بالأناقة والاحتواء.<br><br>معطّر فاخر للمجالس يمزج بريق الزعفران وفخامة الورود مع عمق دخان عود الأريان.</p>', 25, 8, 1, 0, '[\"A\",\"refined\",\"moattar\",\"(perfumed\",\"oud\",\"chips)\",\"infused\",\"with\",\"a\",\"luxurious\",\"blend\",\"of\",\"florals\",\"spices\",\"and\",\"musky–oud\",\"warmth.\",\"The\",\"aldehydic\",\"brightness\",\"contrasts\",\"beautifully\",\"with\",\"rich\",\"roses\",\"exotic\",\"shamama\",\"and\",\"deep\",\"Arian\",\"oud\",\"smokiness.\"]', '{\"Sillage\":\"Very strong – ideal for creating an enveloping aromatic atmosphere\",\"Longevity\":\"Hours in the air\",\"Dispenser\":\"solid_incense\",\"Occasion\":\"Majlis gatherings, guest welcoming, religious and ceremonial events.\",\"Ingredients\":\"Oud Chips: Arian region oud chips – resinous, smoky, and long-lasting.\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '58g', '58g', NULL, 'active'),
-(112, 'FGD01456', '2640070070367', 'oud-kiflain', 'Oud Kiflain', 'عود كفلين', '<p>A deep, complex oud ma’attar weaving saffron roses with rare ouds, leather, and incense for a majestic smoky embrace<br><br>Oud Kiflain opens with a radiant blend of rose, saffron, and earthy nagamotha, setting a luxurious floral–spicy tone. The heart reveals a commanding oud presence, where Arian and Hindi dehn al oud intertwine with orris and leather for depth and refinement. Finally, the base unfurls into a regal dry down—musk, ambergris, sandal oud, Cambodian oud accords, and incense merge to create an enveloping, smoky aura of heritage and sophistication. Perfect for majlis, traditional gatherings, and ceremonial occasions.</p>', '<p>تتألق افتتاحيته بمزيج من الورد والزعفران والنجموثة الترابية لتمنح لمسة زهرية–تبهيرية فاخرة. وفي القلب، يسطع حضور العود المهيب حيث يتناغم عود الأريان ودهـن العود الهندي مع السوسن والجلود ليمنح عمقاً وأناقة. أما القاعدة فتستقر على مزيج ملكي من المسك والعنبر الرمادي وعود الصندل وعود كمبودي مع البخور، لتغمر الأجواء بهالة دخانية أصيلة مترفة، مثالية للمجالس والتجمعات التراثية والمناسبات الاحتفالية.<br><br>عود معطّر عميق ومعقّد يمزج الورد والزعفران مع عود نادر وجلود وبخور في عبق دخاني مهيب.</p>', 25, 8, 1, 0, '[\"Complex\",\"Oud\",\"–\",\"deep\",\"leathery\",\"smoky\",\"with\",\"florals\",\"and\",\"resin\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"12+ hrs\",\"Dispenser\":\"solid_incense\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '48g', '48g', NULL, 'active'),
-(113, 'FGD00551', '2640070070169', 'oud-mattar-zayed-3tl', 'Oud Mattar Zayed 3TL', 'عود معطر زايد 3 تولة', '<p>A noble smoky oud infused with citrus brightness, floral leather depth, and a warm agarwood–amber base.<br><br>Oud Maʽattar Zayed begins with a fresh lift of citrus, bergamot, and spices that awaken the senses with vitality. Its heart unfolds into a refined blend of florals softened by musk and enriched with leather’s warmth. The base settles into a majestic trail of pure agarwood and amber, diffusing a dignified aura that fills gatherings with heritage, elegance, and timeless depth. Perfect for majlis, hospitality, and ceremonial occasions.</p>', '<p>يبدأ عود معطر زايد بنفحات حمضية منعشة من البرغموت والتوابل توقظ الحواس بالحيوية. ثم يكشف القلب عن مزيج راقٍ من الأزهار الممزوجة بالمسك والمُعزّزة بدفء الجلد. أما القاعدة فتستقر على أثر مهيب من العود النقي والعنبر، لينشر في الأجواء هالة عريقة راقية تدوم طويلاً، مثالية للمجالس والضيافة والمناسبات الاحتفالية.<br><br>بخور فاخر يتألق بانتعاش الحمضيات وعمق الجلود الزهرية مع قاعدة دافئة من العود والعنبر.</p>', 25, 8, 1, 0, '[\"Spicy\",\"Woody\",\"–\",\"fresh\",\"citrus\",\"lift\",\"with\",\"smoky\",\"oud\",\"depth\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"12+ hrs\",\"Dispenser\":\"solid_incense\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '3TL', '3TL', NULL, 'active'),
-(114, 'FGD01866', '6290360615219', 'aqua-oud', 'Aqua Oud', 'أكوا عود', 'A refreshing marine oud with bergamot brightness, aromatic herbs, and a smoky–woody base of incense and patchouli.<br><br>Aqua Oud opens with sparkling sea notes and crisp bergamot, evoking the freshness of ocean air. The heart reveals a sophisticated herbal blend of rosemary, sage, geranium, and anise, adding aromatic depth. As it settles, incense, patchouli, and ambroxan merge with white musk, vetiver, and moss, creating a smoky–woody dry down that balances marine lightness with oud-inspired richness. A perfect fragrance for those who seek freshness with oriental depth.', 'يبدأ أكوا عود بنفحات بحرية متلألئة تتناغم مع انتعاش البرغموت، ليجسد عبير نسيم البحر المنعش. وفي القلب، يتجلّى مزيج عطري راقٍ من إكليل الجبل والميرمية والجرانيوم واليانسون ليمنح العطر عمقاً عشبياً متقناً. أما القاعدة فتستوطنها طبقات من البخور والباتشولي والأمبروكسان مع المسك الأبيض والفيتيفر والطحالب، لتمنح جفافاً خشبياً–دخانياً يوازن بين خفة البحر وثراء العود الشرقي. عطر مثالي لمحبي الانتعاش الممزوج بالفخامة الشرقية.<br><br>عطر عود منعش بلمسة بحرية مع إشراقة البرغموت والأعشاب العطرية وقاعدة خشبية–دخانية من البخور والباتشولي.', 28, NULL, 1, 0, '[\"Aromatic\",\"Aquatic\",\"Oud\",\"–\",\"marine\",\"freshness\",\"with\",\"smoky\",\"woody\",\"depth\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"10–12 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '90ml', '90ml', NULL, 'active'),
-(115, 'FGD01325', '2640070070336', 'oud-al-amber-3tl', 'Oud al Amber 3TL', 'عود عنبر  3 تولة', '<p>A sumptuous ambery attar where Indian roses meet ambergris richness, settling into a noble Indian–Cambodian oud base with deep golden warmth.<br><br>Oud al Amber opens with a delicate floral lift—Indian roses and bright white flowers—preparing the senses for a heart steeped in layered amber: ambergris for depth, amber resin for warmth, and black amber for a darker, polished glow. The dry down is classically opulent: Dehnal Oud Indian entwines with Dehnal Oud Cambodi to create a dignified, long-lasting trail of refined ambery oud.</p>', '<p>تبدأ رائحة Oud al Amber بلمسة زهرية رقيقة من الورود الهندية والأزهار البيضاء، تمهّد لقلب غني بطبقات العنبر: عنبر بحري يمنح العمق، وراتنج العنبر يضيف الدفء، والعنبر الأسود يضفي بريقاً داكناً مصقولاً. أما الجفاف فيأتي فخماً أصيلاً، حيث يتداخل دهن العود الهندي مع دهن العود الكمبودي ليترك أثراً عنبرياً عودياً راسخاً يدوم بأناقة.<br><br>دهن عود عنبري فاخر تتلاقى فيه الورود الهندية مع عمق العنبر البحري، ويستقر على قاعدة عود هندي–كمبودي بنفحات ذهبية دافئة.</p>', 25, 8, 1, 0, '[\"Ambery\",\"Oud\",\"–\",\"warm\",\"deep\",\"slightly\",\"floral\",\"resinous\",\"amber\",\"with\",\"rich\",\"oud\",\"core\"]', '{\"Sillage\":\"Heavy\",\"Longevity\":\"12+ hrs\",\"Dispenser\":\"solid_incense\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '3TL', '3TL', NULL, 'active'),
-(116, 'FGD01747', '6290360614663', 'azure-royal', 'Azure Royal', 'أزوري رويال', 'A luminous aquatic–floral fragrance, balancing citrus brightness, delicate blossoms, and a sensual musky–woody base<br><br>Azure Royal opens with sparkling bergamot, juicy mandarin, and aquatic notes that evoke pure freshness. At its heart, jasmine and rose unfurl gracefully, lending timeless floral elegance. The fragrance rests on ambroxan, soft sandalwood, and musk, creating a refined, sensual trail that lingers with sophistication—perfect for everyday luxury and special moments alike.', 'يبدأ أزور رويال بتألق البرغموت وعصارة المندرين والنغمات المائية التي تمنح إحساساً بالانتعاش النقي. في القلب، يتفتح الياسمين والورد برقي ليضفيا لمسة زهرية خالدة. أما القاعدة فتستقر على الأمبروكسان وخشب الصندل والمسك، لتترك أثراً ناعماً مترفاً يدوم بأناقة، مناسباً للحظات اليومية الخاصة والمناسبات المميزة.<br><br>عطر مائي زهري متألق يجمع بين انتعاش الحمضيات ورقة الزهور وقاعدة خشبية–مسكية أنيقة', 28, NULL, 1, 0, '[\"Fresh–Aquatic–Woody\",\"—\",\"royal\",\"marine\",\"breeze\",\"with\",\"soft\",\"florals\",\"and\",\"warm\",\"woods.\"]', '{\"Sillage\":\"Moderate to strong\",\"Longevity\":\"6–8 hrs on skin.\",\"Dispenser\":\"spray\",\"Ingredients\":\"Bergamot Oil, Jasmine Absolute, Ambergris, Sandalwood Oil\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '100ml', '100ml', NULL, 'active'),
-(117, 'FGD01744', 'FGD01744', 'blue-by-ahmed', 'Blue By Ahmed', 'بلو باي احمد', '<p>A bold and modern woody–spicy fragrance with sparkling citrus, aromatic spices, and a smoky, musky trail.<br><br>Blue by Ahmed opens with a vibrant burst of grapefruit, pink pepper, mint, and lemon, delivering freshness with a lively kick. The heart unfolds into spicy ginger, warm nutmeg, refined jasmine, and the smooth radiance of Iso E Super. The base settles into a smoky, woody accord of incense, vetiver, cedar, and sandalwood, enriched with patchouli, labdanum, and white musk—creating a long-lasting, masculine signature full of strength and modern elegance.</p>', '<p>ينطلق Blue by Ahmed بانتعاش حيوي من الجريب فروت والفلفل الوردي والنعناع والليمون، ليمنح لمسة منعشة مفعمة بالحيوية. في القلب، تتألق نغمات الزنجبيل الحارة وجوزة الطيب الدافئة مع الياسمين وأناقة Iso E Super الملساء. أما القاعدة فتستقر على مزيج خشبي–دخاني من البخور والفيتيفر والأرز وخشب الصندل، مدعّم بالباتشولي واللابدانوم والمسك الأبيض، ليترك بصمة عطرية قوية وأنيقة تدوم طويلاً.<br><br>عطر خشبي–تبهيري عصري جريء يجمع بين الحمضيات المتألقة والتوابل العطرية وأثر دخاني–مسكي فاخر.</p>', 28, NULL, 1, 0, '[\":\",\"Fresh\",\"Spicy\",\"Woody\",\"–\",\"crisp\",\"citrus\",\"mint\",\"with\",\"warm\",\"woods\",\"&\",\"smoky\",\"incense\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '100ml', '100ml', NULL, 'active'),
-(118, 'FGD01743', '6290360614724', 'zeleny', 'Zeleny', 'زيليني', 'A vibrant fruity–floral burst of passion fruit and citrus, blooming into peony and vanilla orchid over a soft woody–musk finish.<br><br>Zeleny opens with a juicy medley of passion fruit, grapefruit, pineapple, tangerine, and strawberry—radiant, playful, and instantly uplifting. The heart unfurls with peony, vanilla orchid, berries, jasmine, and lily of the valley, creating a refined bouquet that feels modern yet romantic. It settles into a gentle trail of musk, oakmoss, and woods for a polished, soft-woody musk signature; expect moderate–strong sillage and 6–8 hours of comfortable wear.', 'تبدأ «زيليني» بمزيج عصيري من فاكهة العاطفة والجريب فروت والأناناس واليوسفي والفراولة يمنح إشراقة مرحة فورية. ثم يتفتح القلب بفاوانيا وأوركيد الفانيلا وتوت وياسمين وزنابق الوادي في باقة راقية تجمع العصرية والرومانسية. وأخيراً، يستقر العطر على مسك وطحالب وأخشاب، ليترك أثراً مصقولاً بلمسة خشبية–مسكية ناعمة مع فوحان معتدل إلى قوي وثبات يدوم 6–8 ساعات.<br><br>انطلاقة فاكهية–زهرية نابضة من فاكهة العاطفة والحمضيات، تتفتح إلى الفاوانيا وأوركيد الفانيلا فوق قاعدة خشبية–مسكية ناعمة.', 28, NULL, 1, 0, '[\"Fruity\",\"Floral\",\"with\",\"Soft\",\"Woody\",\"Musk\"]', '{\"Sillage\":\"Moderate to Strong\",\"Longevity\":\"6–8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '100ml', '100ml', NULL, 'active'),
-(119, 'FGD01746', '6290360614618', 'blu-oud', 'Blu Oud', 'بلو عود', '<p>Smoky oud with citrus-leather bite: bergamot and cypress ignite, incense glows over violet and geranium, finishing in patchouli, musk, agarwood, and guaiac wood.<br><br>Blue Oud opens with the crisp brightness of bergamot and mandarin-tinged cypress wrapped in a sleek leather nuance. The heart breathes incense smoke through cool violet leaves and refined geranium. It settles into a deep, resonant base—earthy patchouli and velvety musk fused with noble agarwood and guaiac wood—for a modern oriental signature that feels assured, elegant, and enduring.</p>', '<p>يفتتح Blue Oud بإشراقة البرغموت ونفحات السرو المائلة للحمضيات مع لمسة جلدية أنيقة. في القلب يتصاعد دخان البخور عبر أوراق البنفسج والجرانيوم الراقي. ثم يستقر العطر على قاعدة عميقة من الباتشولي والمسك المخملي ممزوجة بفخامة العود وخشب الغواياك، لتوقيع شرقي عصري واثق وأنيق وثابت.<br><br>عود دخاني بلمسة حمضية–جلدية: برغموت وسرو متألّقان، بخور فوق البنفسج والجرانيوم، وخاتمة باتشولي ومسك وعود وخشب غواياك.</p>', 28, NULL, 1, 0, '[\"Woody\",\"Oriental\",\"–\",\"smoky\",\"oud\",\"with\",\"leather\",\"incense\",\"&\",\"earthy\",\"patchouli\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"10–12 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '100ml', '100ml', NULL, 'active'),
-(120, 'FGD01140', '2640500013285', 'cherry', 'Cherry', 'تشيري', '<p>A playful fruity–floral fragrance where juicy cherry and strawberry meet caramel sweetness and a sensual amber–musk base.<br><br>Cherry opens with a sparkling medley of strawberry, cherry, pineapple, and mandarin, creating an uplifting, juicy introduction. The heart reveals a delicious blend of caramel wrapped around rose, jasmine, and violet for a soft gourmand–floral elegance. It settles into a warm dry down of patchouli, musk, and amber, leaving a lasting trail that is both playful and sophisticated—perfect for day-to-night wear.</p>', '<p>ينطلق Cherry بمزيج متلألئ من الفراولة والكرز والأناناس واليوسفي ليمنح مقدمة عصيرية منعشة. ثم يكشف القلب عن مزيج لذيذ من الكراميل يلتف حول الورد والياسمين والبنفسج ليضفي أناقة زهرية–حلوة. وأخيراً، يستقر على قاعدة دافئة من الباتشولي والمسك والعنبر، تاركاً أثراً مرحاً وأنيقاً يدوم من النهار حتى المساء.<br><br>عطر زهري–فاكهي مرح يجمع الكرز والفراولة مع لمسة كراميل حلوة وقاعدة مسكية–عنبرية فاتنة.</p>', 23, 4, 1, 0, '[\"Sweet\",\"Fruity\",\"Gourmand\",\"–\",\"playful\",\"berries\",\"with\",\"tropical\",\"hints\",\"wrapped\",\"in\",\"caramelized\",\"florals\",\"and\",\"a\",\"sensual\",\"amber–musk\",\"dry\",\"down.\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"7–9 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '50ml', '50ml', NULL, 'active'),
-(121, 'FGD01652', 'FGD01652', 'xtasy', 'Xtasy', 'ايكستاسي', '<p>A sensual oud–floral composition blending radiant roses, incense, and woods into a long-lasting aura of elegance.<br><br>Xtasy opens with a luminous bouquet of Turkish rose, lavender, citruses, and peony, a vibrant balance of floral freshness. At its heart, rose deepens alongside creamy sandalwood, delicate white flowers, and the mystique of frankincense. The fragrance concludes with a powerful base of oud accord, guaiac wood, oakmoss, musk, and ambroxan—an intoxicating signature that radiates strength, sophistication, and allure.</p>', '<p>تتألق مقدمة Xtasy بمزيج مشرق من الورد التركي واللافندر والحمضيات والفاوانيا، مانحاً انتعاشاً زهرياً متوازناً. في القلب، يتعمّق عبير الورد مع خشب الصندل الكريمي وزهور بيضاء ناعمة وغموض البخور. أما القاعدة فتستقر على مزيج قوي من نوتات العود وخشب الغواياك والطحالب والمسك والأمبروكسان، لتترك بصمة آسرة تشع بالقوة والفخامة والجاذبية.<br><br>عطر عود زهري آسر يمزج تألق الورود مع البخور والأخشاب في هالة راقية تدوم طويلاً.</p>', 28, NULL, 1, 0, '[\"Floral–Oriental–Woody\",\"—\",\"opens\",\"with\",\"a\",\"romantic\",\"rose\",\"bouquet\",\"and\",\"soft\",\"lavender\",\"warmed\",\"by\",\"citrus\",\"peony;\",\"the\",\"core\",\"blooms\",\"with\",\"creamy\",\"florals\",\"over\",\"deep\",\"sandalwood\",\"and\",\"frankincense;\",\"finally\",\"a\",\"woody\",\"musk\",\"amber\",\"base\",\"layers\",\"in\",\"rich\",\"oud\",\"guaiac\",\"wood\",\"and\",\"mossy\",\"depth\",\"for\",\"an\",\"enchanting\",\"dry\",\"down.\"]', '{\"Sillage\":\"Strong — powerful projection\",\"Longevity\":\"Excellent — lasting 4-8+ hours on skin, with notable sticking power on fabrics\",\"Dispenser\":\"spray\",\"Occasion\":\"Ideal for evening wear, romantic or ceremonial occasions\",\"Ingredients\":\"Turkish Rose Absolute, Frankincense Resin, Sandalwood Oil, Oud accord, Guaiac Wood Oil, Amber Accord\"}', '2026-04-01 13:46:27', '2026-04-01 13:46:27', '100ml', '100ml', NULL, 'active'),
-(122, 'FGD00178', '2640400011152', 'dehn-al-oud-saad', 'Dehn Al Oud Saad', 'دهن العود سعد', '<p>A majestic oud oil where leathered depth meets rare Assamese oud and a warm ambery–sweet oud trail.<br><br>Dehn Al Oud Saad opens with a commanding accord of pure oud laced with leather, evoking richness and gravitas. At its heart lies Assamese oud—renowned for its smoky intensity and noble character—unveiling layers of depth. The dry down softens into an ambery sweetness blended with oud, leaving a long-lasting, dignified signature that embodies refinement and heritage.</p>', '<p>يبدأ دهن العود سعد بنوتات عود أصيلة ممزوجة بالجلد لتمنح حضوراً ثرياً ومهيباً. في القلب يتألق عود آسام النادر بحدة دخانية وشخصية ملكية تكشف عن طبقات من العمق والأصالة. أما القاعدة فتستقر على دفء العنبر الممزوج بعود حلو، ليترك أثراً راقياً طويل الأمد يجسد الفخامة والتراث.<br><br>دهن عود مهيب يجمع بين عمق جلدي وندرة عود آسام مع قاعدة دافئة عنبرية–عطرية.</p>', 23, 4, 1, 0, '[\"A\",\"bold\",\"and\",\"refined\",\"oud\",\"blend\",\"opening\",\"with\",\"smoky\",\"oud\",\"and\",\"soft\",\"leather\",\"transitioning\",\"into\",\"the\",\"rich\",\"depth\",\"of\",\"Assamese\",\"oud\",\"and\",\"settling\",\"into\",\"a\",\"warm\",\"ambery\",\"Indian\",\"oud\",\"accord.\",\"Powerful\",\"and\",\"sophisticated.\"]', '{\"Sillage\":\"Strong – noticeable and commanding.\",\"Longevity\":\"10–12 hrs on skin, 24+ hrs on clothes.\",\"Dispenser\":\"spray\",\"Occasion\":\"Winter nights, cultural gatherings, formal events.\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '40ml', '40ml', NULL, 'active'),
-(123, 'FGD01653', '6290360613628', 'sapphire', 'Sapphire', 'سفاير', 'A sparkling fruity–aquatic fragrance, where juicy red fruits and watermelon flow into musky woods and luminous florals.<br><br>Sapphire opens with a lively burst of red fruits, refreshing watermelon, soothing lavender, and vibrant Sicilian orange. Its heart blends the warmth of sandalwood with the modern radiance of ambroxan and soft white musk. Finally, the fragrance lingers on a delicate base of lotus, jasmine, lily of the valley, and sea accords—evoking clarity, freshness, and graceful elegance.', 'تتألق مقدمة «سافاير» بمزيج نابض من الفواكه الحمراء والبطيخ المنعش واللافندر والبرتقال الصقلي الحيوي. وفي القلب، يذوب خشب الصندل مع بريق الأمبروكسان ولمسة المسك الأبيض الناعمة. أما القاعدة فتستقر على زهور اللوتس والياسمين وزنابق الوادي مع النغمات البحرية، لتجسد إحساساً بالنقاء والانتعاش والأناقة الراقية.<br><br>عطر فاكهي–مائي متألق يجمع بين نضارة الفواكه الحمراء والبطيخ مع لمسة خشبية–مسكية وزهور مشرقة.', 28, NULL, 1, 0, '[\"Fresh\",\"Fruity\",\"Floral\",\"Aquatic\"]', '{\"Sillage\":\"Moderate\",\"Longevity\":\"6–8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '100ml', '100ml', NULL, 'active'),
-(124, 'FGD01649', '6290360613536', 'endless', 'Endless', 'ايندليس', 'A soft fruity–floral harmony of peach and blossoms, enriched with rose and anchored in a musky–woody base<br><br>Endless begins with the gentle sweetness of peach and delicate apple blossom, radiating lightness and charm. At its heart, pineapple blossom adds a playful twist, balanced with the timeless elegance of rose. The fragrance settles into a sensual dry down of musk, patchouli, and sandalwood, leaving a warm, velvety trail that feels graceful and enduring.', 'تتفتح مقدمة Endless بحلاوة الخوخ ورقة أزهار التفاح، لتمنح لمسة خفيفة آسرة. في القلب، تضيف أزهار الأناناس لمسة مرحة تتناغم مع أناقة الورد الخالدة. أما القاعدة فتستقر على مزيج حسي من المسك والباتشولي وخشب الصندل، تاركة أثراً دافئاً مخملياً ينبض بالأناقة والاستمرارية.<br><br>عطر زهري–فاكهي ناعم يجمع بين الخوخ والأزهار مع لمسة ورد وقاعدة خشبية–مسكية راقية.', 28, NULL, 1, 0, '[\"Fruity\",\"Floral\",\"Woody\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"6–8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '100ml', '100ml', NULL, 'active'),
-(125, 'FGD01502', '6290360612782', 'sage', 'Sage', 'سيج', '<p>A vibrant citrus–floral fragrance enriched with sage, layered over a deep musky–oud base with vanilla warmth.<br><br>Sage opens with a sparkling cocktail of orange, grapefruit, bergamot, peach, and cardamom, blending citrus brightness with spicy nuance. At its heart, rose, jasmine, geranium, and litchi entwine with aromatic clary sage, creating a floral–herbal sophistication. The dry down lingers with patchouli, vanilla, musk, vetiver, and oud accords, polished by ambroxan for a long-lasting, refined signature.</p>', '<p>تنطلق مقدمة Sage بمزيج متلألئ من البرتقال والجريب فروت والبرغموت والخوخ والهيل، يجمع بين إشراقة الحمضيات ولمسة تبهيرية. في القلب، يتناغم الورد والياسمين والجرانيوم والليتشي مع عبير الميرمية العطرية ليكوّنوا أناقة زهرية–عشبية راقية. أما القاعدة فتستقر على الباتشولي والفانيلا والمسك والفيتيفر ونوتات العود، مدعومة بالأمبروكسان لتترك بصمة أنيقة طويلة الأمد.<br><br>عطر زهري–حمضي نابض مدعّم بالميرمية، يرتكز على قاعدة عميقة من العود والمسك مع دفء الفانيلا.</p>', 23, 4, 1, 0, '[\"Fresh\",\"Citrus\",\"Floral\",\"Woody\",\"Amber\"]', '{\"Sillage\":\"Moderate to Strong\",\"Longevity\":\"7–9 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '80ml', '80ml', NULL, 'active'),
-(126, 'FGD01650', 'FGD01650', 'exotic', 'Exotic', 'ايكسزوتيك', '<p>A luminous citrus–floral fragrance with green cedarwood accents, melting into a warm base of sandalwood, vanilla, and amber.<br><br>Exotic opens with the sparkling freshness of bergamot and orange, uplifting and vibrant. The heart reveals a refined harmony of floral and green notes, accented by cedarwood for natural elegance. Finally, the fragrance settles into a sensual trail of sandalwood, vanilla, musk, dry woods, and amber—leaving a smooth, lasting aura that balances brightness with warmth.</p>', '<p>تنطلق مقدمة Exotic بانتعاش البرغموت والبرتقال المشرق، يمنحان لمسة نابضة بالحيوية. في القلب، يتكشف انسجام زهور ولمسات خضراء تتألق بخشب الأرز لزيادة الأناقة الطبيعية. أما القاعدة فتستقر على أثر حسي من خشب الصندل والفانيلا والمسك والأخشاب الجافة والعنبر، لتترك هالة ناعمة تدوم تجمع بين الإشراقة والدفء.<br><br>عطر زهري–حمضي مشرق بلمسات أرز خضراء، يستقر على قاعدة دافئة من خشب الصندل والفانيلا والعنبر</p>', 28, NULL, 1, 0, '[\"Citrus\",\"Woody\",\"Floral\",\"ambery\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"5-7 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '100ml', '100ml', NULL, 'active'),
-(127, 'FGD01651', '6290360613611', 'ruby', 'Ruby', 'روبي', 'A radiant citrus–floral fragrance with a powdery vanilla heart and a musky–woody embrace<br><br>Ruby opens with the brightness of Sicilian orange, jasmine, lily, and crisp apple—fresh and feminine. Its heart reveals a soft powdery accord blended with vanilla bean and sea notes, balancing sweetness with airy freshness. The fragrance settles into a sensual dry down of musk, cashmeran, sandalwood, and ambroxan, leaving a silky, modern trail of refined warmth and elegance.', 'ينطلق Ruby بإشراقة البرتقال الصقلي مع الياسمين والزنابق والتفاح المقرمش في لمسة أنثوية منعشة. ثم يكشف القلب عن مزيج بودري ناعم مع حبوب الفانيلا والنفحات البحرية، ليوازن بين الحلاوة والانتعاش الهوائي. وأخيراً، يستقر العطر على قاعدة حسية من المسك والكاشمران وخشب الصندل والأمبروكسان، تاركاً أثراً حريرياً عصرياً يفيض دفئاً ورقياً.<br><br>عطر زهري–حمضي متألق بقلب بودري–فانيلا وقاعدة خشبية–مسكية دافئة.', 28, NULL, 1, 0, '[\"Floral–Oriental–Powdery\",\"—\",\"a\",\"luminous\",\"dance\",\"of\",\"orange\",\"and\",\"jasmine\",\"softened\",\"by\",\"powder\",\"sailing\",\"into\",\"a\",\"warm\",\"woody\",\"amber\",\"base\",\"with\",\"sea\",\"like\",\"freshness.\"]', '{\"Sillage\":\"Moderate to strong — elegant and enveloping\",\"Longevity\":\"3 hrs on skin, 5-8hrs on fabrics\",\"Dispenser\":\"spray\",\"Occasion\":\"Ideal for both day and night\",\"Ingredients\":\"Sicilian Orange, Jasmine Absolute, apple Accord, Vanilla Bean, Cashmeran, Sandalwood, Ambergris\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '100ml', '100ml', NULL, 'active'),
-(128, 'FGD01654', '6290360614625', 'hayana', 'Hayana', 'حيانا', 'A luminous floral–fruity fragrance where orchid and tangerine meet tropical blossoms, resting on a warm vanilla–amber base.<br><br>Hayana opens with the powdery charm of heliotrope wrapped in juicy tangerine and delicate orchid. The heart bursts with tropical fruits, soft white flowers, and radiant peony, offering a vibrant, feminine bouquet. The fragrance settles into a sensual base of vanilla, musk, and amber—warm, elegant, and irresistibly enveloping.', 'تتألق مقدمة Hayana بلمسة الب heliotrope البودرية مع انتعاش اليوسفي ورقة الأوركيد. في القلب، يسطع مزيج من الفواكه الاستوائية والزهور البيضاء والفاوانيا المشرقة ليشكل باقة أنثوية نابضة بالحياة. أما القاعدة فتستقر على الفانيلا والمسك والعنبر، لتترك أثراً دافئاً راقياً لا يُقاوم.<br><br>عطر زهري–فاكهي متألق يجمع بين الأوركيد واليوسفي وزهور استوائية فوق قاعدة دافئة من الفانيلا والعنبر.', 28, NULL, 1, 0, '[\"Floral\",\"Fruity\",\"Musk\"]', '{\"Sillage\":\"Soft–Moderate\",\"Longevity\":\"5–7 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '100ml', '100ml', NULL, 'active'),
-(129, 'FGD01872', '6290360615240', 'royal-wood-100ml', 'Royal Wood 100ML', 'رويال وود', '<p>A noble woody fragrance blending spicy oud with rosewood, sandalwood, and a warm tonka–amber–vanilla embrace.<br><br>Royal Wood opens with the bold vibrancy of cardamom, Sichuan pepper, and precious agarwood, evoking a refined oriental allure. The heart deepens with the elegance of Brazilian rosewood, creamy sandalwood, and earthy vetiver, creating a balanced woody harmony. The base lingers with tonka bean, amber resin, and vanilla, offering warmth and sensual depth for a long-lasting, majestic signature.</p>', '<p>يبدأ Royal Wood بحيوية الهيل والفلفل السيشواني مع فخامة العود، ليمنح لمسة شرقية راقية. في القلب، يبرز خشب الروزوود البرازيلي مع نعومة خشب الصندل وعمق الفيتيفر الترابي في تناغم خشبي متوازن. أما القاعدة فتستوطنها حبوب التونكا وراتنج العنبر والفانيلا، لتمنح دفئاً وعمقاً حسياً يترك أثراً ملكياً ثابتاً وطويلاً.<br><br>عطر خشبي فاخر يمزج عبق العود المتبّل مع خشب الروزوود والصندل وقاعدة دافئة من التونكا والعنبر والفانيلا.</p>', 28, NULL, 1, 0, '[\"Woody\",\"Spicy\",\"Oriental\"]', '{\"Sillage\":\"Strong &amp\",\"Longevity\":\"10–12 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '100ml', '100ml', NULL, 'active'),
-(130, 'FGD01873', '6290360615295', 'ighraa-100ml', 'Ighraa 100ML', 'إغراء', 'A bold spicy–oriental where tobacco ignites grapefruit and warm spices, softening into coffee–patchouli and a glowing amber–sandalwood–vetiver trail.<br><br>Ighraa opens with a commanding blend of tobacco and black pepper brightened by pineapple, grapefruit, and a swirl of cardamom, nutmeg, and cinnamon. The heart deepens into patchouli wrapped in roasted coffee, smoothed by powdery iris and aromatic lavender. Finally, vanilla and amber melt into dry woods, benzoin, labdanum, sandalwood, and Haitian vetiver—leaving a confident, magnetic signature.', 'تنطلق «إغراء» بمزيج آسر من التبغ والفلفل الأسود يضيئه الأناناس والجريب فروت مع لفّة من الهيل وجوزة الطيب والقرفة. يتعمّق القلب بباتشولي غنيّ يحتضنه عبق القهوة، وتنعّمه لمسة السوسن مع وضوح اللافندر العطري. وفي القاعدة، تذوب الفانيلا والعنبر في أخشاب جافة وبنزوين ولابدانوم وخشب الصندل مع فيتيفر هايتي، تاركة بصمة واثقة آسرة.<br><br>عطر شرقي متبّل جريء: يتوهّج فيه التبغ مع الجريب فروت والتوابل، ويلين إلى قهوة وباتشولي وينتهي بأثر عنبري–صندلي–فيتيفر دافئ.', 28, NULL, 1, 0, '[\"Spicy\",\"Oriental\",\"Woody\"]', '{\"Sillage\":\"Heavy\",\"Longevity\":\"9–12 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '100ml', '100ml', NULL, 'active'),
-(131, 'FGD01871', '6290360615257', 'royal-cherry', 'Royal Cherry', 'رويال تشيري 100مل', '<p>A rich gourmand–floral, where luscious cherry and almond meet Turkish rose and plum, wrapped in a warm spicy–woody base.<br><br>Royal Cherry opens with a juicy, addictive duo of cherry and almond. At its heart, the sweetness of cherry deepens into a sensual blend of plum, Turkish rose, and jasmine—fruity, velvety, and floral. The dry down unveils tonka bean, vanilla, and cinnamon enriched with benzoin, sandalwood, cedar, and vetiver, leaving a warm, lingering trail of elegance and indulgence.</p>', '<p>يبدأ Royal Cherry بازدواجية شهية من الكرز واللوز. في القلب، يتعمق عبير الكرز مع البرقوق والورد التركي والياسمين ليمنح لمسة فاكهية–مخمليّة زهرية آسرة. أما القاعدة فتتجلى في حبوب التونكا والفانيلا والقرفة، مدعومة بالبنزوين وخشب الصندل والأرز والفيتيفر، لتترك أثراً دافئاً مترفاً يدوم طويلاً.<br><br>عطر زهري–غورماند فاخر يجمع بين الكرز واللوز مع الورد التركي والبرقوق، على قاعدة دافئة متبّلة–خشبية.</p>', 28, NULL, 1, 0, '[\"Fruity\",\"Gourmand\",\"Woody\",\"Oriental\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '100ml', '100ml', NULL, 'active'),
-(132, 'FGD01741', 'FGD01741', 'oud-couture-100ml', 'Oud Couture 100ML', 'عود كوتشر 100مل', '<p>A refined fruity–floral oud, where peach and berries meet rose and honey over a sensual woody–ambery base.<br><br>Oud Couture opens with the luminous freshness of orange, red berries, and velvety peach. The heart blooms with elegant white flowers and rose, enriched by a golden drizzle of honey for depth and sensuality. The fragrance concludes with moss, creamy sandalwood, and ambroxan, shaping a sophisticated, long-lasting oud-inspired signature that is both modern and timeless.</p>', '<p>تتألق مقدمة Oud Couture بانتعاش البرتقال ولمسة التوت مع نعومة الخوخ المخملي. في القلب، يتفتح العطر بزهور بيضاء أنيقة وورد فاخر تغمره لمسة عسل ذهبية تمنحه عمقاً وحسية آسرة. أما القاعدة فتستوطنها الطحالب وخشب الصندل الكريمي مع الأمبروكسان، لتشكل توقيعاً راقياً مستوحى من العود، عصرياً وخالداً في آن واحد.<br><br>عطر عود زهري–فاكهي راقٍ يجمع بين الخوخ والتوت مع الورد والعسل على قاعدة خشبية–عنبرية فاتنة.</p>', 28, NULL, 1, 0, '[\"Fruity\",\"Floral\",\"Woody\",\"Amber\"]', '{\"Sillage\":\"Moderate to Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '100ml', '100ml', NULL, 'active'),
-(133, 'FGD01711', '6290360615158', 'meillure-80ml', 'Meillure 80ML', 'مليور 80 مل', 'A luminous citrus–floral bouquet crowned with jasmine and orange blossom, settling into golden honey, amber, and patchouli warmth.<br><br>Meillure opens with the sparkling freshness of Amalfi lemon, sweet raspberry, and bright neroli. Its heart blossoms with an elegant blend of jasmine, African orange flower, classic orange blossom, and creamy gardenia—radiant and feminine. The base reveals a sensual finish of white honey, patchouli, and amber, leaving a golden, velvety trail that lingers with sophistication.', 'تنطلق مقدمة Meillure بانتعاش متلألئ من ليمون أمالفي وتوت العليق وزهر النارنج. ثم يتفتح القلب بمزيج أنيق من الياسمين وزهرة البرتقال الإفريقية وزهر البرتقال الكلاسيكي والغاردينيا الكريمية، ليمنح لمسة مشعة أنثوية. أما القاعدة فتستقر على عسل أبيض وباتشولي وعنبر، لتترك أثراً ذهبياً مخملياً يفيض بالرقي والجاذبية.<br><br>عطر زهري–حمضي متألق يتوّجه الياسمين وزهر البرتقال، ويستقر على دفء العسل والعنبر والباتشولي.', 28, NULL, 1, 0, '[\"Fruity\",\"Floral\",\"Oriental\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '80ml', '80ml', NULL, 'active'),
-(134, 'FGD01754', '6290360614632', 'lush-noir-75ml', 'Lush Noir 75ML', 'لش نوير 75مل', 'Darkly luminous: sparkling fresh notes and bergamot meet bitter almond, peony, and ylang-ylang over a velvety vanilla–coumarin–musk trail.<br><br>Lush Noir opens in a bright flash of sparkling fresh accord and crisp bergamot, rounded by the suave bite of bitter almond. The heart blooms with peony and ylang-ylang—silky florals that add body and allure. A sensual dry down of vanilla, coumarin, and musk settles close to the skin, leaving a refined, nocturnal elegance.', 'تنطلق «لاش نوار» ببريق متلألئ من لمسة منعشة مع برغموت نقي، تتوازن بلمسة اللوز المرّ الأنيقة. يتفتح القلب بفاوانيا وإيلنغ-إيلنغ يمنحان نعومة وحضوراً آسراً. وتستقر القاعدة على فانيلّا وكومارين ومِسك لخشوع حسيّ راقٍ يلازم البشرة بأناقة ليلية.<br><br>إشراقة داكنة: نفحات منعشة متلألئة مع البرغموت واللوز المرّ، يتبعها فاوانيا وإيلنغ-إيلنغ فوق أثر فانيلّا–كومارين–مِسك مخملي.', 28, NULL, 1, 0, '[\"Floral\",\"Oriental\",\"Gourmand\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"7–9 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '75ml', '75ml', NULL, 'active'),
-(135, 'FGD01868', '6290360615486', 'is-it-me-90ml', 'Is It Me 90ML', 'إز إت مي 90مل', '<p>A playful gourmand–amber fragrance where saffron and candied orange meet cotton candy and ambergris, resting on a sensual woody base.<br><br>Is It Me opens with a sparkling blend of saffron, jasmine, and sweet candied orange—luminous and inviting. At its heart, a swirl of cotton candy melts into the oceanic richness of ambergris, striking a balance between airy sweetness and refined depth. The fragrance concludes with cedar, ambroxan, and woody notes, leaving a smooth, radiant trail that feels modern, youthful, and magnetic.</p>', '<p>ينطلق «إز إت مي» بمزيج متألق من الزعفران والياسمين والبرتقال المسكّر، يمنح إشراقة جذابة. في القلب، يذوب غزل البنات في فخامة العنبر الرمادي ليوازن بين الحلاوة الهوائية والعمق الراقي. أما القاعدة فتستوطنها نغمات خشبية وأرز مع الأمبروكسان، لتترك أثراً ناعماً مشرقاً يفيض بالعصرية والشبابية والجاذبية.<br><br>عطر غورماند–عنبر مرح يمزج الزعفران والبرتقال المسكّر مع غزل البنات والعنبر الرمادي فوق قاعدة خشبية حسية.</p>', 28, NULL, 1, 0, '[\"Gourmand\",\"Oriental\",\"Woody\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"7-9 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '90ml', '90ml', NULL, 'active'),
-(136, 'FGD01869', '6290360615202', 'mystique-pink', 'Mystique Pink', 'مايستيك بنك', '<p>A radiant fruity–floral with peony and mandarin, blossoming into osmanthus and rose, and settling on a sensual woody–spicy base. Mystique Pink opens with the playful freshness of peony, mandarin, and citrus, offering a sparkling start. At its heart, delicate osmanthus blends with rose, revealing soft femininity and graceful allure. The fragrance concludes with pink pepper, patchouli, and sandalwood, leaving a warm, sensual trail that balances elegance with modern charm.</p>', '<p>تنطلق مقدمة Mystique Pink بانتعاش مرح من الفاوانيا واليوسفي والحمضيات، لتمنح بداية مشرقة متلألئة. في القلب، يتناغم الأوسمانثوس الرقيق مع الورد ليكشفا عن أنوثة ناعمة وجاذبية راقية. أما القاعدة فتتألف من الفلفل الوردي والباتشولي وخشب الصندل، لتترك أثراً دافئاً حسياً يوازن بين الأناقة والسحر العصري. عطر زهري–فاكهي متألق يتفتح بالفاوانيا واليوسفي، ويزهر بالأوسمانثوس والورد ليستقر على قاعدة خشبية–تبهيرية أنيقة</p>', 28, NULL, 1, 0, '[\"Floral\",\"Woody\",\"Spicy\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '100ml', '100ml', NULL, 'active'),
-(137, 'FGD01655', '6290360615868', 'zumar', 'Zumar', 'زمر', '<p>An opulent oud–gourmand where saffron and fruits melt into deep oud, cacao, and rose resins, sweetened with brown sugar.</p><p> Zumar opens with the radiant warmth of saffron, juicy pear, and red berries, lifted by the rare kinam oud accord. The fragrance then deepens into a resinous heart (intentionally veiled in mystery) before settling into a sumptuous base of brown sugar, ambrette, oud, white musk, cacao, patchouli, and rose resins. The result is a sophisticated, long-lasting signature—rich, exotic, and irresistibly indulgent.</p>', '<p>تتألق مقدمة Zumar بدفء الزعفران مع الكمثرى الغنية والتوت الأحمر، مدعومة بندرة نوتة عود الكينام. ثم يتعمق العطر بقلب راتنجي غامض (قصداً محاط بالغموض)، ليستقر على قاعدة مترفة من السكر البني والمسك النباتي والعود والمسك الأبيض والكاكاو والباتشولي وراتنج الورد. النتيجة توقيع فاخر طويل الأمد يجمع بين الغنى والغموض والجاذبية اللامقاومة. عطر عود غورماند فاخر تتمازج فيه نغمات الزعفران والفواكه مع عمق العود والكاكاو وراتنج الورد، محلاة بالسكر البني.</p>', 23, 3, 1, 0, '[\"Rich\",\"Floral\",\"–\",\"Oriental\",\"–\",\"Gourmand\",\"—\",\"opens\",\"with\",\"oriental\",\"warmth\",\"from\",\"saffron\",\"and\",\"fruity\",\"sweetness\",\"blooms\",\"into\",\"creamy\",\"florals\",\"and\",\"settles\",\"into\",\"a\",\"decadent\",\"gourmand\",\"base\",\"spiked\",\"with\",\"oud\",\"and\",\"resinous\",\"depth.\"]', '{\"Sillage\":\"Strong — projective &amp\",\"Longevity\":\"Above-average — lasts all day &amp\",\"Dispenser\":\"spray\",\"Occasion\":\"Perfect for memorable evenings or special occasions.\",\"Ingredients\":\"Saffron, Kinam Oud Accord, Jasmine, Bulgarian &amp\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '60ml', '60ml', NULL, 'active'),
-(138, 'FGD01421', '2640150014038', 'ghali', 'Ghali', 'غالي', '<p>A commanding oud–leather blend softened by florals and amber warmth. Ghali opens with the depth of Indian oud entwined with refined leather, setting a tone of power and distinction. At its heart, soft white flowers meet the gentle sweetness of vanilla, offering an elegant contrast. Finally, the base of white musk and amber grounds the composition in sensual warmth. With its rich projection and 12+ hours longevity, Ghali is a statement of heritage and modern refinement.</p>', '<p>يبدأ \"غالي\" بعمق العود الهندي الممزوج بلمسة جلدية راقية تمنحه طابعًا قويًا ومهيبًا. في القلب، تتناغم الزهور البيضاء مع حلاوة الفانيليا الناعمة لتمنح لمسة أنيقة ومتوازنة. أما القاعدة فتتألف من المسك الأبيض والكهرمان، لتمنح ثباتًا دافئًا وحسيًا. يتميز \"غالي\" بإسقاط غني وثبات يدوم أكثر من 12 ساعة، ليكون رمزًا للأصالة والفخامة العصرية. مزيج مهيب من العود والجلد، يكتمل برقة الزهور ودفء الكهرمان.</p>', 24, 5, 1, 0, '[\"Woody\",\"–\",\"Leather\",\"–\",\"Floral\",\"–\",\"Amber\"]', '{\"Sillage\":\"Rich, commanding projection\",\"Longevity\":\"12+ hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '15ml', '15ml', NULL, 'active'),
-(139, 'FGD01461', '2640150013895', 'ghawi', 'Ghawi', 'غاوي', '<p>A luxurious floral–oud creation with a powdery rose heart and musky amber depth. Ghawi begins with a fresh floral accord touched by aromatic herbs, offering a graceful opening. Its heart reveals the elegance of Indian rose, softened by vanilla and airy powdery notes, weaving refinement and warmth. The base settles into a profound fusion of Indian and Cambodian oud, embraced by amber and musk, leaving a long-lasting, opulent trail that lingers for 12+ hours.</p>', '<p>يبدأ \"غاوي\" بنفحات زهرية منعشة تتمازج مع أعشاب عطرية لتمنح مقدمة أنيقة. يكشف قلبه عن روعة الورد الهندي، الممزوج بحلاوة الفانيليا ورقة النغمات البودرية ليمنح توازناً راقياً ودافئاً. أما القاعدة فتستقر على مزيج عميق من العود الهندي والكمبودي، يحتضنه الكهرمان والمسك ليترك أثراً فاخراً يدوم أكثر من 12 ساعة. ابتكار فاخر من الزهور والعود يتألق بقلب وردي بودري وعمق كهرماني مسكي.</p>', 24, 5, 1, 0, NULL, '{\"Longevity\":\"12+ hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '15ml', '15ml', NULL, 'active'),
-(140, 'FGD01970', 'FGD01970', 'ahl', 'Ahl', 'أهل', '<p>A vibrant symphony of fruits, florals, and marine freshness over creamy woods and oud depth.</p><p> AHL opens with an exhilarating burst of cardamom, citrus, and luscious fruits like coconut, melon, and raspberry. Its heart blossoms into an expansive floral bouquet—rose, magnolia, tulip, jasmine, and lily—gently lifted by marine notes and cashmere wood. The base is rich and enduring, where sandalwood, Thai oud, caramel, and vanilla merge with musk and amber, creating a warm, sensual finish. With its strong sillage and longevity of over 12 hours, AHL is designed for unforgettable presence.</p>', '<p>يفتتح \"أهل\" بانفجار منعش من الهيل والحمضيات، تتبعه لمسات فاكهية غنية من جوز الهند، الشمام، والتوت العليق. يتفتح القلب كحديقة زهرية واسعة تضم الورد والماغنوليا والتوليب والياسمين وزنبق الوادي، تتخللها نغمات بحرية وخشب الكشمير. أما القاعدة فغنية ودافئة، حيث يلتقي العود التايلندي مع الصندل والفانيليا والكراميل والمسك والكهرمان، ليمنح ثباتاً حسيًا يتجاوز 12 ساعة مع إسقاط قوي يملأ المكان. سيمفونية نابضة من الفواكه والزهور ونفحات بحرية، تعانقها أخشاب كريمية وعمق العود.</p>', 23, 3, 1, 0, '[\"Aquatic\",\"Spicy\",\"Floral\",\"–\",\"fresh\",\"marine\",\"opening\",\"with\",\"spicy\",\"fruity\",\"layers\",\"over\",\"creamy\",\"woods\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"12+ hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '60ml', '60ml', NULL, 'active'),
-(141, 'FGD01867', 'FGD01867', 'coco-blend', 'Coco Blend', 'كوكو بليند', '<p>A luminous citrus–floral blend resting on a smooth, ambery–woody base. Coco Blend opens with a sparkling medley of orange, mandarin, bergamot, and orange blossom, offering brightness and charm. At its heart, elegant florals—Turkish rose, jasmine, mimosa, and ylang-ylang—bloom with sophistication. The fragrance dries down into a sensual base of patchouli, vanilla, vetiver, white musk, tonka bean, and ambroxan, creating a refined warmth. With moderate to strong sillage and 6–8 hours longevity, Coco Blend is perfect for both elegant daytime moments and festive evenings.</p>', '<p>يفتتح \"كوكو بلِند\" بتناغم متلألئ من البرتقال واليوسفي والبرغموت وزهر البرتقال، ليمنح إشراقاً وسحراً. في القلب، تتفتح أزهار راقية من الورد التركي والياسمين والميموزا والإيلنغ، لتضفي لمسة من الأناقة. أما القاعدة فتغتني بالباتشولي والفانيليا والفيتيفر والمسك الأبيض والتونكا والأمبروكسان، لتخلق دفئاً راقياً. يتميز العطر بإسقاط معتدل إلى قوي وثبات يدوم 6–8 ساعات، ليكون مثالياً لأوقات النهار الأنيقة أو الأمسيات الاحتفالية. مزيج متألق من الحمضيات والزهور يستقر على قاعدة خشبية كهرمانية ناعمة.</p>', 28, NULL, 1, 0, '[\"Elegant\",\"floral\",\"oriental\",\"with\",\"citrus\",\"brightness\",\"blooming\",\"florals\",\"and\",\"a\",\"smooth\",\"woody–\",\"ambery\",\"base.\",\"Tropical\",\"yet\",\"sophisticated\",\"perfect\",\"for\",\"making\",\"a\",\"warm\",\"refined\",\"impression.\"]', '{\"Sillage\":\"Moderate to strong – leaves a radiant trail.\",\"Longevity\":\"6–8 hours on skin, longer on clothes.\",\"Dispenser\":\"spray\",\"Occasion\":\"Ideal for daytime elegance, brunches, summer evenings, special dinners, and festive gatherings.\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '90ml', '90ml', NULL, 'active'),
-(142, 'FGD01814', 'FGD01814', 'red-jewel', 'Red Jewel', 'Red Jewel', '<p>.</p>', '<p>.</p>', 28, NULL, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:28', '2026-04-01 13:46:28', '100ml', '100ml', NULL, 'active'),
-(143, 'FGD01106', '2641000013225', 'abaan', 'Abaan', 'أبان', '<p>Exotic fruits melt into creamy white-chocolate florals over a soft musky–orris base. </p><p>Abaan opens with a playful trio of litchi, jackfruit, and kiwi, bursting with juicy brightness. The heart blooms into a delectable white-chocolate, orchid, and jasmine accord, enriched by a vanilla cake nuance for a modern gourmand glow. It settles gracefully on musk, orris, and a woody accord, delivering a smooth, cuddling trail with elegant presence.</p>', '<p>يبدأ «أبان» بثلاثي مرح من الليتشي والجاك فروت والكيوي ينبض بعصيرية براقة. ثم يتفتح القلب على توليفة شهية من الشوكولاتة البيضاء والأوركيد والياسمين، تتعزز بلمسة كعكة الفانيليا لتمنح توهجاً غورمانياً معاصراً. وأخيراً يستقر على المسك والأوريس مع اتفاق خشبي يترك أثراً ناعماً ودافئاً بأناقة لافتة. فاكهة استوائية تذوب في زهور الشوكولاتة البيضاء الكريمية فوق قاعدة مسكية-أوريس ناعمة.</p>', 23, 3, 1, 0, '[\"Gourmand\",\"Floral\",\"–\",\"exotic\",\"fruits\",\"with\",\"creamy\",\"edible\",\"notes\"]', '{\"Sillage\":\"Moderate to Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '100ml', '100ml', NULL, 'active'),
-(144, 'FGD01955', 'FGD01955', 'mosaic', 'Mosaic', 'موزيك', '<p>A gourmet coffee–cacao opening blooms into elegant white florals over a creamy, musky–woody embrace. Mosaic begins with an indulgent mélange of coffee, almond, orange, and cacao—rich, textured, and irresistibly inviting. The heart unfolds into luminous white flowers with orris and Bulgarian rose, adding polish and depth. As it settles, a velvety base of tonka bean, vanilla, and praline melts into sandalwood and musk, leaving a smooth, comforting trail with modern gourmand sophistication.</p>', '<p>يبدأ «موزاييك» بمزيج شهي من القهوة واللوز والبرتقال والكاكاو يمنح غنىً مغرياً وملمساً فاخراً. يتكشف القلب عن زهور بيضاء مضيئة مع الأوريس والورد البلغاري لإضفاء أناقة وعمق. أما القاعدة فتجمع التونكا والفانيليا والبرالين بانسياب كريمي يعانق الصندل والمسك، تاركاً أثراً مريحاً راقياً بطابع غورماني معاصر. افتتاحية قهوة وكاكاو غورمانية تتفتح إلى زهور بيضاء أنيقة فوق احتضان كريمي مسكي خشبي.</p>', 28, NULL, 1, 0, '[\"Gourmand\",\"Woody\",\"Floral\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '100ml', '100ml', NULL, 'active'),
-(145, 'FGD01959', 'FGD01959', 'moonlit', 'Moonlit', 'مون لت', '<p>A luminous fruity–floral bouquet drifting into a soft, musky–woody glow. Moonlit opens with sparkling citrus, juicy nectarine, crisp apple, and dark black currant for a vivid first impression. The heart blooms with gardenia, magnolia, jasmine, freesia, and lily of the valley, creating a graceful floral aura. It settles into a smooth base of patchouli, musk, sandalwood, vanilla, and amber—elegant, comforting, and perfectly balanced. Olfactive family: Fruity Floral Woody. Performance: moderate sillage with 6–8 hours longevity.</p>', '<p>يبدأ «مونلت» بانتعاش الحمضيات وعصيرية النكترين وحيوية التفاح وعمق الكشمش الأسود. يتفتح القلب مع الغاردينيا والماغنوليا والياسمين والفريزيا وزنبق الوادي ليصوغ هالة زهرية راقية. ثم يستقر على قاعدة ناعمة من الباتشولي والمسك وخشب الصندل والفانيليا والكهرمان—بأناقة مريحة وتوازنٍ مثالي. العائلة العطرية: فاكهي زهري خشبي. الأداء: إسقاط معتدل مع ثبات 6–8 ساعات. باقة فاكهية زهرية مشرقة تنساب إلى وهجٍ خشبي مسكي ناعم.</p>', 28, NULL, 1, 0, '[\"Fruity\",\"Floral\",\"Woody\"]', '{\"Sillage\":\"Moderate\",\"Longevity\":\"6–8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '100ml', '100ml', NULL, 'active');
-INSERT INTO `products` (`id`, `fgd`, `barcode`, `slug`, `name_en`, `name_ar`, `description_en`, `description_ar`, `category_id`, `subcategory_id`, `is_active`, `is_featured`, `tags`, `attributes`, `created_at`, `updated_at`, `size_label_en`, `size_label_ar`, `media_url`, `deleted_status`) VALUES
-(146, 'FGD01956', 'FGD01956', 'cinder', 'Cinder', 'سندر', '<p>Bright citrus–spice ignites an ambered oud heart, settling into refined leather and vetiver. Cinder opens with an energetic lift of bergamot and davana kissed by pink pepper—sparkling and confidently modern. The heart gathers depth as agarwood (oud) merges with the glow of white amber and an aromatic touch of rosemary. In the dry-down, a sophisticated texture of leather and musk is polished by earthy Haitian vetiver and a clean ambroxan aura, leaving a poised, memorable trail.</p>', '<p>تفتتح «سيندر» بلمعان البرغموت ودفء الدافانا مع لمسة فلفل وردي نابضة بالعصرية. في القلب، يتعمّق الحضور مع العود يتماهى مع إشراقة العنبر الأبيض ونفحة إكليل الجبل العطرية. ثمّ يستقر العطر على جلد أنيق ومسك ناعم تصقله الفيتيفر الهايتي وشفافية الأمبركسان، ليترك أثراً راقياً لا يُنسى. بريق حمضي متبّل يوقظ قلباً عنبريّ العود، ويستقر على جلد وفِتيفر راقيين.</p>', 28, NULL, 1, 0, '[\"Woody\",\"Spicy\",\"Leather\",\"–\",\"bright\",\"citrus\",\"spice\",\"opening\",\"aromatic\",\"amberoud\",\"mid\",\"bold\",\"leather\",\"vetiver\",\"base.\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '100ml', '100ml', NULL, 'active'),
-(147, 'FGD01359', '2640500013605', 'tanuf', 'Tanuf', 'تنوف', '<p>Leather and sandal ignite a rosy, modern heart, finishing in cedarwood–oud warmth.</p><p> Tanuf opens with a confident duet of leather and sandal, immediately setting a suave, tactile tone. At the heart, rose meets the silky radiance of Iso E Super, lending airy diffusion and contemporary elegance. The dry-down deepens into cedarwood, oud, and amber, wrapping the skin in luminous warmth with refined persistence—perfect for evening poise and signature presence.</p>', '<p>ينطلق «تنوف» بثنائية واثقة من الجلد والصندل تمنح إحساساً فاخراً ولمسة ملموسة. في القلب، يعانق الورد إشراقة Iso E Super لانتشار هوائي وأناقة عصرية. ثم يستقر العطر على خشب الأرز والعود والكهرمان، ليغلف البشرة بدفء مضيء وثبات راقٍ—مثالي للأمسيات وبصمة لا تُنسى. جلد وصندل يوقظان قلباً وردياً عصرياً، ينتهي بدفء العود والأرز.</p>', 23, 4, 1, 0, '[\"Woody\",\"Leather\",\"Oriental\"]', '{\"Sillage\":\"Moderate to Strong\",\"Longevity\":\"12+ hrs\",\"Dispenser\":\"other\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '50ml', '50ml', NULL, 'active'),
-(148, 'FGD01717', 'FGD01717', 'green-pearl', 'Green Pearl', 'غرين بيرل', '<p>Juicy fruits and orange blossom bloom into luminous white florals over a soft, gourmand amber–vanilla trail. Green Pearl opens with a radiant mix of apple, red fruits, pear, and citrus accord, lifted by orange blossom for a sparkling first impression. The heart glows with white flowers, jasmine, and lily of the valley, creating a graceful bouquet. It settles into a comforting base where amber, vanilla, and maltol melt into musk and cedarwood, leaving a smooth, elegant signature.</p>', '<p>ينطلق «جرين بيرل» بمزيج متألق من التفاح والفواكه الحمراء والإجاص والأكورِد الحمضي، تتوّجه زهرة البرتقال بلمعان أخّاذ. يتلألأ القلب مع الزهور البيضاء والياسمين وزنبق الوادي ليصوغ باقة رشيقة. ثم يستقر على قاعدة مريحة حيث تذوب الفانيليا والمالتول في الكهرمان مع المسك وخشب الأرز، فيترك توقيعاً ناعماً وأنيقاً. فواكه عصيرية وزهر برتقال تتفتح إلى زهور بيضاء مشرقة فوق أثر غورماني ناعم من الكهرمان والفانيليا.</p>', 28, NULL, 1, 0, '[\"Fruity\",\"Floral\",\"Gourmand\"]', '{\"Sillage\":\"Moderate\",\"Longevity\":\"6–8 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '80ml', '80ml', NULL, 'active'),
-(149, 'FGD01769', 'FGD01769', 'marj-hair-mist', 'Marj Hair Mist', 'مرج (عطرللشعر)', '<p>A radiant oud-kissed hair mist: citrus–spice sparkle, a floral–woody heart, and a soft musky–amber trail for touchable, beautifully scented hair. Marj Hair Mist opens with lively bergamot, tangerine, and a bright pink pepper–elemi–nutmeg lift, brushed with oud and a smooth hint of honey. The heart flows into textured patchouli, airy aromatic accords, vetiver, and cashmere wood, warmed by cinnamon and illuminated with rose, saffron, jasmine, and orange blossom. It settles into a refined base of musk, amber, and ambroxan, nuanced by raspberry, oakmoss, powdery tones, ambrette seeds, leather, sandalwood, violet, and agarwood. The lightweight mist veils hair without heaviness, ideal for daily refresh, post-styling finishing, or gentle between-wash touch-ups—leaving a soft, elegant trail.</p>', '<p>تتألق «مرج هير ميست» ببداية نابضة من البرغموت واليوسفي مع لمسة فلفل وردي وإليمي وجوزة الطيب، تتعانق مع العود ونعومة العسل. يتكشف القلب عن باتشولي ونفحات عطرية وفيتيفر وخشب الكشمير، مع دفء القرفة وإشراقة الورد والزعفران والياسمين وزهر البرتقال. ثم يستقر العطر على قاعدة أنيقة من المسك والكهرمان والأمبركسان، تتزين بلمسات توت العليق وطحلب البلوط وبودري وحبوب الأمبريت وجلد وخشب الصندل وبنفسج ودهن العود. تركيبة خفيفة لا تثقل الشعر، مناسبة للاستخدام اليومي، كلمسة نهائية بعد التصفيف أو لتجديد الانتعاش بين الغسلات، مع أثر ناعم أنيق. رذاذ شعر بإشراقة عطرية ممزوجة بالعود: بريق حمضي متبّل، قلب زهري خشبي، وأثر مسكي عنبري ناعم لشعرٍ معطّر وملمسٍ حريري.</p>', 29, 11, 1, 0, '[\"Spicy\",\"Woody\",\"Oriental\"]', '{\"Sillage\":\"Strong\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '50ml', '50ml', NULL, 'active'),
-(150, 'FGD01914', 'FGD01914', 'nehayah', 'Nehayah', 'نهاية', '<p>Tropical citrus and coconut glide into resinous florals, melting into a musky, vanilla–caramel embrace over dry woods. Nehayah opens with sunlit orange, creamy coconut, bright tangerine, and juicy pineapple—a radiant, tropical lift. The heart deepens with myrrh and helichrysum, joined by silky cashmere wood and a dew-fresh touch of lily of the valley. In the dry-down, musk and vanilla cocoon the skin while caramel lends a delicious warmth over dry woods, creating a comforting, luminous trail that feels both exotic and elegantly composed.</p>', '<p>يفتتح «نهاية» بإشراقة البرتقال ولمسة جوز الهند الكريمية مع اليوسفي والأناناس لعطرٍ استوائي متلألئ. يتعمّق القلب مع المرّ والهيليكريزم، ويزداد نعومةً بفضل خشب الكشمير ولمسة زنبق الوادي الندية. أما القاعدة فتحتضن المسك والفانيليا فيما يضيف الكراميل دفئاً شهيّاً فوق الأخشاب الجافة، تاركةً أثراً مريحاً ومضيئاً يجمع بين الطابع الغورماني والأناقة. حمضيات استوائية وجوز الهند تنساب إلى زهور رزينية، وتذوب في عناق مسكي بالفانيليا والكراميل فوق أخشابٍ جافة.</p>', 24, 5, 1, 0, '[\"Fruity\",\"–\",\"Gourmand\",\"–\",\"Woody\",\"–\",\"Resinous\"]', '{\"Sillage\":\"Exotic tropical sweetness with a warm resin finish\",\"Longevity\":\"8 hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '15ml', '15ml', NULL, 'active'),
-(151, 'FGD01742', '6290360612935', 'couture-noir', 'Couture Noir', 'كوتشر نوير', '<p>Crisp apple and lemon meet a dark floral–leather heart, resting on a sensual mossy–amber base. Couture Noir opens with the lively brightness of apple and lemon, creating a sharp, modern lift. At its heart, soft lily of the valley is contrasted with bold leather and earthy patchouli, giving the fragrance both refinement and daring edge. Finally, the dry-down rests on moss, musk, and glowing amber, enveloping the skin in a warm, elegant finish. Poised yet seductive, Couture Noir is crafted for evening sophistication and signature presence.</p>', '<p>يفتتح «كوتور نوار» بحيوية التفاح والليمون ليمنح انطلاقة عصرية مشرقة. يتكشف القلب مع زنبق الوادي الرقيق في تباين أنيق مع الجلد الجريء والباتشولي الترابي، ليخلق توازناً بين الرقي والجرأة. أما القاعدة فتستقر على الطحلب والمسك والكهرمان المضيء، لتغلف البشرة بدفء وأناقة آسرة. إنه عطر للأمسيات ولمن يسعون إلى حضور أيقوني. تفاح حاد وبرغموت يلتقيان بقلب جلدي زهري داكن يستقر على قاعدة مسكية كهرمانية متألقة.</p>', 28, NULL, 1, 0, '[\"Fruity\",\"Leather\",\"Chypre\",\"–\",\"crisp\",\"apple\",\"lemon\",\"freshness\",\"floral\",\"leather\",\"heart\",\"earthy\",\"moss\",\"and\",\"amber\",\"in\",\"the\",\"base.\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"7-9 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '100ml', '100ml', NULL, 'active'),
-(152, 'FGD01972', 'FGD01972', 'bakhoor-marj', 'Bakhoor marj', 'بخور مرج', '<p>A rich, room-filling bakhoor where spicy brightness meets honeyed oud on an ambery–leathery base.</p><p>Ignite Bakhoor Marj to release a vivid opening of bergamot, pink pepper, elemi, nutmeg, and tangerine. The heart glows with oud and honey over patchouli, aromatic nuances, vetiver, cashmere wood, cinnamon, rose, saffron, jasmine, and orange blossom. It settles into a plush trail of musk, amber, raspberry, oakmoss, powdery ambrette, leather, sandalwood, violet, agarwood, and ambroxan—perfect for gatherings, majlis, and ceremonial moments.</p>', '<p>بخور فاخر يملأ المكان بتوابل زاهية وعسل العود على قاعدة عنبرية جلدية.</p><p>عند إشعاله، يفوح مرج بانطلاقة نابضة من البرغموت، والفلفل الوردي، والإليمي، وجوزة الطيب، واليوسفي. يتوهّج قلبه بالعود والعسل على الباتشولي، واللمسات العطرية، والفيتيفر، وخشب الكشمير، والقرفة، والورد، والزعفران، والياسمين، وزهر البرتقال. ويستقر على أثر ناعم من المسك والعنبر والتوت والطحلب ولمسة بودرية مع بذور الأمبريت والجلد والصندل والبنفسج والعود والأمبروكسان—مثالي للمجالس والمناسبات والطقوس العطرية.</p>', 25, 7, 1, 0, '[\"Spicy\",\"–\",\"Woody\",\"–\",\"Oriental\",\"–\",\"Sweet\",\"–\",\"Leather\",\"–\",\"Amber\"]', '{\"Sillage\":\"Intense and rich — fills large spaces\",\"Longevity\":\"Exceptional — hours of lingering depth\",\"Dispenser\":\"jar\",\"Ingredients\":\"Saffron, Honey Accord, Oud Oil, Jasmine Absolute, Leather Accord, Ambroxan, Patchouli Oil, Sandalwood Oil, Amber Resin.\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', NULL, NULL, NULL, 'active'),
-(153, 'FGD02009', 'FGD02009', 'la-rosee', 'La Rosee', 'لا روزي', '<p>Lush roses and gourmand warmth sparkle with bright fruits and sweet oud, melting into a creamy vanilla–musk embrace. </p><p>La Rosee opens with a lively burst of pink pepper, mandarin, and bergamot, joined by juicy passion fruit and peach over a sweet oud accord. The heart unfurls a radiant rose duet—Rose Grasse and Rose Bulgaria—layered with almond, geranium, and a touch of caramel for delectable softness. As it settles, heliotrope notes, patchouli, vanilla, tonka, and sugar drift into moss, musk, and oud, creating a silky, romantic trail with modern gourmand charm.</p>', '<p>تنطلق «لا روزيه» بانطلاقة نابضة من الفلفل الوردي والماندرين والبرغموت، مع فاكهة العاطفة والخُوخ فوق اتفاق عودٍ حلو. يتكشف القلب عن ثنائي وردي متألق—ورد غراس وورد بلغاري—تدعمه اللوز وإبرة الراعي ولمسة كراميل تمنح نعومة شهية. وفي الجفاف، تنساب نغمات الهليوتروب والباتشولي والفانيليا والتونكا والسكر إلى الطحلب والمسك والعود، لتصوغ أثراً حريرياً رومانسياً بطابع غورماني عصري. ورود فاخرة بدفء غورماني تتلألأ بفاكهة مشرقة وعودٍ حلو، وتذوب في عناق كريمي من الفانيليا والمسك.</p>', 23, 4, 1, 0, '[\"Fruity\",\"Floral\",\"Gourmand\",\"Oriental\"]', '{\"Sillage\":\"Moderate–Strong\",\"Longevity\":\"7–9 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '100ml', '100ml', NULL, 'active'),
-(154, 'FGD02042', 'FGD02042', 'oud-aslaaf', 'Oud Aslaaf', 'عود أسلاف', '<p>Powdery saffron and fresh whispers bloom into rose–vanilla warmth over creamy oud, musk, sandalwood, and amber. Oud Aslaaf opens with a soft saffron glow and talc-powder elegance lifted by fresh notes—clean, airy, and inviting. The heart unfurls a graceful bouquet of rose and white flowers, smoothed by vanilla and touched with refined leather. As it diffuses, a serenely luxurious base of white musk, oud, sandalwood, and amber fills the space with comforting radiance. Designed for gatherings, guest welcoming, and quiet moments at home, its projection is refined yet noticeable, creating an embracing aura that lingers beautifully.</p>', '<p>تنطلق «عود أسلاف» بتوهّج الزعفران ونعومة البودرة مع نغمات منعشة تمنح صفاءً جذاباً. يتكشف القلب عن الورد والزهور البيضاء برفاهيةٍ تصقلها الفانيليا وتزيدها الجلود رُقياً. ومع الانتشار، تتكوّن قاعدة مطمئنة من المسك الأبيض والعود وخشب الصندل والكهرمان، فتملأ المكان بهالةٍ دافئة راقية. مناسب للمجالس واستقبال الضيوف ولحظات السكينة في المنزل، بإسقاط واضح وأثرٍ باقٍ يلفّ الأجواء بأناقة. زعفران بودري ولمسات منعشة تتفتح إلى دفء الورد والفانيليا فوق عود كريمي ومسك وصندل وكهرمان.</p>', 25, 8, 1, 0, '[\"Floral\",\"Oriental\",\"–\",\"powdery\",\"saffron\",\"floral\",\"with\",\"creamy\",\"oud\"]', '{\"Sillage\":\"Moderate to Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"solid_incense\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '58g', '58g', NULL, 'active'),
-(155, 'FGD02219', 'FGD02219', 'bakhoor-rasiyat-10-tabs', 'Bakhoor Rasiyat (10 Tabs)', 'بخور راسيات', '<p>Radiant mandarin lifts velvety Indian roses over an oud-amber heart, diffusing into a deep white/black musk aura for welcoming, room-filling warmth. Bakhoor Rasiyat opens bright with mandarin, then blooms into Indian roses and soft white flowers, setting a refined, floral tone for gatherings. As the smoke unfolds, Dehn Al Oud melds with glowing amber, settling into a plush base of white musk enriched by a sensual black musk depth. The result is a graceful, long-lasting ambiance—perfect for majlis, guest hospitality, and evening serenity.</p>', '<p>تنطلق «بخور راسيات» بإشراقة الماندرين، ثم تتفتح الورود الهندية مع الزهور البيضاء لتمنح أجواءً زهرية راقية للمجالس. ومع انتشار الدخان، يتماهى دهن العود مع الكهرمان المتوهّج، ليستقر على مسكٍ أبيض غني، تعمّقه لمسة مسك أسود آسرة. النتيجة عبيرٌ مهيب طويل الأمد—مثالي لاستقبال الضيوف وهدوء الأمسيات. ينهض الماندرين بوردٍ هندي مخملي فوق قلب عودي عنبري، ليفترش هالة مسكٍ أبيض/أسود دافئة تملأ المكان ترحيباً وأناقة.</p>', 25, 7, 1, 0, '[\"Musky\",\"–\",\"deep\",\"warm\",\"and\",\"elegant\"]', '{\"Sillage\":\"Strong – rich musky projection\",\"Longevity\":\"3 hrs in air.\",\"Dispenser\":\"jar\",\"Ingredients\":\"Black Musk, Indian Rose Absolute, Premium Oud Oil, Amber\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '20 Tab', '20 Tab', NULL, 'active'),
-(156, 'FGD01965', 'FGD01965', 'kawkab', 'Kawkab', 'كوكب', '<p>A stellar rose constellation—citrus and mango sparkle over saffron-kissed Isparta rose and black tea, descending into musky, oud-kinam woods.</p><p> Kawkab opens with a generous rose bouquet and peony, brightened by bergamot, lemon, and grapefruit. A juicy twist of mango, a glimmer of pink pepper, and luminous orange blossom add lift and radiance. At the heart, Isparta rose blooms with depth beside black tea, iris, amber, praline, and a refined touch of saffron. The dry-down turns sumptuous and textured: musk and guaiac wood meet Oud Ahme Kinam accord, cypriol, nagarmotha, cedar/cedarwood, tonka, and patchouli, shaping an elegant, long-lasting trail.</p>', '<p>ينطلق «كوْكب» بـ باقة ورد وفاوانيا تتوهجان مع البرغموت والليمون والجريب فروت. تمنح المانجو عصيرية مرِحة، وتضيف الفلفل الوردي وزهر البرتقال لمعاناً أنيقاً. في القلب، يتفتّح ورد إسبارطا بعمق إلى جانب الشاي الأسود والسوسن والكهرمان والبرالين ولمسة زعفران راقية. وفي الجفاف، تتعانق المسك وخشب الغاياك مع اتفاق عود أحمد كينام والسيبريول والناغارموثا وخشب الأرز والتونكا والباتشولي، لصياغة أثرٍ أنيق طويل الأمد. كوكبة ورد متألّقة—حمضيات ومانجو لامعة فوق ورد إسبارطا بلمسة زعفران وشاي أسود، تنساب إلى أخشاب كينام عود ومسك دافئ.</p>', 23, 3, 1, 0, '[\"Oriental\",\"Floral\",\"Woody\"]', '{\"Sillage\":\"Heavy\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '75ml', '75ml', NULL, 'active'),
-(157, 'FGD01962', 'FGD01962', 'o-clock', 'O clock', 'او كلوك', '<p>A sparkling apple–lavender lift over malted citrus and cinnamon, unfolding to orange blossom and elegant leather, resting on vanilla CO₂, musk, and amber warmth. O’Clock opens with a vivid burst of apple, lavender, and cinnamon, brightened by bergamot and grapefruit, then given a modern twist with sparkling malt notes. The heart reveals a refined blend of orange blossom and lily of the valley, contrasted with a smooth leather nuance for tailored sophistication. Finally, the scent settles into a confident base of vanilla CO₂, musk, patchouli, and amber, leaving a warm, polished trail that feels both urbane and inviting.</p>', '<p>يبدأ «أو’كلوك» بانطلاقة نابضة من التفاح واللافندر والقرفة، تتلألأ مع البرغموت والجريب فروت وتكتسب لمسة عصرية عبر نغمات المالت المتلألئة. يتكشف القلب عن زهر البرتقال وزنبق الوادي بتباين أنيق مع الجلد لأسلوب مصقول. وفي الجفاف، تستقر فانيليا CO₂ مع المسك والباتشولي والكهرمان، تاركة أثراً دافئاً مصقولاً يفيض بحضور حضري أنيق. انتعاش تفاح ولافندر متلألئ فوق حمضيات مالتيّة وقرفة، يتفتح إلى زهر برتقال ولمسة جلدية أنيقة، ويستقر على فانيليا CO₂ ومسك وكهرمان.</p>', 28, NULL, 1, 0, '[\"Fruity\",\"Spicy\",\"Leathery\",\"Amber\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"9–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '100ml', '100ml', NULL, 'active'),
-(158, 'FGD01963', 'FGD01963', 'brulee', 'Brulee', 'برولي', 'Decadent caramel and bergamot ignite a vanilla–orange blossom heart over musky ambroxan woods, wrapping skin in gourmand glow.\r\n\r\nBrulee opens with a melt-in-the-air sweetness of caramel and sugar, creamed with coconut, spiced by cardamom, and brightened by Sicilian bergamot. The heart turns irresistibly indulgent: silky vanilla and luminous orange blossom entwine with a whisper of incense, while chocolate and milk add plush, dessert-like warmth. The dry-down is smooth and comforting—white musk and ambroxan float over soft woods and tonka beans, leaving a polished, modern gourmand trail that feels elegant rather than heavy.', 'تنطلق «بروليه» بحلاوة الكراميل والسكر المذابة في جوز الهند، تتوهج بلمسة هيل وتشرق مع برغموت صقلي. يتعمّق القلب بترف الفانيليا وزهر البرتقال مع همسة بخور، وتضيف الشوكولاتة والحليب دفئاً شهياً مخملياً. أما القاعدة فتتماهى فيها المسك الأبيض والأمبركسان فوق أخشاب ناعمة وتونكا، لتترك أثراً غورمانياً حديثاً ناعماً وأنيقاً.\r\n\r\nكراميل فاخر وبرغموت يوقظان قلب الفانيليا وزهر البرتقال فوق أخشابٍ مسكية بأمبروكسان، لوهجٍ غورماني دافئ.', 28, NULL, 1, 0, '[\"Gourmand\",\"Oriental\",\"–\",\"sweet\",\"edible\",\"notes\",\"with\",\"warm\",\"woods\",\"&\",\"musk\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"12+ hrs\",\"Dispenser\":\"serum\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '100ml', '100ml', NULL, 'active'),
-(159, 'FGD02010', 'FGD02010', 'bakhoor-kiflain', 'Bakhoor Kiflain', 'بخور كفلين', '<p>Smoky oud and saffron rise through dry incense and Indian agarwood, settling into a soft white amber–musk glow. Bakhoor Kiflain opens with a smoky oud accord brushed by saffron and dry incense, creating a dignified, ceremonial lift. The heart turns richly woody with Indian agarwood (oud), softened by a breath of rose and aromatic herbs that add refinement to the smoke. As it diffuses, a comforting base of white amber, white musk, and labdanum wraps the space in luminous warmth. Ideal for welcoming guests, evening majlis, or moments of quiet reflection, its trail is enveloping yet polished.</p>', '<p>تنطلق «بخور كفلين» باتفاق عودٍ دخاني تلامسه خيوط الزعفران والبخور الجاف، ليمنح بداية مهيبة بطابع احتفالي. يتعمّق القلب مع العود الهندي وتسبغه الورد والأعشاب العطرية بمسةٍ راقية تُهذّب الدخان. ومع الانتشار، تتكوّن قاعدة مريحة من الكهرمان الأبيض والمسك الأبيض واللابدانوم، فتغلف المكان بدفءٍ مضيء. مثالي لاستقبال الضيوف، والمجالس المسائية، ولحظات السكينة، بأثرٍ يحتضن الأجواء برقي. عودٌ دخاني مع زعفران يعلوان عبر بخورٍ جاف وعودٍ هندي، ليستقرا في توهّج كهرمان أبيض ومسك ناعم.</p>', 25, 7, 1, 0, '[\"Amber\",\"&\",\"Oriental\"]', '{\"Sillage\":\"Heavy / Bold / Traditional\",\"Dispenser\":\"solid_incense\",\"Occasion\":\"Ceremonial, Majlis, VIP occasions\",\"Ingredients\":\"Oud Powder is Natural.\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '20 Tab', '20 Tab', NULL, 'active'),
-(160, 'FGD02051', 'FGD02051', 'alf-shauk', 'Alf Shauk', 'ألف شوق', '<div><meta content=\"text/html; charset=utf-8\"><meta name=\"ProgId\" content=\"Excel.Sheet\"><meta name=\"Generator\" content=\"Microsoft Excel 15\"><p>The Alf Shauq Gift Set is a luxurious collection of four premium fragrances, each crafted to capture the richness of Arabian perfumery. This exquisite set includes Lathani, a refined blend of floral and woody accords; Oud Classic, a timeless composition showcasing the deep, warm, and resinous essence of pure oud; Mubakhkhar, an opulent fusion of incense and spices that evokes the ambiance of an authentic Arabian majlis; and Oud Cambodian, a rare and precious oud variety with a rich, smoky, and earthy depth that lingers beautifully. Perfect for gifting or personal indulgence, the Alf Shauq Gift Set is a celebration of tradition, elegance, and perfumery artistry.</p></div>', '<p>The Alf Shauq Gift Set is a luxurious collection of four premium fragrances, each crafted to capture the richness of Arabian perfumery. This exquisite set includes Lathani, a refined blend of floral and woody accords; Oud Classic, a timeless composition showcasing the deep, warm, and resinous essence of pure oud; Mubakhkhar, an opulent fusion of incense and spices that evokes the ambiance of an authentic Arabian majlis; and Oud Cambodian, a rare and precious oud variety with a rich, smoky, and earthy depth that lingers beautifully. Perfect for gifting or personal indulgence, the Alf Shauq Gift Set is a celebration of tradition, elegance, and perfumery artistry.</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', NULL, NULL, NULL, 'active'),
-(161, 'FGD01979', '6290360617657', 'maani', 'Ma\'ani', 'معاني', '<p>Vibrant citrus and spice meet an airy aromatic heart, drying to a clean, musky–woody trail with modern ambroxan lift.</p><p> Ma’ani opens with the zesty glow of blood orange and Sicilian lemon, sparked by juniper berries and warmed with cardamom. The heart airs out with a contemporary blend of Iso E Super, lavender, geranium, clary sage, and hedione, creating smooth diffusion and effortless sophistication. In the dry-down, vetiver, cedarwood, and patchouli fold into ambroxan and white musk for a crisp, long-smelling impression that feels polished and modern.</p>', '<p>ينطلق «معاني» بإشراقة البرتقال الدموي والليمون الصقلي تتوهج مع ثمار العرعر وتدفأ بـ الهال. يتنفس القلب بمزيج معاصر من Iso E Super واللافندر وإبرة الراعي والميرمية وهيديون، لينسج انتشاراً ناعماً وأناقة بلا عناء. ثم يستقر على الفيتيفر وخشب الأرز والباتشولي مع الأمبركسان والمسك الأبيض، تاركاً انطباعاً نظيفاً حديثاً طويل البقاء. حمضيات نابضة وتوابل تلتقي بقلب عطري هوائي، تجف على أثر خشبي مسكي نظيف بلمسة أمبروكسان عصرية.</p>', 23, 4, 1, 0, '[\"Citrus–Aromatic–Woody\",\"—\",\"a\",\"vibrant\",\"zesty\",\"opening\",\"meets\",\"a\",\"sophisticated\",\"aromatic\",\"heart\",\"drying\",\"down\",\"to\",\"a\",\"smooth\",\"musky–woody\",\"base\",\"with\",\"modern\",\"ambroxan\",\"lift.\"]', '{\"Sillage\":\"Moderate to strong — bright projection with smooth longevity\",\"Longevity\":\"7–9 hrs on skin, 12+ hrs on fabrics\",\"Dispenser\":\"spray\",\"Occasion\":\"Ideal for daytime sophistication\",\"Ingredients\":\"Blood Orange Essence, Iso E Super, Haitian Vetiver, Ambroxan, White Musk\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '100ml', '100ml', NULL, 'active'),
-(162, 'FGD01967', 'FGD01967', 'frost-ice', 'Frost Ice', 'فروست آيس', '<p>A cool marine breeze of citrus and watermelon, blooming with jasmine clarity and resting on ambergris-woody depth. Frost Ice opens with sea notes that sparkle alongside juicy watermelon, zesty grapefruit, and bright mandarin orange for an instant rush of freshness. The heart brings airy elegance: luminous jasmine tempered by aromatic rosemary. As it dries down, ambergris lends saline sophistication over soft woods, moss, and patchouli, creating a clean, modern trail. Olfactive family: Fresh Aquatic Woody. Performance: strong sillage, 7–9 hours.</p>', '<p>يبدأ «فروست آيس» بـ نغمات بحرية تتلألأ مع البطيخ العصيري والجريب فروت النابض والماندارين المشرق لانتعاش فوري. في القلب، يزهو الياسمين برهافةٍ هوائية تعادلها إكليل الجبل العطري. ثم يستقر العطر على عنبرٍ رمادي يمنح لمسة مالحة مميزة فوق أخشاب ناعمة وطُحلب وباتشولي، ليترك أثراً نظيفاً حديثاً. العائلة العطرية: منعش بحري خشبي. الأداء: إسقاط قوي وثبات 7–9 ساعات. نسيم بحري بارد من الحمضيات والبطيخ، يتفتح بصفاء الياسمين ويستقر على عمق عنبر رمادي وخشبٍ راقٍ.</p>', 28, NULL, 1, 0, '[\"Fresh\",\"Aquatic\",\"Woody\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"7-9 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:29', '2026-04-01 13:46:29', '100ml', '100ml', NULL, 'active'),
-(163, 'FGD01968', 'FGD01968', 'peachy-peach', 'Peachy Peach', 'بيتشي بيتش', '<p>A playful gourmand: vanilla, pear, and marshmallow lift into bubblegum–caramel delight, melting over cashmere woods, white musk, and tonka warmth. Peachy Peach opens with creamy vanilla, juicy pear, and fluffy marshmallow, brightened by violet leaves and ylang-ylang for a charming, airy glow. The heart turns irresistibly fun with bubblegum, jelly bean, and caramel, cushioned by jasmine and resinous labdanum for a polished sweetness. It settles into a cuddly base where sugar, patchouli, and tonka melt into cashmere wood, sandalwood, vetiver, and white musk, leaving a smooth, modern gourmand trail.</p>', '<p>ينطلق «بيتشي بيتش» بـ الفانيليا الكريمية والإجاص العصيري والمارشميلو الوثير، تتلألأ معها أوراق البنفسج ويلانغ-يلانغ لإشراقة هوائية جذّابة. يتعمّق القلب بمرح العلكة وحلوى الجيلي والكراميل مع نعومة الياسمين ورنين اللابدانوم لرقة حلاوة مصقولة. وفي الجفاف، يذوب السكر والباتشولي والتونكا داخل خشب الكشمير وخشب الصندل والفيتيفر والمسك الأبيض، تاركاً أثراً غورمانياً عصرياً ناعماً. غورمان مرح: فانيليا وإجاص ومارشميلو تتصاعد إلى متعة علكة–كراميل، وتذوب فوق خشب الكشمير ومسك أبيض ودفء التونكا.</p>', 28, NULL, 1, 0, '[\"Gourmand\",\"Fruity\",\"Woody\",\"Musk\"]', '{\"Sillage\":\"Strong &amp\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', '100ml', '100ml', NULL, 'active'),
-(164, 'FGD01916', 'FGD01916', 'kafa', 'Kafa', 'كفى', '<p>Spiced brightness meets floral depth—peppered saffron and mint lift a rosy tolu heart, settling into a smooth amber–musk wood embrace. Kafa opens with a vivid spice-breeze of black pepper, saffron, and ginger, cooled by peppermint and softened with camomile. The heart blooms in refined layers: rose glows beside balsamic tolu balm, while jasmine, geranium, and juicy litchi add sheen and texture. The dry-down is elegant and comforting, where white musk and amber melt into polished cedarwood and sandalwood, leaving a poised, lingering aura ideal for evening refinement or signature daily wear.</p>', '<p>ينطلق «كفا» بنسيمٍ بهيّ من الفلفل الأسود والزعفران والزنجبيل ينعشه النعناع وتليّنه البابونج. يتفتح القلب بطبقات راقية: يتوهج الورد إلى جانب تولو بالم البلسمي، وتمنح الياسمين وإبرة الراعي والليتشي بريقاً وملمساً عطرياً أخّاذاً. ثم يستقر على المسك الأبيض والكهرمان مع خشب الأرز وخشب الصندل المصقولين، ليوفّر هالة أنيقة باقية تناسب الأمسيات أو التوقيع اليومي الراقي. إشراقة متبّلة بلُمسات زهرية—زعفران وفلفل أسود ونعناع يرفعون قلب الورد والتولو، ليستقر على عناق عنبري مسكي خشبي.</p>', 24, 5, 1, 0, '[\"Spicy\",\"–\",\"Floral\",\"–\",\"Woody\",\"–\",\"Musky\"]', '{\"Sillage\":\"Vibrant and aromatic, smooth floral-woody dry-down\",\"Longevity\":\"9 hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', '15ml', '15ml', NULL, 'active'),
-(165, 'FGD01915', 'FGD01915', 'ehyaa', 'Ehyaa', 'إحياء', '<p>Juicy raspberry brightens a silky white-floral heart over papyrus, melting into ambered dry woods and soft musk. Ehyaa opens with a vivid touch of raspberry—bright, modern, and mouth-watering. The heart unveils a refined veil of white flowers balanced by the airy, woody texture of papyrus, creating an elegant lift. As it settles, amber and dry woody nuances fold into musk, leaving a smooth, quietly magnetic trail that feels polished and intimate.</p>', '<p>يفتتح «إحياء» بلمسة توت العليق المشرقة بطابع عصري شهي. ثم يكشف القلب عن حجاب من الزهور البيضاء يتوازن مع قوام خشبي هوائي من البَرْدي، ليمنح انتشاراً أنيقاً. ومع الاستقرار، تتعانق الكهرمان والأخشاب الجافة مع المسك لترك أثرٍ ناعمٍ جذّاب بإحساس مصقول وحميم. توت العليق العصيري يضيء قلباً زهرياً ناعماً مع البردي، ويذوب في أخشابٍ جافة كهرمانية ومسك ناعم.</p>', 24, 5, 1, 0, '[\"Fruity\",\"–\",\"Floral\",\"–\",\"Woody\",\"–\",\"Musky\"]', '{\"Sillage\":\"Moderate to strong, elegant fruity floral aura\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"dabber_stick\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', '15ml', '15ml', NULL, 'active'),
-(166, 'FGD01964', 'FGD01964', 'tiff-tiff', 'Tiff Tiff', 'تف تف', '<p>Candied fruits and dates glow into a velvety rose–vanilla heart, settling in a soft white-musk amber embrace. Tiff Tiff opens with delectable sugar, luscious dates, bright mandarin, and juicy red berries—a playful, inviting sparkle. The heart blooms in elegant contrast: Bulgarian rose and peony draped in creamy vanilla and soft cacao for a plush, romantic center. Finally, the fragrance melts into white musk, glowing amber, and smooth tonka, leaving a cuddly, gently gourmand trail.</p>', '<p>ينطلق «تِف تِف» بحلاوة السكر وثراء التمر مع إشراقة الماندرين وعصيرية التوتات الحمراء لافتتاحية مرِحة جذّابة. يتفتح القلب بأناقة حيث الورد البلغاري والفاوانيا يلتفّان حول الفانيليا والكاكاو بملمس مخملي رومانسي. ثم يذوب العطر في المسك الأبيض والكهرمان والتونكا ليترك أثراً دافئاً حميماً بطابع غورماني ناعم. فواكه مسكّرة وتمور تتوهج بقلب وردي فانيلي مخملي، وتستقر في عناق ناعم من المسك الأبيض والكهرمان.</p>', 28, NULL, 1, 0, '[\"Gourmand\",\"Floral\",\"Oriental\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"8–10 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', '100ml', '100ml', NULL, 'active'),
-(167, 'FGD01966', 'FGD01966', 'black-fume', 'Black Fume', 'بلاك فيوم', '<p>A dark raspberry spark smolders into orris and burnt-wood allure, settling in labdanum, oud, and tobacco with a modern ambroxan glow. Black Fume opens with a singular raspberry accent—juicy yet shadowed—hinting at the drama to come. The heart unveils textured orris wrapped in a burnt wood effect, giving the fragrance its smoky, addictive core. As it dries down, resinous labdanum, regal oud, and smooth tobacco unfurl with a clean ambroxan sheen, leaving a bold, modern trail that feels luxuriously dark yet impeccably polished.</p>', '<p>ينطلق «بلاك فيوم» بلمسة توتٍ علّيق واحدة—عصيرية بطابعٍ معتم—تمهّد لدرama الآتي. في القلب، يلتف السوسن حول تأثير الخشب المحترق ليصوغ جوهراً دخانياً آسراً. ومع الجفاف، تتفتح اللابدانوم الراتنجية والعود الملكي والتبغ الناعم تحت بريق الأمبركسان النظيف، تاركاً أثراً حديثاً جريئاً بترفٍ داكن وصياغة متقنة. شرارة توتٍ داكنة تتوهج في سحر السوسن وخشبٍ محترق، وتستقر على لابدانوم وعود وتبغ بلمسة أمبروكسان عصرية.</p>', 28, NULL, 1, 0, '[\"Smoky–Woody–Amber\",\"—\",\"an\",\"intoxicating\",\"mix\",\"of\",\"sweet\",\"raspberry\",\"contrasted\",\"with\",\"dark\",\"smoky\",\"woods\",\"deepened\",\"by\",\"resinous\",\"oud\",\"and\",\"warm\",\"labdanum\",\"finished\",\"with\",\"a\",\"modern\",\"ambroxan\",\"trail.\"]', '{\"Sillage\":\"Strong — commanding and lingering projection\",\"Longevity\":\"10–12 hrs on skin, 14+ hrs on fabrics\",\"Dispenser\":\"spray\",\"Occasion\":\"Perfect for evening wear or cooler nights\",\"Ingredients\":\"Raspberry Accord, Orris, Labdanum Resin, Oud Oil, Ambroxan\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', '100ml', '100ml', NULL, 'active'),
-(168, 'FGD02116', 'FGD02116', 'aazz-o-azeez', 'Aazz O Azeez', 'أعز و عزيز', '<p>\"The Aazz O Azeez Gift Set is a luxurious collection of fragrances that embodies the essence of elegance and sophistication. This exquisite set features a selection of premium perfumes, each crafted to perfection, making it an ideal gift for those who appreciate the finer things in life.</p><p>Each fragrance in the Aazz O Azeez Gift Set is a testament to the artistry of perfumery, blending rich notes and exquisite ingredients to create a harmonious olfactory experience. Perfect for special occasions or everyday indulgence, this gift set is a celebration of luxury and refinement.\"</p>', NULL, 26, NULL, 1, 0, NULL, NULL, '2026-04-01 13:46:30', '2026-04-01 13:46:30', NULL, NULL, NULL, 'active'),
-(169, 'FGD02115', 'FGD02115', 'mtr-oud-ahmed-58g', 'MTR Oud Ahmed 58G', '', 'Fresh aldehydic florals drift into saffron–sandal warmth, settling on sweet-burning Arian oud and soft white musks.\r\n\r\nMTR Oud Ahmed is a refined oud ma’attar designed to scent garments and spaces with poised radiance. It opens airy and elegant—fresh aldehydic facets lifted by dewy rose and jasmine blossom. The heart turns luxurious with saffron warmth, creamy sandalwood, and labdanum resin, creating an enveloping glow. As the smoke diffuses, a serene base of soft white musks and amber melds with Cambodian-style oud oil over Indonesian Arian oud chips (sweet-burning), filling the room with welcoming depth. Ideal for Friday gatherings, majlis, guest hospitality, and special moments at home.', '«MTR عود أحمد» معطّر عود فاخر صُمّم لتعطير الملابس والفضاء بهالة راقية. يبدأ بنفحات هوائية أنيقة من الألدهيدات المنعشة تتلألأ معها وردة نديّة وزهرة الياسمين. يتعمّق القلب بـ دفء الزعفران ونعومة الصندل الكريمية وراتنج اللابدانوم ليمنح توهجاً حاضناً. ومع انتشار الدخان، تتشكل قاعدة هادئة من المسكات البيضاء الناعمة والكهرمان تتناغم مع زيت عود بطابع كمبودي فوق رقائق عود آريان الإندونيسية (احتراق حلو)، فتملأ المكان بعمقٍ مرحِّب. مثالي للجمعة، والمجالس، وضيافة الضيوف، ولحظات البيت الخاصة.\r\n\r\nأزهار بألدهيدات منعشة تنساب إلى دفء الزعفران والصندل، وتستقر على عود آريان العذب الاحتراق ومسك أبيض ناعم.', 25, 8, 1, 0, NULL, '{\"Longevity\":\"Infused with extra perfume oil for long-lasting effect\",\"Occasion\":\"Friday prayers (Jumu’ah)\",\"Ingredients\":\"Oud chips origin: Arian region – Indonesia\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', '58g', '58g', NULL, 'active'),
-(170, 'FGD01647', 'FGD01647', 'ameer-al-oud', 'Ameer Al Oud', 'أميرالعود', 'Saffron-lit aldehydes crown a rose–vanilla heart, settling into opulent labdanum and agarwood for a deep oriental signature.\r\n\r\nAmeer Al Oud opens with a luminous contrast: aldehydes that feel crisp and airy, warmed by precious saffron. The heart blooms with romantic rose wrapped in creamy vanilla over elegant woods, shaping a plush, refined presence. As it dries down, resinous labdanum fuses with noble agarwood (oud) and a final touch of vanilla, leaving a luxurious oriental trail. Olfactive family: Oriental Oud. Performance: heavy sillage and 12+ hours longevity—crafted for statement evenings and ceremonial elegance.', 'يفتتح «أمير العود» بتباينٍ متألّق حيث تمنح الألدهيدات نقاءً هوائياً تتوهّجه خيوط الزعفران. يتفتح القلب مع الورد الرومانسي يحتضنه الفانيليا فوق أخشاب أنيقة، ليصوغ حضوراَ ناعماً رفيعاً. وفي الجفاف، يتآلف اللابدانوم الراتنجي مع دهن العود ولمسة فانيليا أخيرة، ليترك أثراً شرقياً فاخراً. العائلة العطرية: شرقي عود. الأداء: إسقاط قوي وثبات يتجاوز 12 ساعة—مثالي للأمسيات والمناسبات الرسمية.\r\n\r\nألدهيدات بلمسة زعفران تعلو قلباً من الورد والفانيليا، وتستقر على لابدانوم وعود فاخر لتوقيعٍ شرقي عميق.', 28, NULL, 1, 0, '[\"Oriental\",\"Oud\",\"–\",\"luxurious\",\"saffron\",\"rose\",\"over\",\"warm\",\"oud\",\"vanilla\"]', '{\"Sillage\":\"Heavy\",\"Longevity\":\"12+ hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', '100ml', '100ml', NULL, 'active'),
-(171, 'FGD01969', 'FGD01969', 'musk-amiri', 'Musk Amiri', 'مسك أميري', 'Airy peony and aldehydes bloom into white florals and rose, settling in a soft, amber-musky veil.\r\n\r\nMusk Amiri opens with a luminous pairing of peony and sheer aldehydes for a clean, modern lift. The heart unfolds into an elegant bouquet of white flowers and romantic rose, diffusing with polished softness. As it dries down, the composition wraps the skin in a comforting musky embrace touched by warm amber, creating a refined, powdery floral–musky signature—effortless, graceful, and quietly captivating.', 'يفتتح «مسك أميري» بثنائية مشرقة من الفاوانيا والألدهيدات تمنح نقاءً عصرياً نظيفاً. يتكشف القلب عن باقة أنيقة من الزهور البيضاء والورد بانتشارٍ ناعم مصقول. ثم يحتضن العطر البشرة بلمسة مسكية مريحة تتوهج بـ الكهرمان، ليقدّم توقيعاً زهرياً بودرياً مسكياً راقياً—سهل الارتداء، رشيق الجمال، وجاذب بهدوء.\r\n\r\nيتفتح الفاوانيا والألدهيدات برقةٍ إلى زهور بيضاء وورد، ويستقرّان في حجابٍ مسكي عنبري ناعم.', 28, NULL, 1, 0, '[\"Powdery\",\"Floral\",\"Musky\"]', '{\"Sillage\":\"Moderate\",\"Longevity\":\"7 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', '100ml', '100ml', NULL, 'active'),
-(172, 'FGD01997', 'FGD01997', 'jree', 'Jree', 'جري', '<p>Saffron-leather sparks a rosy oud, melting into praline-vanilla over a regal oud core. Jree opens with a luxurious contrast: radiant saffron and supple leather wrapped around juicy red fruits. The heart reveals classic arabesque elegance as oud meets rose, a poised duet that feels both velvety and powerful. In the dry-down, oud returns, now sweetened with praline and vanilla to create a smooth, enveloping trail that feels opulent yet effortlessly wearable.</p>', '<p>تنطلق «جري» بتباين فاخر يجمع الزعفران المتلألئ والجلد المرن مع الفواكه الحمراء العصيرية. يكشف القلب عن أناقة شرقية أصيلة حيث يلتقي العود بـ الورد في ثنائي مخملي قوي الحضور. وفي الجفاف، يعود العود محاطاً بـ البرالين والفانيليا ليصوغ أثراً ناعماً يحتضن البشرة بترفٍ سهل الارتداء. زعفران وجلْد يوقظان عوداً وردياً يذوب في برالين وفانيليا فوق قلب عودٍ مهيب.</p>', 28, NULL, 1, 0, '[\"Oriental–Gourmand–Woody\",\"—\",\"luxurious\",\"saffron\",\"and\",\"sensual\",\"leather\",\"meet\",\"the\",\"sweetness\",\"of\",\"red\",\"fruits\",\"unfolding\",\"into\",\"a\",\"heart\",\"of\",\"royal\",\"rose\",\"and\",\"oud\",\"with\",\"a\",\"decadent\",\"praline–vanilla\",\"base.\"]', '{\"Sillage\":\"Strong — opulent and captivating trail\",\"Longevity\":\"7-8 hrs on skin, 8+ hrs on fabrics\",\"Dispenser\":\"spray\",\"Occasion\":\"Ideal for evening glamour\",\"Ingredients\":\"Saffron Absolute, Oud, Rose, Praline Accord, Vanilla Bean Extract\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', '100ml', '100ml', NULL, 'active'),
-(173, 'FGD01998', 'FGD01998', 'ainaak', 'Ainaak', 'عَيناك', '<p>Zesty grapefruit–bergamot and ginger lift an aromatic heart of ambrette, white amber, and oud, drying to ambroxan, vetiver, patchouli, musk, and leather. Ainaak opens with the crisp bite of grapefruit and bergamot, energized by warming ginger. The heart moves into modern elegance: the musky glow of ambrette intertwines with white amber and agarwood (oud), sharpened by green rosemary for airy clarity. As it settles, ambroxan adds clean radiance over patchouli and vetiver, while musk and a supple leather nuance shape a confident, contemporary trail.</p>', '<p>يفتتح «عينك» بعضّةٍ نقية من الجريب فروت والبرغموت تتوهّج مع الزنجبيل الدافئ. ثم يتجه القلب نحو أناقة عصرية؛ أمبريت بمسكيّته الناعمة يتآلف مع العنبر الأبيض والعود، وتمنحه إكليل الجبل حدّةً خضراء ووضوحاً هوائياً. ومع الاستقرار، يضفي الأمبركسان إشراقة نظيفة فوق الباتشولي والفيتيفر، وتتكامل المسك مع لمسة جلدية رشيقة لتوقيعٍ واثق حديث. حمضيات الجريب فروت والبرغموت مع الزنجبيل ترفع قلباً عِطرياً من أمبريت وعنبر أبيض وعود، ليجف على أمبركسان وفيتيفر وباتشولي ومسك وجلد.</p>', 28, NULL, 1, 0, '[\"Fresh\",\"Woody\",\"Amber\",\"–\",\"zesty\",\"citrus\",\"with\",\"herbal\",\"oud\",\"and\",\"leather\",\"depth\"]', '{\"Sillage\":\"Strong\",\"Longevity\":\"10–12 hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', '100ml', '100ml', NULL, 'active'),
-(174, 'FGD02124', 'FGD02124', 'shauque-al-shuyookh', 'Shauque Al Shuyookh', 'شوق الشيوخ', '<p>Elevate your gifting with the Shauque Al Shuyookh Gift Set by Ahmed Al Maghribi Perfumes!</p><p><br>This exquisite collection features the captivating Bin Shaikh Perfume, the timeless Oud Classic Perfume, and the rich Dehn Al Oudh Mubakhar. Accompanied by a beautifully crafted Mabkhar, an elegant Prayer Mat, and a traditional Masbaha, this set is the perfect gift for those who appreciate elegance and tradition.</p>', '<p>ارتقِ بفن الهدايا مع طقم <strong>شوق الشيوخ</strong> من <strong>عطور أحمد المغربي</strong>!</p><p>يضم هذا الطقم الفاخر تشكيلة من الروائح الآسرة تشمل <strong>عطر بن الشيخ</strong> الجذاب، و<strong>عطر العود الكلاسيكي</strong> الخالد، و<strong>دهن العود المبخر</strong> الغني والفواح.<br>كما يحتوي على <strong>مبخرة فاخرة</strong> بتصميم أنيق، و<strong>سجادة صلاة راقية</strong>، و<strong>مسبحة تقليدية</strong> تعبّر عن الأصالة والجمال.</p><p>هدية مثالية لمن يقدّر الأناقة والتراث في آنٍ واحد.<br>&nbsp;</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', NULL, NULL, NULL, 'active'),
-(175, 'FGD01887', 'FGD01887', 'bakhoor-takhyyal', 'Bakhoor Takhyyal', '', 'Turkish rose and lavender glow over lemon–peony brightness, deepening to sweet sandalwood and frankincense, then settling in a musky oud–amber veil.\r\n\r\nBakhoor Takhyyal opens with a floral halo—Turkish rose and lavender lifted by lemon and peony—creating a luminous welcome. The heart turns warmly sweet as sandalwood and white flowers merge with frankincense, adding serene depth. Finally, the smoke lingers in a musky embrace where agarwood (oud) and guaiac wood meet oak moss, musk, and amber, leaving rooms scented with graceful, comforting richness—ideal for majlis, guest hospitality, and quiet evening rituals.', 'تنطلق «بخور تَخَيَّل» بهالة زهرية من ورد تركي ولافندر يرفعها ليمون وفاوانيا لإطلالة مضيئة مرحِّبة. يتجه القلب نحو حلاوة دافئة حيث يلتقي خشب الصندل والزهور البيضاء مع اللبان ليمنح عمقاً هادئاً. ثم يرسو الدخان في عناق مسكي تتآلف فيه دهن العود وخشب الغاياك مع طحلب البلوط والمسك والكهرمان، تاركاً فخامة مريحة تعبق بالمجالس وضيافة الضيوف وطقوس المساء.\r\n\r\nورد تركي ولافندر يتلألآن فوق إشراقة ليمون وبيوني، يتعمّقان إلى صندل وبخور حلوين، ثم يستقران في حجابٍ مسكي من العود والكهرمان.', 25, 7, 1, 0, NULL, NULL, '2026-04-01 13:46:30', '2026-04-01 13:46:30', NULL, NULL, NULL, 'active'),
-(176, 'FGD01888', 'FGD01888', 'bakhoor-marrah', 'Bakhoor Marrah', '', 'Aldehydic sparkle over juicy fruits, a blooming rose–jasmine heart, and a warm amber–oud–sandalwood base for welcoming, room-filling elegance.\r\n\r\nBakhoor Marrah opens bright and airy with aldehydes that lift a succulent fruity glow, setting a crisp, inviting tone. The heart blooms into classic florals—rose and jasmine—rounded by gentle herbal nuances that refine the smoke. As it diffuses, the ambience deepens into plush amber and creamy sandalwood, threaded with oud notes, polished cedar, and soft musk. The result is a graceful, lingering aura—ideal for guest hospitality, evening majlis, and moments of serene reflection.', 'بريقٌ ألدهيدي مع فواكهٍ عصيرية، يتفتح إلى قلبٍ من الورد والياسمين بنفحاتٍ عشبية رقيقة، ليستقر على كهرمان وخشب الصندل مع نوتات العود والأرز والمسك. يمنح «بخور مرّة» بدايةً مشرقة مرحِّبة، ثم يعمّق الأجواء بدفءٍ آسر يملأ المكان برقةٍ وأناقة—مثالي لضيافة الضيوف، والمجالس المسائية، ولحظات السكينة في البيت.\r\n\r\nالعربية: بريق ألدهيدي مع فواكه عصيرية وقلب وردي ياسميني، يرسو على قاعدة كهرمان–عود–صندل لدفءٍ يملأ المكان بأناقة.', 25, 7, 1, 0, NULL, NULL, '2026-04-01 13:46:30', '2026-04-01 13:46:30', NULL, NULL, NULL, 'active'),
-(177, 'FGD01889', 'FGD01889', 'bakhoor-taajab', 'Bakhoor Taajab', '', 'Sparkling apple–lavender and malted citrus bloom into orange blossom and lily of the valley, edged with leather, settling in vanilla CO₂, musk, patchouli, and amber.\r\n\r\nBakhoor Taajab opens bright and modern: crisp apple and airy lavender shimmer with bergamot, grapefruit, cinnamon, and a contemporary sparkling malt lift. As the smoke unfurls, a refined floral heart of orange blossom and lily of the valley gathers poise, contrasted by a smooth leather nuance for elegant structure. The diffusion lingers in a comforting base where vanilla CO₂ and musk flow over patchouli and glowing amber, creating a welcoming, room-filling aura ideal for guest hospitality, evening majlis, and serene home rituals.', 'ينطلق «بخور تعجّب» بإشراقة عصرية من التفاح واللافندر مع البرغموت والجريب فروت والقرفة ولمسة مالت متلألئة. ومع انتشار الدخان، يتجلّى قلبٌ زهري راقٍ من زهر البرتقال وزنبق الوادي يتوازن بتباينٍ أنيق مع الجلد. ثم يرسو العبير على قاعدة مريحة حيث تمتزج فانيليا CO₂ والمسك فوق الباتشولي والكهرمان المتوهّج، ليمنح هالةً دافئة تعبق بالمكان—مثالية للمجالس، وضيافة الضيوف، وطقوس البيت الهادئة.\r\n\r\nتفاح ولافندر متلألئان مع حمضيات مالتيّة يتفتحان إلى زهر البرتقال وزنابق الوادي بلمسة جلدية، ويستقران على فانيليا CO₂ ومسك وباتشولي وكهرمان.', 25, 7, 1, 0, NULL, NULL, '2026-04-01 13:46:30', '2026-04-01 13:46:30', NULL, NULL, NULL, 'active'),
-(178, 'FGD01974', 'FGD01974', 'niswah', 'Niswah', 'نسوة', '<p>A dazzling fruity-spice prelude crowns a lush floral heart with a smoky twist, melting into a decadent oud–amber gourmand trail.</p><p> NISWAH opens in technicolor: raspberry, pear, red berries, black currant, apple, and hazelnut sparkle with bergamot, pink pepper, saffron, tagette, peony, and sparkling accords. The heart blooms opulently—rose, jasmine, gardenia, frangipani, osmanthus, and orris—edged by a burnt wood effect, creamed with coconut, and shaded by plum, orange flower, cinnamon, and nutmeg. The dry-down turns indulgent and enveloping: oud, tobacco, labdanum, patchouli, ambroxan, white musk, ambrette, and gourmand hues of brown sugar, cacao, chocolate, caramel over sandalwood, guaiacwood, cashmeran, vanilla, benzoin, tonka bean, amber, and rose resins—a sumptuous, long-lasting signature.</p>', '<p>تنطلق «نِسْوَه» بلوحةٍ نابضة: توت علّيق وإجاص وتوتات حمراء وكشمش أسود وتفاح وبندق تتألّق مع برغموت وفلفل وردي وزعفران وتاجيت وفاوانيا ونغمات متلألئة. يتكشف القلب بفخامة—ورد وياسمين وغاردينيا وفرنغيباني وأوسمانثس وأوريس—تؤطره لمسة خشب محترق وتنعّمه جوز الهند وتظللّه البرقوق وزهر البرتقال وقرفة وجوزة الطيب. أما القاعدة فغنية ملتفّة: عود وتبغ ولابدانوم وباتشولي وأمبركسان ومسك أبيض وأمبريت مع سكر بني وكاكاو وشوكولاتة وكراميل فوق صندل وغاياك وكاشميرن وفانيليا وبنزوين وتونكا وكهرمان وراتنجات الورد—توقيعٌ فاخر طويل الأمد. تمهيدٌ فاكهيّ متوّهج بتوابلٍ راقية يعلو قلباً زهورياً كثيفاً بلمسة مدخّنة، يذوب في أثرٍ غورماني من عود وكهرمان.</p>', 23, 3, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', '75ml', '75ml', NULL, 'active'),
-(179, 'FGD02180', 'FGD02180', 'kaaf-noir', 'Kaaf Noir', 'كاف نوار', '<p>Magnetic citrus-woody signature: blood orange and Sicilian lemon spark over aromatic lavender and Iso E Super, settling into vetiver, cedarwood, and airy ambroxan.</p><p>Kaaf Noir opens with a vivid rush of blood orange and Sicilian lemon, lifted by the crisp bite of juniper berries and a spicy thread of cardamom. The heart moves into a modern, diffusive aura where Iso E Super wraps lavender, geranium, clary sage, and luminous hedione in clean sophistication. It dries down to a smooth trail of vetiver, cedarwood, and patchouli, refined by weightless ambroxan and white musk—versatile, polished, and quietly magnetic from day to night.</p>', '<p>توقيع حمضي عطري خشبي: برتقال دموي وليمون صقلي فوق لافندر و Iso E Super، وجفاف أنيق من فيتيفر وخشب الأرز وأمبروكسان بلمسة مسك أبيض وباتشولي.</p><p>تنطلق كاف نوار باندفاع حيوي من البرتقال الدموي والليمون الصقلي، يتعزّز بقرمشة توت العرعر ولمسة حارّة من الهيل. في القلب، يمنح Iso E Super هالة عصرية نقيّة تلتف حول اللافندر وإبرة الراعي والميرمية العطرية وهِديون اللامع. ويستقر العطر على أثر ناعم من الفيتيفر وخشب الأرز والباتشولي، تصقله خفّة الأمبروكسان والمسك الأبيض—رشيق، أنيق، وجذّاب بهدوء طوال اليوم.</p>', 28, NULL, 1, 0, '[\"Citrus–Aromatic–Woody\",\"—\",\"a\",\"vibrant\",\"zesty\",\"opening\",\"meets\",\"a\",\"sophisticated\",\"aromatic\",\"heart\",\"drying\",\"down\",\"to\",\"a\",\"smooth\",\"musky–woody\",\"base\",\"with\",\"modern\",\"ambroxan\",\"lift.\"]', '{\"Sillage\":\"Moderate to strong — bright projection with smooth longevity\",\"Longevity\":\"7–9 hrs on skin, 12+ hrs on fabrics\",\"Dispenser\":\"spray\",\"Occasion\":\"Ideal for daytime sophistication\",\"Ingredients\":\"Blood Orange Essence, Iso E Super, Haitian Vetiver, Ambroxan, White Musk\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', '100ml', '100ml', NULL, 'active'),
-(180, 'FGD02126', 'FGD02126', 'bakhoor-musk-o-amber-10-tabs', 'Bakhoor Musk-O-Amber 10 Tabs', '', NULL, NULL, 25, 7, 1, 0, NULL, NULL, '2026-04-01 13:46:30', '2026-04-01 13:46:30', NULL, NULL, NULL, 'active'),
-(181, 'FGD01250', 'FGD01250', 'hirfah-air-freshner', 'Hirfah Air Freshner', '', '<p>Sweet lime and lavender brighten green apple; healing wood, geranium, pine, and magnolia unfold over amber, musk, sandalwood, oud, and patchouli.</p>', '<p>تنطلق هِرفه بليمٍ حلو ينعشه اللافندر والتفاح الأخضر الهش. يرتكز القلب على خشبٍ علاجي مع رفعٍ عطري من الجيرانيوم، ووضوحٍ بارد من الصنوبر، وتفتّحٍ ناعم للماغنوليا. تستقر القاعدة على العنبر والمسك مع طبقات من خشب الصندل والعود، ويضيف الباتشولي عمقاً لأثرٍ متزنٍ طويل. ليمٌ حلو ولافندر يضيئان التفاح الأخضر؛ خشبٌ علاجي وجيرانيوم وصنوبر وماغنوليا تتكشف فوق عنبر ومسك وصندل وعود وباتشولي.</p>', 29, 9, 1, 0, NULL, NULL, '2026-04-01 13:46:30', '2026-04-01 13:46:30', NULL, NULL, NULL, 'active');
-INSERT INTO `products` (`id`, `fgd`, `barcode`, `slug`, `name_en`, `name_ar`, `description_en`, `description_ar`, `category_id`, `subcategory_id`, `is_active`, `is_featured`, `tags`, `attributes`, `created_at`, `updated_at`, `size_label_en`, `size_label_ar`, `media_url`, `deleted_status`) VALUES
-(182, 'FGD01183', 'FGD01183', 'bidun-esam-air-freshner', 'Bidun Esam Air Freshner', 'بدون إسم(ملطف للمنزل)', '<p>Citrus-bright freshness meets herbal tea and rose over musk, sandalwood, and Cambodian oud—an opulent, everyday air refresh for home and majlis.<br><br>Bidun Esam lifts the atmosphere with a radiant splash of bergamot, grapefruit, orange, and pear that clears the air in seconds. The heart unfolds with sage, green tea, and black currant, textured by geranium, a sprinkle of white pepper, and a refined Turkish rose glow. A polished dry down of soft musk, smooth sandalwood, enveloping amber, dignified Cambodian oud, earthy patchouli, and cedarwood warmth lingers elegantly—ideal for living rooms, halls, wardrobes, and welcoming entryways.</p>', '<p>انتعاش حمضي مضيء يلتقي بشاي عشبي وورد فوق مسك وصندل وعود كمبودي—ترف يومي فوري للمنزل والمجلس.<br><br>يرتقي Bidun Esam بأجواء المكان برشة متلألئة من البرغموت والجريب فروت والبرتقال والكمثرى، فتنتعش الحواس على الفور. يتفتح القلب على حكيم وشاي أخضر وكشمش أسود مع لمسات من الجيرانيوم وفلفل أبيض وتوهج ورد تركي راقٍ. وفي القاعدة يستقر مسك ناعم وصندل مصقول وكهرمان دافئ مع عود كمبودي مهيب وباتشولي وخشب أرز، في أثرٍ أنيق يدوم في الصالون والممرات والخزائن ومداخل الضيافة.</p>', 29, 9, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', NULL, NULL, NULL, 'active'),
-(183, 'FGD00401', 'FGD00401', 'supreme-air-freshner', 'Supreme Air Freshner', '(ملطف للمنزل) سبريم', '<p>Juicy pear &amp; red fruits meet soft florals over clean musk and woods—an instant-luxe air refresh for every room.<br><br>Designed for effortless daily elegance, Supreme brightens your space with a sparkling blend of red fruits, pear, and melon that lifts the air in seconds. A graceful heart of rose, freesia, magnolia and airy hedione softens the ambience, while ambroxan, white musk, patchouli and sandalwood leave a smooth, welcoming trail—ideal for living rooms, bedrooms, wardrobes and entryways.</p>', '<p>كمثرى وتوت أحمر مع زهور ناعمة على مسك وخشب نظيف—انتعاش فاخر فوري لمحيط منزلك.<br><br>صُمِّم سبريم لترفٍ يومي بلا مجهود؛ ينعش الأجواء سريعًا بلمعة الفواكه الحمراء والكمثرى والشمام، ثم يزدان بقلب ورد وفريزيا وماغنوليا ولمسة هوائية من هيديون. وفي القاعدة ينساب أمبروكسان ومسك أبيض وباتشولي وخشب الصندل ليترك أثراً ناعماً مرحِّباً في الصالون وغرف النوم والخزائن والمداخل.&nbsp;</p>', 29, 9, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:30', '2026-04-01 13:46:30', NULL, NULL, NULL, 'active'),
-(184, 'FGD02168', 'FGD02168', 'rose-noir-body-gel', 'Rose noir Body Gel', 'روز نوار جل جسم', '<p>\"A modern powdery bouquet: Sicilian orange, jasmine, lily and apple drift to vanilla and sea notes over musk, cashmeran, sandalwood and ambroxan.</p><p>Rose Noir Body gel opens with a luminous contrast—sunlit Sicilian orange sparkling around dewy jasmine and lily, cushioned by crisp apple. The heart turns silken and addictive with a powdery accord and real vanilla bean, brushed by cool sea notes for airy freshness. The drydown is quietly addictive: glowing ambroxan, caressing musk, and plush cashmeran laid over creamy sandalwood for a smooth, modern trail.\"</p>', '<p>باقة بودرية عصرية: ينثال فيها البرتقال الصقلي والياسمين والزنبق والتفاح نحو الفانيلا والنفحات البحرية، على خلفية من المسك والكشميران وخشب الصندل والأمبروكسان.</p><p>يفتتح جل جسم روز نوار بتباينٍ مضيء—برتقال صقلي مشمس يتلألأ حول ياسمينٍ وزنبقٍ مبللين بالندى، تحتضنه لمسة تفاح هشّة. يتحوّل القلب إلى إحساس حريري إدماني مع نفحات بودرية وفانيلا طبيعية من قرون الفانيلا الحقيقية، وتلامسه نفحات بحرية باردة تمنحه انتعاشًا هوائيًا. أما القاعدة فإدمانية بهدوء: أمبروكسان متوهّج، ومسك مُداعِب، وكشميران وثير يستقر فوق خشب صندلٍ كريمي ليخلّف أثرًا ناعمًا وعصريًا.</p>', 29, 10, 1, 0, NULL, NULL, '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(185, 'FGD00687', 'FGD00687', 'patchouli', 'Patchouli', 'باتشولي', '<p>PATCHOULI Eau de Parfum is a euphoric balance of intense and subtle tones, gathered from the northern coast of South America through to the heart of Asia. Fusing together the work of man and nature, we present to you this spicy, smoky &amp; leathery fragrance.<br>TOP NOTE:<br>This delicately balanced concoction will take you on a pleasant ride - facing a gentle breeze in the heart of a lush green forest, that carries with it the essence of fresh red roses, infused with the warmth of the ever so unique fragrance of Saffron. <br>HEART NOTE:<br>Travel to the Patchouli gardens of Southeast Asia and experience the Monsoons through this earthy scent; brewed in concert with the smoky aroma of Myrrh.<br>BASE NOTE:<br>This perfume is poised with intense notes of Oud and the core of exotic Guaiac wood. And nothing short of the most sumptuous Black Musk was the final key ingredient to creating this timeless brew.</p><p>EDP 50ML.</p>', '<p>عطر <strong>باتشولي – Eau de Parfum</strong> هو توازن ساحر بين النغمات المكثفة والرقيقة، مستوحى من سواحل أمريكا الجنوبية الشمالية وصولًا إلى قلب آسيا. بمزيج فريد يجمع بين إبداع الإنسان وروعة الطبيعة، نقدم لكم هذا العطر الفوّاح بنفحات <strong>حارة، مدخنة، وجلدية</strong>.</p><p><strong>المقدمة (Top Note):</strong><br>مزيج متوازن بعناية يأخذك في رحلة ممتعة وسط نسيم لطيف يهبّ من قلب غابة خضراء غنّاء، يحمل معه عبير الورد الأحمر الطازج ممزوجًا بدفء الزعفران الفريد في رائحته.</p><p><strong>قلب العطر (Heart Note):</strong><br>سافر إلى حدائق الباتشولي في جنوب شرق آسيا، واستشعر أجواء موسم الأمطار من خلال هذه الرائحة الترابية العميقة، الممتزجة بعبير المرّ المدخن.</p><p><strong>القاعدة (Base Note):</strong><br>تتوازن ختام النغمات مع العود الفاخر وخشب الغاياك الغريب، لتُختتم التركيبة بلمسة فاخرة من <strong>المسك الأسود</strong> الذي يشكل العنصر الأخير في هذا الإبداع الخالد.</p><p><strong>حجم العبوة:</strong> ٥٠ مل – Eau de Parfum</p>', 23, 3, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(186, 'FGD01982', 'FGD01982', 'musk-kashmiri', 'Musk kashmiri', '', NULL, NULL, 23, 3, 1, 0, NULL, NULL, '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(187, 'FGD01508', 'FGD01508', 'oud-mtr-asaateen-36g', 'Oud Mtr Asaateen 36G', 'عود متر أساطين ٣٦ غرام', '<p>It unfolds into a breathtakingly beautiful mist of aromas. It blooms into your home with a colorful bouquet of flowers.</p><p>At the top, you\'ll be greeted with the distinct and alluring aroma of oud, layered with the rich notes of white amber. In the heart, a bouquet of leather roses and herbs gives way to a soothing base of sandalwood, amber resins, vanilla, and musk.<br>The combination of oud and amber gives a warm, inviting feel, while the floral and herbal notes provide a refreshing twist.</p>', '<p>يتفتح هذا العطر كسحابة مدهشة من الروائح الأخاذة، وينتشر في أرجاء منزلك كأنّه باقة زهور ملوّنة تنبض بالحياة.</p><p>في البداية، يرحب بك العود برائحته المميزة والجذابة، ممزوجة بعبق العنبر الأبيض الغني. وفي القلب، تنبض نغمات الورد الجلدي والأعشاب العطرية، لتقودك نحو قاعدة دافئة من خشب الصندل، وراتنجات العنبر، والفانيليا، والمسك.</p><p>يجتمع العود والعنبر ليمنحا إحساسًا دافئًا ومترفًا، بينما تضيف النوتات الزهرية والعشبية لمسة منعشة تبعث على الصفاء والتوازن.</p>', 25, 8, 1, 0, NULL, '{\"Dispenser\":\"jar\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(188, 'FGD02050', 'FGD02050', 'fabulous-gift-set', 'Fabulous Gift set', 'طقم الهدايا فابولس', '<p>Three signature blooms in one elegant gift: Gardenia, Rose Noir, Musk &amp; Roses—floral opulence from bright fruits to powdery petals and creamy woods.<br><br>Curated for effortless gifting, this trio moves from the lush depth of Gardenia (floral–oriental–woody) to the velvety, powdery aura of Rose Noir, and the romantic, fruity-floral glow of Musk &amp; Roses. Expect sparkling citrus and fruits, a heart of refined rose and white florals, and a long-lasting trail of musk, sandalwood, vanilla and modern ambroxan—perfect for day-to-night elegance.</p>', '<p>ثلاث روائح أيقونية في هدية أنيقة: غاردينيا، روز نوار، مسك آند روزز—فخامة زهرية من فواكه مشرقة إلى بتلات بودرية وأخشاب كريمية.<br><br>&nbsp;اختير هذا الثلاثي بعناية ليُدهش في كل مناسبة: عمق غاردينيا الزهري-الشرقي-الخشبي، ونعومة روز نوار البودرية، ورومانسية مسك آند روزز الفاكهية الزهرية. يبدأ بتألق الحمضيات والفاكهة، يزدهر بقلب الورد والياسمين، وينتهي بقاعدة مسكية–صندلية مع فانيلا ولمسة أمبروكسان عصرية—أناقة تدوم من النهار إلى المساء.</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(189, 'FGD01800', 'FGD01800', 'lilfrash-tamam', 'Lilfrash Tamam', '', NULL, NULL, 29, 9, 1, 0, NULL, NULL, '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(190, 'FGD01801', 'FGD01801', 'lilfrash-jaw', 'Lilfrash Jaw', '', NULL, NULL, 29, 9, 1, 0, NULL, NULL, '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(191, 'FGD02194', 'FGD02194', 'marj-gift-set', 'Marj Gift set', 'طقم هدية مرج', '<p>Crafted for impressive gifting, Marj opens with bergamot, pink pepper, elemi, nutmeg, and tangerine—an energetic prelude that feels bright yet refined. <br><br>The heart unfolds into an opulent tapestry of oud and honey, textured with patchouli, aromatic nuances, vetiver, and cashmere wood, then warmed by cinnamon. A floral glow of rose, saffron, jasmine, and orange blossom adds elegance. The base is plush and enduring—musk and amber blended with raspberry and oakmoss, a powdery whisper of ambrette seeds, and a polished trail of leather, sandalwood, violet, agarwood, and ambroxan. The result is a spicy–woody oriental signature with sweet and leathery facets—perfect for celebrations and unforgettable moments.</p>', '<p>هدية تُصنع للتميّز: يبدأ “مرج” بتوهّجٍ حار-حمضي من البرغموت والفلفل الوردي والإليمي وجوزة الطيب واليوسفي، بإشراقةٍ أنيقة ومتوازنة. يتسارع القلب نحو فخامة العود والعسل مع الباتشولي والنفحات العطرية والفيتيفر وخشب الكشمير وتوابل القرفة، تتوّجها لمسات ورد وزعفران وياسمين وزهر البرتقال. أما القاعدة فغنية وثابتة: مسك وكهرمان مع توت العلاّق وطحلب السنديان ومسحة بودرية من بزر المسك، ثم أثرٌ جلدي راقٍ وخشب الصندل والبنفسج والعود والأمبروكسان. بصمة عطرية شرقية خشبية-حارّة مع حلاوة ولمسة جلدية—مثالية للهدايا والمناسبات الكبيرة.</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(192, 'FGD01978', 'FGD01978', 'arwa', 'Arwa', 'أروى', '<p>A luminous citrus–spice spark over a serene aromatic heart, melting into sensual musk–amber resins and labdanum—a modern elegance named Arwa.</p><p>Arwa opens with bright orange kissed by a floral lift and a peppery twinkle—fresh, confident, and instantly refined. The heart settles into an elegant aromatic signature where lavender breathes clarity, pink pepper adds a soft, rosy sparkle, and patchouli grounds the blend with modern depth. As it dries down, silky musk and amber resins wrap the skin, enriched by the balsamic warmth of labdanum for a smooth, long-lasting trail. Sophisticated in daylight, irresistible at dusk—Arwa is effortless poise</p>', '<p>شرارة حمضيات وتوابل فوق قلب عطِر هادئ، تذوب إلى مسك وعنبر راتنجي ولابدانوم—أناقة عصرية باسم أروى.</p><p>تبدأ «أروى» بانتعاش البرتقال ونفحة زهرية خفيفة ولمسة فلفل نابضة—إشراقة فورية متقنة. ثم يستقر القلب على توقيع عطري راقٍ؛ يمنح اللافندر صفاءً هادئًا، ويضيف الفلفل الوردي بريقًا ورديًا ناعمًا، فيما يرسّخ الباتشولي التركيبة بعمق حديث. ومع الجفاف، يلفّ المسك والعنبر الراتنجي البشرة بدفء مخملي تتعزّزه حرارة اللابدانوم، تاركًا أثرًا ناعمًا طويل البقاء. أنيق نهارًا، آسِر عند المساء—«أروى» هي بساطة الرقي.</p>', 23, 3, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(193, 'FGD02049', 'FGD02049', 'the-leather-collection', 'The Leather Collection', 'مجموعة الجلد', '<p>The Leather Collection — a bold trio inspired by timeless craftsmanship. Includes a luxurious leather perfume, an intense concentrated oil, and rich Oud Combodi for an unforgettable scent experience.<br><br>Discover <i>The Leather Collection</i> — a tribute to strength, sophistication, and classic elegance. This exclusive gift set brings together three masterpieces: a deep, captivating leather perfume, a concentrated leather oil that lingers with power and warmth, and the rare Oud Combodi, known for its smoky richness.<br>Each element complements the other, creating a complete fragrance ritual that celebrates modern luxury rooted in tradition — perfect for those who appreciate depth, character, and distinction.</p>', '<p>مجموعة الجلد – ثلاثية فاخرة مستوحاة من روح الحرفية الأصيلة. تضم عطر الجلد الفاخر، زيت الجلد المركز، وعود كمبودي غني يمنح تجربة عطرية لا تُنسى.<br><br>اكتشف <strong>مجموعة الجلد</strong> – تحية للأناقة الكلاسيكية والقوة العصرية.<br>تجمع هذه المجموعة المميزة بين ثلاثة روائع: عطر الجلد العميق والفخم، زيت الجلد المركز ذو الأثر الدافئ والدائم، وعود كمبودي النادر برائحته الغنية والدخانية.<br>معًا، يكوّنون طقسًا عطريًا متكاملًا يحتفي بالفخامة الحديثة rooted in التراث، لمن يقدّرون العراقة، القوة، والتميّز.</p>', 26, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(194, 'FGD01971', 'FGD01971', 'nihlah', 'Nihlah', 'نهلة', '<p>A rich contrast of sparkling citrus and sumptuous woods—Nihlah unfolds from saffron-kissed fruits to plush leather, rose, and a velvety oud–musk embrace.</p><p>Crafted for presence, Nihlah greets you with bergamot, lemon, black currant, and raspberry brightened by saffron, nutmeg, and ginger. The heart deepens into leather, oakwood, Damascena rose, patchouli, cashmeran, caramel, and plum—textured, plush, and irresistibly smooth. In the base, oud merges with papyrus, vetiver, incense, cedarwood, white musk, and a whisper of talc, leaving a refined, powdery-woody trail that lingers with quiet confidence.</p>', '<p>تباين آسر بين انتعاش الحمضيات ودفء الأخشاب—«نهلة» يتفتح من زعفران وفواكه ناعمة إلى جلد وورد، وينتهي بحضن عود ومسك مخملي.</p><p>تبدأ الرائحة بشرارة من البرغموت والليمون مع الكشمش الأسود والتوت العليق، يعززها الزعفران وجوزة الطيب والزنجبيل. يتعمّق القلب إلى جلد وخشب السنديان وورد دمشقي وباتشولي مع كشميران ولمسة كراميل وبرقوق لملمس مخملي فاخر. أما القاعدة فتجمع العود والبردي والفيتيفير والبخور وخشب الأرز والمسك الأبيض ولمسة بودرة تلك، لتبقى هالة خشبية بودرية أنيقة تدوم بثقة هادئة.</p>', 23, 3, 1, 0, NULL, '{\"Longevity\":\"6-7hrs\",\"Dispenser\":\"spray\",\"Occasion\":\"Best worn on cold evenings, formal events, and Luxury dinners.\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', '75ml', '75ml', NULL, 'active'),
-(195, 'FGD01886', 'FGD01886', 'khilfah', 'Khilfah', 'خِلْفَة', '<p>A modern contrast of citrus, spice, and woods—Khilfah moves from grapefruit and bergamot to ambrette, rosemary, and oud, settling into leathery musk and ambroxan.</p><p>The opening is energetic: grapefruit and bergamot meet davana, pink pepper, and ginger for a sparkling, spicy-citrus lift. The heart turns textured and elegant with ambrette, white amber, agarwood, and rosemary—an aromatic thread weaving warmth into refined woods. Finally, ambroxan, patchouli, vetiver, musk, and leather create a confident, long-lasting signature that balances freshness with polished depth.</p>', '<p>تباين حديث بين الحمضيات والتوابل والأخشاب—«خِلْفَة» ينطلق من جريب فروت وبرغموت إلى أمبريت وروزماري وعود، ليستقر على مسك جلدي وأمبروكسان.</p><p>بداية نابضة بالحيوية: جريب فروت وبرغموت يلتقيان بدافانا وفلفل وردي وزنجبيل لرفعٍ حمضي متوّج بتوابل مشرقة. يتعمّق القلب بأناقة محبوكة من أمبريت وعنبر أبيض وعود وروزماري، في خيط عطري يدفئ الخشب برقي. وأخيراً، يمنح أمبروكسان وباتشولي وفيتيفير ومسك وجلـد بصمة واثقة طويلة الأمد تجمع بين الانتعاش والعمق المصقول.</p>', 23, 3, 1, 0, NULL, '{\"Longevity\":\"6-7hrs\",\"Dispenser\":\"spray\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(196, 'FGD02157', 'FGD02157', 'the-roots-2000', 'The Roots 2000', 'الجذور ٢٠٠٠', '<p>An ode to the foundation of Ahmed Al Maghribi, carrying the richness of tradition into the future. 2000 features radiant citrus, white florals, and warm woods — celebrating the authenticity and purity that built the brand’s roots</p>', '<p>نشيدٌ لأساس أحمد المغربي، يحمل غنى التقاليد نحو المستقبل.<br>\"٢٠٠٠\" يفوح بعبق الحمضيات المشرقة والزهور البيضاء والأخشاب الدافئة، احتفاءً بالأصالة والنقاء اللذين شكّلا جذور العلامة وبداية مسيرتها.</p>', 23, 3, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', '75ml', '75ml', NULL, 'active'),
-(197, 'FGD02158', 'FGD02158', 'the-alchemy-lab-2025', 'The Alchemy Lab 2025', 'مختبر الخيمياء ٢٠٢٥', '<p>A reflection of modern mastery, 2025 is a signature fragrance crafted by Mr. Kafeel Ahmed to represent the strength, refinement, and timeless identity of Ahmed Al Maghribi today. The fragrance balances bergamot, neroli, and jasmine sambac over ambergris and cedarwood — representing transformation and creative evolution.</p>', '<p>انعكاسٌ لفنّ الإتقان المعاصر، تأتي \"٢٠٢٥\" كعطرٍ توقيعي صاغه السيّد كفيل أحمد ليجسّد قوة وهوية أحمد المغربي ورُقيّه في حاضرنا.<br>تتناغم نغمات البرغموت والنيرولي وياسمين السامباك فوق قاعدة من عنبر الحوت وخشب الأرز، في تعبيرٍ عن التحوّل والإبداع المتجدّد.</p>', 23, 3, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', '75ml', '75ml', NULL, 'active'),
-(198, 'FGD02159', 'FGD02159', 'the-beyond-2050', 'The Beyond 2050', 'ما وراء ٢٠٥٠', '<p>A visionary, sophisticated, and timeless fragrance carrying the brand’s heritage into tomorrow’s world of perfumery, 2050 fuses peach, freesia, jasmine, and musk — an ethereal blend that adapts to the wearer, redefining the future of scent.</p>', '<p>عطرٌ رؤيويّ، راقٍ وخالد، يحمل إرث العلامة إلى عالم عطور الغد.<br>\"٢٠٥٠\" يمزج الخوخ والفريزيا والياسمين والمسك في توليفةٍ شفافة تتناغم مع مرتديها، لتعيد رسم مستقبل العطور وتمنح كل شخصية بصمتها الخاصة.</p>', 23, 3, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', '75ml', '75ml', NULL, 'active'),
-(199, 'FGD02193', 'FGD02193', 'shaikhat', 'Shaikhat', 'شيخة', '<p>A luminous concentrated oil where citrus and jasmine sparkle over creamy white florals, settling into velvety musk, elegant woods, amber and vanilla warmth.</p><p>Shaikhat opens with a radiant citrus lift touched by airy aldehydic shimmer, immediately intertwined with jasmine’s refined glow. At its heart, a bouquet of white flowers, lily, and rose unfolds with silky poise, wrapping the skin in luminous softness. The dry-down is irresistibly elegant: musk smooths the edges, woods add quiet structure, while amber and vanilla melt into a sensual, lasting embrace—an impression of noble grace and modern femininity</p>', '<p>زيت مركز مشرق يمزج الحمضيات والياسمين ببريق أنيق فوق زهور بيضاء ناعمة، لينساب إلى مسك مخملي وأخشاب راقية وعنبر وفانيلا دافئة.</p><p>تبدأ «شيخة» بنفحة حمضية متلألئة يضيئها طابع ألدهيدي شفاف، يتعانق فورًا مع وهج الياسمين الراقي. في القلب، تتفتح زهور بيضاء وزنبق وورد برقة حريرية تعانق البشرة بلمسة مضيئة. في القاعدة، يصقل المسك الحواف، وتمنح الأخشاب توازنًا هادئًا، بينما يذوب العنبر والفانيلا في دفء حسي آسر يدوم طويلًا—أناقة ملكية بأنفاس عصرية.</p>', 24, 5, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(200, 'FGD02201', 'FGD02201', 'blush-noire', 'Blush Noire', 'بلَش نوار', '<p>Blush Noire plays in elegant contrasts. The opening pairs crisp rhubarb with juicy blackberry and apple, heightened by aromatic clary sage for a vivid, textured lift. At the heart, Egyptian jasmine and lily of the valley bloom with an airy, marine breeze—transparent yet expressive. As it settles, a contemporary base unfolds: mineral notes and ambergris lend cool, polished depth, while musk and vanilla soften the edges for a smooth, lingering trail. Effortlessly modern and quietly addictive</p>', '<p>بلَش نوار (Blush Noire) يلعب على ثنائية الأناقة والتباين.<br>تفتتح الرائحة بنفحات منعشة من الراوند المقرمش، ممزوجة بتوت العليق الأسود والتفاح العصير، ومُعزَّزة بلمسة عطرية من الميرمية لتمنح انطلاقة حيوية غنية بالتفاصيل.</p><p>في القلب، يتفتح الياسمين المصري وزنابق الوادي مع نسمة بحرية شفافة — رقيقة في إحساسها، لكنها واضحة الحضور.</p><p>أما في القاعدة، فتتكشف لمسة عصرية من النوتات المعدنية والعنبر الرمادي، تضيف عمقًا باردًا ومصقولًا، بينما يوازنها المسك والفانيليا بنعومة مخملية تترك أثرًا أنيقًا وطويل الثبات.</p><p>عطر حديث بلا تكلف… جذاب بهدوء، ويصعب مقاومة حضوره.</p>', 23, 4, 1, 0, NULL, '{\"Longevity\":\"6-7hrs\",\"Dispenser\":\"spray\",\"Occasion\":\"Winter nights, cultural gatherings, formal events.\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(201, 'SAL00377', 'SAL00377', 'ramadan-essence', 'Ramadan Essence', 'جوهر رمضان', '<p>A sensual blend of rose, musk, and warmth, the Rose Noir collection layers body, hair, and skin in a soft, elegant aura.</p><p>The Rose Noir collection unites Rose Noir Perfume, Rose Noir Hair Mist, Rose Noir Gel, Is It Me, and Bidun Esam Oil into a complete fragrance ritual. From the velvety floral depth of Rose Noir to the gentle freshness of the hair mist and body gel, each layer enhances the next. Is It Me adds a modern, expressive signature, while Bidun Esam Oil brings a concentrated, intimate warmth. Together, they create a smooth, lingering scent experience that feels both romantic and refined.</p>', '<p>مزيجٌ حسي من الورد والمسك والدفء، تُغلف مجموعة روز نوار الجسد والشعر والبشرة بهالةٍ ناعمة وأنيقة تدوم.</p><div class=\"flex flex-col text-sm pb-25\"><article class=\"text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&amp;:has([data-writing-block])&gt;*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]\"><div class=\"text-base my-auto mx-auto pb-10 [--thread-content-margin:--spacing(4)] @w-sm/main:[--thread-content-margin:--spacing(6)] @w-lg/main:[--thread-content-margin:--spacing(16)] px-(--thread-content-margin)\"><div class=\"[--thread-content-max-width:40rem] @w-lg/main:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col agent-turn\"><div class=\"flex max-w-full flex-col grow\"><div class=\"min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal [.text-message+&amp;]:mt-1\"><div class=\"flex w-full flex-col gap-1 empty:hidden first:pt-[1px]\"><div class=\"markdown prose dark:prose-invert w-full wrap-break-word light markdown-new-styling\"><p>تجمع مجموعة روز نوار بين عطر روز نوار، ورذاذ الشعر روز نوار، وجل روز نوار، وعطر إز إت مي، وزيت بدون إسام ضمن طقس عطري متكامل. من عمق الورد المخملي في روز نوار إلى الانتعاش الرقيق في رذاذ الشعر وجل الجسم، تتناغم الطبقات لتعزز بعضها البعض. يضيف إز إت مي لمسة عصرية معبّرة، بينما يمنح زيت بدون إسام دفئًا مركزًا وحميميًا، لتمنحك تجربة عطرية ناعمة تدوم بأناقة.</p></div></div></div></div><div class=\"z-0 flex min-h-[46px] justify-start\">&nbsp;</div><div class=\"mt-3 w-full empty:hidden\"><div class=\"text-center\">&nbsp;</div></div></div></div></article></div><div class=\"pointer-events-none h-px w-px absolute bottom-0\">&nbsp;</div>', 27, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(202, 'SAL00380', 'SAL00380', 'ramadan-blessings', 'Ramadan Blessings', 'بركات رمضان', '<p>A gentle blend of florals, soft oud, and caring essentials, Ramadan Blessings wraps daily moments in warmth, tenderness, and serene elegance.</p><p>Ramadan Blessings brings together the Little Heart Giftset, Oud &amp; Roses Gel, and Shaikha Hind Hair Mist in a graceful fragrance ritual. The Little Heart Giftset offers a charming, heartfelt selection, while Oud &amp; Roses Gel enriches the skin with a delicate floral-oud touch. Shaikha Hind Hair Mist adds a soft, refreshing aura that lingers beautifully. Together, they create a light yet comforting scent experience, perfect for the peaceful rhythm of Ramadan days and nights.</p>', '<p>مزيجٌ لطيف من الزهور والعود الناعم ومنتجات العناية، تغلف بركات رمضان اللحظات اليومية بالدفء والرقة والأناقة الهادئة.</p><div class=\"flex flex-col text-sm pb-25\"><article class=\"text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&amp;:has([data-writing-block])&gt;*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]\"><div class=\"text-base my-auto mx-auto pb-10 [--thread-content-margin:--spacing(4)] @w-sm/main:[--thread-content-margin:--spacing(6)] @w-lg/main:[--thread-content-margin:--spacing(16)] px-(--thread-content-margin)\"><div class=\"[--thread-content-max-width:40rem] @w-lg/main:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col agent-turn\"><div class=\"flex max-w-full flex-col grow\"><div class=\"min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal [.text-message+&amp;]:mt-1\"><div class=\"flex w-full flex-col gap-1 empty:hidden first:pt-[1px]\"><div class=\"markdown prose dark:prose-invert w-full wrap-break-word light markdown-new-styling\"><p>تجمع بركات رمضان بين مجموعة ليتل هارت، وجل عود آند روزز، ورذاذ الشعر شيخة هند ضمن طقس عطري أنيق. تقدم مجموعة ليتل هارت لمسة مليئة بالمحبة، بينما يمنح جل عود آند روزز البشرة نفحة زهرية بالعود الرقيق. ويضيف رذاذ الشعر شيخة هند هالة منعشة تدوم بنعومة. معًا يصنعون تجربة عطرية خفيفة ومريحة، مثالية لإيقاع أيام وليالي رمضان الهادئة.</p></div></div></div></div><div class=\"z-0 flex min-h-[46px] justify-start\">&nbsp;</div><div class=\"mt-3 w-full empty:hidden\"><div class=\"text-center\">&nbsp;</div></div></div></div></article></div><div class=\"pointer-events-none h-px w-px absolute bottom-0\">&nbsp;</div>', 27, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(203, 'SAL00381', 'SAL00381', 'the-blessed-crescent', 'The Blessed Crescent', 'الهلال المبارك', '<p>A soft union of warmth and elegance, The Blessed Crescent surrounds each moment with gentle sweetness and a lasting, comforting glow.</p><p>The Blessed Crescent brings together the Little Heart Giftset and Endless in a refined, two-step fragrance ritual. The Little Heart Giftset offers a charming and heartfelt scent experience, while Endless adds a smooth, long-lasting signature that lingers with quiet sophistication. Together, they create a balanced aura of tenderness and depth, perfect for serene Ramadan evenings and meaningful gatherings.</p>', '<p>تناغمٌ ناعم من الدفء والأناقة، يحيط الهلال المبارك بكل لحظة بحلاوةٍ رقيقة وبريقٍ مريح يدوم.</p><div class=\"flex flex-col text-sm pb-25\"><article class=\"text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&amp;:has([data-writing-block])&gt;*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]\"><div class=\"text-base my-auto mx-auto pb-10 [--thread-content-margin:--spacing(4)] @w-sm/main:[--thread-content-margin:--spacing(6)] @w-lg/main:[--thread-content-margin:--spacing(16)] px-(--thread-content-margin)\"><div class=\"[--thread-content-max-width:40rem] @w-lg/main:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col agent-turn\"><div class=\"flex max-w-full flex-col grow\"><div class=\"min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal [.text-message+&amp;]:mt-1\"><div class=\"flex w-full flex-col gap-1 empty:hidden first:pt-[1px]\"><div class=\"markdown prose dark:prose-invert w-full wrap-break-word light markdown-new-styling\"><p>يجمع الهلال المبارك بين مجموعة ليتل هارت وعطر إندلس في طقس عطري بسيط وأنيق. تقدم مجموعة ليتل هارت لمسة عطرية مليئة بالرقة، بينما يضيف إندلس بصمة ناعمة تدوم طويلًا بأناقة هادئة. معًا يصنعان هالة متوازنة من الحنان والعمق، مثالية لأمسيات رمضان الهادئة واللقاءات المميزة.</p></div></div></div></div><div class=\"z-0 flex min-h-[46px] justify-start\">&nbsp;</div><div class=\"mt-3 w-full empty:hidden\"><div class=\"text-center\">&nbsp;</div></div></div></div></article></div><div class=\"pointer-events-none h-px w-px absolute bottom-0\">&nbsp;</div>', 27, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(204, 'SAL00383', 'SAL00383', 'crescent-of-blessings', 'Crescent of Blessings', 'هلال البركات', '<p>A graceful blend of soft florals, gentle oud, and caring essentials, Crescent of Blessings surrounds each moment with tenderness, warmth, and serene elegance.</p><p>Crescent of Blessings brings together Antee Giftset 05, Marj Gel, and Oud &amp; Roses Hair Mist in a balanced fragrance ritual. Antee Giftset 05 offers a refined, charming scent experience, while Marj Gel enriches the skin with a smooth, elegant touch. Oud &amp; Roses Hair Mist adds a delicate floral-oud aura that lingers softly throughout the day. Together, they create a light yet comforting fragrance experience, perfect for the peaceful rhythm of Ramadan.</p>', '<p>تناغمٌ أنيق من الزهور الناعمة والعود الرقيق ومنتجات العناية، يحيط هلال البركات بكل لحظة بالدفء والرقة والأناقة الهادئة.</p><div class=\"flex flex-col text-sm pb-25\"><article class=\"text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&amp;:has([data-writing-block])&gt;*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]\"><div class=\"text-base my-auto mx-auto pb-10 [--thread-content-margin:--spacing(4)] @w-sm/main:[--thread-content-margin:--spacing(6)] @w-lg/main:[--thread-content-margin:--spacing(16)] px-(--thread-content-margin)\"><div class=\"[--thread-content-max-width:40rem] @w-lg/main:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col agent-turn\"><div class=\"flex max-w-full flex-col grow\"><div class=\"min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal [.text-message+&amp;]:mt-1\"><div class=\"flex w-full flex-col gap-1 empty:hidden first:pt-[1px]\"><div class=\"markdown prose dark:prose-invert w-full wrap-break-word light markdown-new-styling\"><p>يجمع هلال البركات بين مجموعة أنتي 05، وجل مارج، ورذاذ الشعر عود آند روزز في طقس عطري متوازن. تقدم مجموعة أنتي 05 تجربة عطرية راقية ومحببة، بينما يمنح جل مارج البشرة لمسة ناعمة وأنيقة. ويضيف رذاذ الشعر عود آند روزز هالة زهرية بالعود تدوم بنعومة طوال اليوم، لتمنحك تجربة عطرية خفيفة ومريحة تناسب أجواء رمضان الهادئة.</p></div></div></div></div><div class=\"z-0 flex min-h-[46px] justify-start\">&nbsp;</div><div class=\"mt-3 w-full empty:hidden\"><div class=\"text-center\">&nbsp;</div></div></div></div></article></div><div class=\"pointer-events-none h-px w-px absolute bottom-0\">&nbsp;</div>', 27, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:31', '2026-04-01 13:46:31', NULL, NULL, NULL, 'active'),
-(205, 'SAL00385', 'SAL00385', 'royal-oud-majlis', 'Royal Oud Majlis', 'رويال عود مجلس', '<p>A majestic harmony of deep oud, warm resins, and rich oriental notes, Royal Oud Majlis fills every gathering with dignity, depth, and timeless elegance.</p><p>Royal Oud Majlis brings together Taajab, Marah, Takhayal, Rasiayat, and Ghair Adi in a refined fragrance ritual. Taajab opens with an expressive and vibrant presence, while Marah adds soft warmth and smooth character. Takhayal introduces a dreamy oriental depth, and Rasiayat enriches the air with resinous, comforting tones. Ghair Adi completes the experience with a distinctive, long-lasting signature. Together, they create a luxurious atmosphere worthy of grand majlis moments.</p>', '<div class=\"flex flex-col text-sm pb-25\"><article class=\"text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&amp;:has([data-writing-block])&gt;*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]\"><div class=\"text-base my-auto mx-auto pb-10 [--thread-content-margin:--spacing(4)] @w-sm/main:[--thread-content-margin:--spacing(6)] @w-lg/main:[--thread-content-margin:--spacing(16)] px-(--thread-content-margin)\"><div class=\"[--thread-content-max-width:40rem] @w-lg/main:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col agent-turn\"><div class=\"flex max-w-full flex-col grow\"><div class=\"min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal [.text-message+&amp;]:mt-1\"><div class=\"flex w-full flex-col gap-1 empty:hidden first:pt-[1px]\"><div class=\"markdown prose dark:prose-invert w-full wrap-break-word light markdown-new-styling\"><p>تناغمٌ ملكي من العود العميق والراتنجات الدافئة والنفحات الشرقية الغنية، يملأ رويال عود مجلس كل مجلس بالهيبة والعمق والأناقة الخالدة.</p><div class=\"flex flex-col text-sm pb-25\"><article class=\"text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&amp;:has([data-writing-block])&gt;*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]\"><div class=\"text-base my-auto mx-auto pb-10 [--thread-content-margin:--spacing(4)] @w-sm/main:[--thread-content-margin:--spacing(6)] @w-lg/main:[--thread-content-margin:--spacing(16)] px-(--thread-content-margin)\"><div class=\"[--thread-content-max-width:40rem] @w-lg/main:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col agent-turn\"><div class=\"flex max-w-full flex-col grow\"><div class=\"min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal [.text-message+&amp;]:mt-1\"><div class=\"flex w-full flex-col gap-1 empty:hidden first:pt-[1px]\"><div class=\"markdown prose dark:prose-invert w-full wrap-break-word light markdown-new-styling\"><p>يجمع رويال عود مجلس بين تعجب، مرح، تخيّل، راسيات، وغير عادي في طقس عطري راقٍ. يفتتح تعجب التجربة بحضور نابض ومعبّر، بينما يضيف مرح دفئًا ناعمًا وطابعًا سلسًا. يمنح تخيّل عمقًا شرقيًا حالِمًا، وتثري راسيات الأجواء بنفحات راتنجية مريحة. ويكمل غير عادي التجربة ببصمة مميزة تدوم طويلًا، لتصنع أجواءً فاخرة تليق بمجالس العود الراقية.</p></div></div></div></div><div class=\"z-0 flex min-h-[46px] justify-start\">&nbsp;</div><div class=\"mt-3 w-full empty:hidden\"><div class=\"text-center\">&nbsp;</div></div></div></div></article></div><div class=\"pointer-events-none h-px w-px absolute bottom-0\">&nbsp;</div></div></div></div></div><div class=\"mt-3 w-full empty:hidden\"><div class=\"text-center\">&nbsp;</div></div></div></div></article></div><div class=\"pointer-events-none h-px w-px absolute bottom-0\">&nbsp;</div>', 27, NULL, 1, 0, NULL, '{\"Dispenser\":\"other\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', NULL, NULL, NULL, 'active'),
-(206, 'FGD01973', 'FGD01973', 'dulook', 'Dulook', 'دولوك', '<p>Citrus sparks the opening, lavender spices the heart, and a smooth oud-wood base lingers with mossy depth.<br><br>DULOOK greets you with a crisp flash of grapefruit and bergamot, sparked by a gentle bite of pink pepper. Moments later, lavender takes the lead—wrapped in the warm spice of cardamom and the golden nuance of saffron for a smoother, more aromatic heart. As the fragrance deepens, oud essence lends a polished, shadowed woodiness, balanced by the earthy clarity of vetiver. Oakmoss and sandalwood complete the dry-down with a velvety, clean woody signature that feels composed and quietly assertive.</p>', '<p>شرارة حمضيات في البداية، قلب لافندر متبّل، وقاعدة عود وخشب ناعمة تمتد بعمقٍ طحلبي.<br><br>يستقبلك <strong>دولوك</strong> بومضةٍ منعشة من الجريب فروت والبرغموت، تتقدّها لسعةٌ رقيقة من الفلفل الوردي. وبعد لحظات، يتقدّم اللافندر إلى الواجهة—مُحاطًا بدفء الهيل ولمسة الزعفران الذهبية ليصنع قلبًا أكثر نعومةً وعطرية. ومع تعمّق العطر، تمنح خلاصة العود طابعًا خشبيًا مصقولًا وذا ظلالٍ أنيقة، يوازنه نقاء الفيتيفر الترابي. ثم يكتمل الجفاف على طحلب البلوط وخشب الصندل، في خاتمةٍ مخملية ونظيفة بتوقيعٍ خشبي متزن وحضورٍ هادئ الوضوح.</p>', 23, 4, 1, 0, NULL, '{\"Longevity\":\"8–10 hrs on skin, 24+ hrs on fabrics\",\"Dispenser\":\"spray\",\"Occasion\":\"Majlis, royal events, heritage gatherings, ceremonial wear.\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', '100ml', '100ml', NULL, 'active'),
-(207, 'FGD02153', 'FGD02153', 'bloom-spectrum', 'Bloom Spectrum', 'بلوم سبيكتروم', '<p>A radiant citrus–aromatic lift melts into a luminous floral bouquet, then settles into a plush oud-amber-vanilla trail with earthy vetiver depth.<br>Bloom Spectrum opens with sparkling bergamot wrapped in calming lavender and a green basil twist—clean, bright, and uplifting. As it warms, the heart blooms into a classic trio of rose, jasmine, and lily, creating a smooth floral glow that feels elegant and confident. In the dry-down, an oud accord anchors the fragrance with refined warmth, softened by amber and creamy vanilla, while vetiver adds a subtle, earthy contrast that keeps the sweetness polished and modern.</p>', '<p>افتتاحية حمضية عطرية مشرقة تتلاشى إلى باقة زهرية مضيئة، ثم تستقر على أثر دافئ من عود وعنبر وفانيلا مع عمق فيتيفر ترابي.<br>تبدأ Bloom Spectrum ببرغموت متلألئ يلتف حوله لافندر هادئ ولمسة ريحان خضراء—نظيفة، منعشة، ومفعمة بالحيوية. ومع الدفء يتفتح القلب بثلاثي كلاسيكي من الورد والياسمين والزنبق ليمنح إحساساً زهورياً ناعماً وأنيقاً. وفي القاعدة، يمنح أكورد العود ثباتاً ووقاراً، يلينه العنبر وفانيلا كريمية، بينما يضيف الفيتيفر توازناً ترابياً خفيفاً يحافظ على رقي الحلاوة وحداثتها.</p>', 28, NULL, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', NULL, NULL, NULL, 'active'),
-(208, 'FGD02149', 'FGD02149', 'ctrine', 'Ctrine', 'سِترين', '<p>Ctrine is a sparkling mango-citrus burst sharpened by ginger, blooming into jasmine-cedar warmth and settling into a musky oud-amber glow.<br>It opens with juicy mango wrapped in bright lemon, energized by a clean ginger bite that feels instantly uplifting. As it evolves, jasmine brings a luminous floral heart while cedarwood adds a calm, woody structure, with coumarin lending a soft, smooth sweetness that rounds the edges. In the dry-down, musk melts into the depth of agarwood (oud), warmed by amber for a refined, lingering finish—fresh at first, then elegantly warm and sensual.</p>', '<p>سِترين نفحة مانجو حمضية متلألئة يوقظها الزنجبيل، تتفتح إلى ياسمين مع دفء خشب الأرز، وتستقر على مسك مع عود وعنبر متوهّج.<br>تبدأ الرائحة بمانجو عصيري يلتقي بلمعان الليمون، بينما يمنح الزنجبيل لمسة حيوية منعشة. ثم يتألق القلب بزهرة الياسمين المضيئة مع حضور خشب الأرز المتزن، ويضيف الكومارين حلاوة ناعمة مخملية تُكمل التوازن. وفي القاعدة، ينساب المسك مع عمق العود (الأكاروود) وتحتضنه حرارة العنبر، لتترك أثراً راقياً يتدرّج من انتعاش فاكهي إلى دفء جذاب.</p>', 28, NULL, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', NULL, NULL, NULL, 'active'),
-(209, 'FGD02150', 'FGD02150', 'dubai-chocolate', 'Dubai Chocolate', 'دبي شوكولا', '<p>Dubai Chocolate is a decadent gourmand blend—pistachio and toasted vermicelli melting into creamy chocolate, finished with vanilla musk and cooked sugar warmth.<br>It opens with a nutty, roasted glow where pistachio meets the comforting toast of vermicelli accords, setting a rich, edible mood. The heart turns velvety and indulgent as cream folds into chocolate, creating a smooth, dessert-like softness. In the dry-down, vanilla and musk wrap everything in a clean, cozy aura, while cooked sugar adds a gently caramelized, lingering sweetness</p>', '<p>دبي شوكولا تجربة غورماند فاخرة—فستق وشعيرية محمّصة تذوب في كريمة وشوكولا، وتستقر على فانيلا ومسك وسكّر مطبوخ دافئ.<br>تبدأ بنفحات شهية دافئة؛ فستق غني يلتقي بأكورد الشعيرية المحمّصة ليمنح افتتاحية “محروقة” ناعمة ومغرية. ثم يأتي القلب بقوام مخملي حيث تتداخل الكريمة مع الشوكولا لتقديم إحساس حلو وناعم كالحلوى. ومع الوقت، تحتضن الفانيلا والمسك الرائحة بلمسة نظيفة ودافئة، بينما يضيف السكّر المطبوخ طابعاً كراميلياً خفيفاً يترك أثراً مريحاً ومتناغماً.</p>', 28, NULL, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', NULL, NULL, NULL, 'active'),
-(210, 'FGD02148', 'FGD02148', 'garnet', 'Garnet', 'غارنيت', '<p>Garnet opens with aromatic lavender wrapped in smooth leather, blooming into rose and jasmine over a deep oud heart—then melting into amber, musk, and woods.<br>The opening feels poised and confident: lavender’s clean glow meets the dark elegance of leather. As it settles, a floral duet of rose and jasmine rises—rich, refined, and beautifully framed by oud. The finish is warm and lingering, where amber and musk soften into woody notes for a signature that feels polished, bold, and unmistakably luxurious.</p>', '<p>يفتتح <strong>غارنيت</strong> بنفحات لافندر عطرية يلفّها جلد ناعم، ثم يتفتح بوردة وياسمين فوق قلب عود عميق، قبل أن يذوب في عنبر ومسك وأخشاب.<br>البداية أنيقة وواثقة؛ إشراقة اللافندر النظيفة تلتقي بفخامة الجلد الداكن. ومع الاستقرار، يعلو ثنائي الورد والياسمين بطابع غني وراقي، ويمنحه العود عمقًا شرقيًا متزنًا. أما الخاتمة فدافئة وممتدة، حيث ينساب العنبر والمسك على نغمات خشبية تمنح العطر بصمة مصقولة وجريئة وفاخرة.</p>', 28, NULL, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', NULL, NULL, NULL, 'active'),
-(211, 'FGD02152', 'FGD02152', 'kaffe-latte', 'Kaffe Latte', 'كافيه لاتيه', '<p>A creamy café-inspired gourmand—almond and lemon over coffee-coconut warmth, melting into vanilla caramel and soft musk.<br>Bright lemon lifts a silky almond–buttermilk opening, like the first sip of a latte with a citrus twist. As it settles, coconut and coffee take the spotlight, while birch adds a refined, gently woody edge that keeps the sweetness elegant. The finish is pure comfort: vanilla and caramel wrapped in clean musk for a smooth, lingering signature.</p>', '<p>عطر غورماند مستوحى من القهوة—لوز مع لمسة ليمون، ينساب إلى قهوة وجوز الهند، ويذوب على فانيلا وكراميل ومسك ناعم.<br>يفتتح بانتعاش الليمون الذي ينعش نعومة اللوز واللبن، كأنها رشفة لاتيه دافئة بلمسة حمضية أنيقة. ثم تتقدّم القهوة مع جوز الهند، بينما يمنح خشب البتولا بعدًا خشبيًا راقيًا يوازن الحلاوة. وفي القاعدة، تنساب الفانيلا والكراميل داخل مسك نظيف لختام كريمي ناعم يدوم بإحساس مريح.</p>', 28, NULL, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', NULL, NULL, NULL, 'active'),
-(212, 'FGD02199', 'FGD02199', 'kaaf-pink', 'Kaaf Pink', 'كاف بينك', '<p>Kaaf Pink opens with a sparkling citrus trio, blooms into jasmine–rose radiance, then settles into a clean musk with mossy, woody depth.<br>A bright lift of bergamot, mandarin, and lemon sets a crisp, elegant tone from the first spray. At the heart, Moroccan jasmine intertwines with rose and orange flower, creating a smooth floral harmony that feels refined and modern. The finish is quietly confident—musk wraps around birch and oakmoss, leaving a fresh, softly woody trail with a touch of green sophistication.</p>', '<p>يبدأ كاف بينك بانتعاش حمضيات متألّقة، ثم يتفتح بقلب من الياسمين والورد، ويستقر على مسك ناعم بعمقٍ خشبيّ طحلبيّ.<br>تمنح مقدّمته من البرغموت والماندرين والليمون إشراقة نظيفة وحيوية فورية. وفي القلب، ينساب ياسمين المغرب مع الورد وزهر البرتقال ليقدّم باقة زهرية متوازنة وراقية. أما القاعدة فتأتي بهدوءٍ أنيق: مسكٌ ناعم يحتضن البتولا وطحلب البلوط ليترك أثراً خشبيّاً أخضر، فخمًا بلا تكلّف.</p>', 28, NULL, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', NULL, NULL, NULL, 'active'),
-(213, 'FGD02151', 'FGD02151', 'matcha', 'Matcha', 'ماتشا', '<p>A sparkling fruit opening melts into creamy matcha florals, finishing with caramel-amberwood warmth and elegant patchouli depth.<br>Black currant, pear, and lemon create a crisp, juicy lift that feels instantly clean and modern. At the heart, matcha takes center stage—smooth, green, and softly creamy—wrapped in jasmine and freesia for a refined floral glow. The dry-down turns irresistibly warm: amberwood and caramel bring a golden sweetness, while patchouli adds a polished, earthy contrast that keeps the gourmand touch sophisticated.</p>', '<p>افتتاحية فاكهية مشرقة تذوب في قلب ماتشا كريمي مع زهور ناعمة، وتستقر على دفء الكراميل والأمبر وود مع عمق الباتشولي.<br>يفتتح العطر بالكشمش الأسود والكمثرى والليمون بانتعاش عصري ونقاء لافت. ثم يظهر قلب الماتشا بطابعٍ أخضر ناعم وكريمي، محاطًا بياسمين راقٍ وفريزيا شفافة تمنحه إشراقة زهرية متزنة. وفي القاعدة تتصاعد لمسة دافئة شهية من الأمبر وود والكراميل، بينما يمنح الباتشولي عمقًا ترابيًا أنيقًا يوازن الحلاوة ويجعل الأثر أكثر فخامة.</p>', 28, NULL, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', NULL, NULL, NULL, 'active'),
-(214, 'FGD02155', 'FGD02155', 'prometheus', 'Prometheus', 'بروميثيوس', '<p>Prometheus ignites with bergamot and pink pepper, then settles into aromatic woods—cedar, patchouli, and lavender—finished by clean musk, guaiac, and vetiver.<br>A crisp citrus lift meets the dry sparkle of juniper and a peppery flash, creating an opening that feels sharp, modern, and confident. As it warms, lavender brings a smooth aromatic calm while cedarwood and patchouli add earthy structure. In the dry-down, musk turns everything polished and refined, with guaiac wood’s smoky-woody nuance and vetiver’s clean, elegant depth—leaving a composed signature that feels effortlessly powerful.</p>', '<p>بروميثيوس يشتعل ببرغموت وفلفل وردي، ثم يهدأ على أخشاب عطرية—أرز وباتشولي ولافندر—ويختتم بمسك نقي وخشب الغاياك وڤيتيفر.<br>افتتاحيته حمضية مشرقة تتلاقى مع جفاف العرعر ولمعة الفلفل الوردي لتمنح حضورًا حادًا وعصريًا. ومع الوقت، ينساب اللافندر بنعومة عطرية متزنة بينما يمنح الأرز والباتشولي عمقًا ترابيًا أنيقًا. وفي القاعدة، يلمّع المسك التركيبة بإحساس نظيف ومصفّى، مع لمسة غاياك خشبية مائلة للدخان وڤيتيفر رصين يمنح النهاية ثباتًا ووقارًا.</p>', 28, NULL, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', NULL, NULL, NULL, 'active'),
-(215, 'FGD02163', 'FGD02163', 'rhea', 'Rhea', 'ريا', '<p>Rhea opens with bright citrus and juicy orchard fruits, melts into creamy white florals, then settles into a soft, woody musky embrace.<br>A sparkling trio of citrus, nectarine, and apple creates an uplifting first impression—fresh, crisp, and radiant. As it evolves, gardenia and magnolia bring a velvety floral glow, while jasmine adds a graceful, luminous sweetness. The finish is smooth and comforting: patchouli for depth, musk for softness, and sandalwood for a creamy, elegant trail.</p>', '<p>ريا تفتتح بنفحات حمضية مشرقة وفواكه عصيرية، ثم تتفتح بزهور بيضاء كريمية، وتستقر على دفء خشبي ومسك ناعم.<br>في البداية يلمع مزيج الحمضيات مع رحيق النكتارين ونضارة التفاح ليمنح إحساسًا منعشًا وواثقًا. ثم تأتي الغاردينيا والماغنوليا بملمس زهري مخملي، وتضيف الياسمين لمسة مضيئة وناعمة. أما القاعدة فتتوازن بين عمق الباتشولي ونعومة المسك وكريمية خشب الصندل لتترك أثراً أنيقاً ودافئاً.</p>', 28, NULL, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', NULL, NULL, NULL, 'active'),
-(216, 'FGD02226', 'FGD02226', 'opaline-wave', 'Opaline wave', 'أوبالين ويف', '<p>A bright Mediterranean citrus opening melts into velvety rose and neroli, then settles into agarwood, ambergris, and musk for a clean, radiant depth.<br>Opaline Waves begins with a crisp trio of citron, Calabrian bergamot, and Sicilian orange—sparkling and sunlit. As it warms, the heart blooms into a graceful rose bouquet, where rose and Bulgarian rose feel plush and refined, lifted by the luminous clarity of neroli. The finale is quietly powerful: agarwood notes add an elegant, woody shadow, while ambergris lends a soft mineral warmth and musk wraps everything in a smooth, skin-close trail</p>', '<p>افتتاحية حمضيات متوسطية مشرقة تنساب إلى ورد مخملي ونيرولي، ثم تستقر على نفحات العود والعنبر الرمادي والمسك بعمقٍ نظيف ومضيء.<br>تبدأ أوبالين ويف بلمعةٍ منعشة من السترون وبرغموت كالابريا وبرتقال صقلية—إشراقة صافية كضوء النهار. ثم يتفتح القلب بباقة ورد أنيقة؛ وردٌ مع ورد بلغاري بملمسٍ مخملي، يعلوه صفاء النيرولي المضيء. وفي النهاية يظهر السحر الهادئ: نفحات العود تمنح ظلًا خشبيًا راقيًا، ويضيف العنبر الرمادي دفئًا معدنيًا ناعمًا، بينما ينسدل المسك ليترك أثرًا ناعمًا وقريبًا من البشرة</p>', 28, NULL, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', NULL, NULL, NULL, 'active');
-INSERT INTO `products` (`id`, `fgd`, `barcode`, `slug`, `name_en`, `name_ar`, `description_en`, `description_ar`, `category_id`, `subcategory_id`, `is_active`, `is_featured`, `tags`, `attributes`, `created_at`, `updated_at`, `size_label_en`, `size_label_ar`, `media_url`, `deleted_status`) VALUES
-(217, 'FGD01977', 'FGD01977', 'haam', 'Haam', 'هام', '<p>HAAM opens with a bright floral–citrus breeze, melts into ambered musk, then settles into a smooth woody trail of ambergris and cashmere wood.<br>A refined composition that balances freshness with warmth—its luminous opening feels clean and uplifting, while the heart wraps you in a soft, sensual glow of musk and amber. As it dries down, woody tones deepen the scent with a polished, comforting finish where ambergris nuance meets the velvety touch of cashmere wood.</p>', '<p>يبدأ <strong>هام</strong> بنفحات زهرية-حمضية مشرقة، ثم يذوب في قلب من المسك والعنبر، ويستقر على قاعدة خشبية ناعمة من العنبر الرمادي وخشب الكشمير.<br>تركيبة راقية تجمع بين الانتعاش والدفء—افتتاحية مضيئة تمنح إحساساً نظيفاً ومنعشاً، بينما يحتضنك القلب بوهج مخملي من المسك والعنبر. وفي الثبات، تتعمّق الأخشاب لتترك أثراً أنيقاً ومريحاً حيث يلتقي طابع العنبر الرمادي بلمسة خشب الكشمير الناعمة.</p>', 23, 3, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-01 13:46:32', NULL, NULL, NULL, 'active'),
-(218, 'FGD01976', 'FGD01976', 'marin', 'Marin', 'مارين', '<p>Marin is a juicy fruity-floral—sparkling pineapple and red berries melt into peachy rose, finishing in creamy vanilla and smooth sandalwood woods.<br>It opens with a bright, mouthwatering burst of pineapple wrapped in strawberry and raspberry sweetness. As it settles, a soft heart of peach and rose adds an elegant, velvety glow. The base brings comfort and depth—vanilla beans folded into gentle woods, with sandalwood lending a creamy, refined finish.</p>', '<p>مارين عطر فاكهي–زهري نابض؛ أناناس وتوت أحمر متلألئ ينساب إلى خوخ وورد، ويستقر على فانيلا كريمية وخشب صندل دافئ.<br>يبدأ بإشراقة شهية من الأناناس تتداخل مع حلاوة الفراولة والتوت العليق. ثم يتوازن القلب بلمسة مخملية من الخوخ والورد تمنح العطر رُقياً ناعماً. وفي النهاية، يقدّم قاعدة مريحة وعميقة من حبوب الفانيلا مع الأخشاب، بينما يضيف خشب الصندل لمسة كريمية راقية تُطيل الإحساس بالدفء.</p>', 23, 3, 1, 0, NULL, '{\"Dispenser\":\"spray\"}', '2026-04-01 13:46:32', '2026-04-02 12:55:00', NULL, NULL, NULL, 'active');
-
-
---
--- Dumping data for table `product_country`
---
-
-INSERT INTO `product_country` (`id`, `product_id`, `country_id`, `is_visible`, `slug_override`, `meta_title_en`, `meta_title_ar`, `meta_desc_en`, `meta_desc_ar`, `sort_order`) VALUES
-(1, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(2, 1, 2, 0, NULL, NULL, NULL, NULL, NULL, 0),
-(3, 1, 3, 0, NULL, NULL, NULL, NULL, NULL, 0),
-(5, 1, 4, 0, NULL, NULL, NULL, NULL, NULL, 0),
-(6, 1, 5, 0, NULL, NULL, NULL, NULL, NULL, 0),
-(7, 1, 6, 0, NULL, NULL, NULL, NULL, NULL, 0),
-(25, 4, 1, 0, 'test in uae', NULL, NULL, NULL, NULL, 0),
-(27, 4, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(28, 4, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(29, 4, 4, 0, NULL, NULL, NULL, NULL, NULL, 0),
-(30, 4, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(31, 4, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(73, 5, 1, 0, NULL, NULL, NULL, NULL, NULL, 0),
-(74, 5, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(75, 5, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(76, 5, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(77, 5, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(78, 5, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(79, 6, 1, 0, NULL, NULL, NULL, NULL, NULL, 0),
-(80, 6, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(81, 6, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(82, 6, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(83, 6, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(84, 6, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(85, 7, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(86, 7, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(87, 7, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(88, 7, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(89, 7, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(90, 7, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(91, 8, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(92, 8, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(93, 8, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(94, 8, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(95, 8, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(96, 8, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(97, 9, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(98, 9, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(99, 9, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(100, 9, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(101, 9, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(102, 9, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(103, 10, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(104, 10, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(105, 10, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(106, 10, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(107, 10, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(108, 10, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(109, 11, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(110, 11, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(111, 11, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(112, 11, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(113, 11, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(114, 11, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(115, 12, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(116, 12, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(117, 12, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(118, 12, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(119, 12, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(120, 12, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(121, 13, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(122, 13, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(123, 13, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(124, 13, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(125, 13, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(126, 13, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(127, 14, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(128, 14, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(129, 14, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(130, 14, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(131, 14, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(132, 14, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(133, 15, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(134, 15, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(135, 15, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(136, 15, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(137, 15, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(138, 15, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(139, 16, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(140, 16, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(141, 16, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(142, 16, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(143, 16, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(144, 16, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(145, 17, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(146, 17, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(147, 17, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(148, 17, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(149, 17, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(150, 17, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(151, 18, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(152, 18, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(153, 18, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(154, 18, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(155, 18, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(156, 18, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(157, 19, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(158, 19, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(159, 19, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(160, 19, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(161, 19, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(162, 19, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(163, 20, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(164, 20, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(165, 20, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(166, 20, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(167, 20, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(168, 20, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(169, 21, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(170, 21, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(171, 21, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(172, 21, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(173, 21, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(174, 21, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(175, 22, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(176, 22, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(177, 22, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(178, 22, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(179, 22, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(180, 22, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(181, 23, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(182, 23, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(183, 23, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(184, 23, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(185, 23, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(186, 23, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(187, 24, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(188, 24, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(189, 24, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(190, 24, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(191, 24, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(192, 24, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(193, 25, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(194, 25, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(195, 25, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(196, 25, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(197, 25, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(198, 25, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(199, 26, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(200, 26, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(201, 26, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(202, 26, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(203, 26, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(204, 26, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(205, 27, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(206, 27, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(207, 27, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(208, 27, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(209, 27, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(210, 27, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(211, 28, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(212, 28, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(213, 28, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(214, 28, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(215, 28, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(216, 28, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(217, 29, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(218, 29, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(219, 29, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(220, 29, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(221, 29, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(222, 29, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(223, 30, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(224, 30, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(225, 30, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(226, 30, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(227, 30, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(228, 30, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(229, 31, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(230, 31, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(231, 31, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(232, 31, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(233, 31, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(234, 31, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(235, 32, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(236, 32, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(237, 32, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(238, 32, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(239, 32, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(240, 32, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(241, 33, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(242, 33, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(243, 33, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(244, 33, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(245, 33, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(246, 33, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(247, 34, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(248, 34, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(249, 34, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(250, 34, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(251, 34, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(252, 34, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(253, 35, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(254, 35, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(255, 35, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(256, 35, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(257, 35, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(258, 35, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(259, 36, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(260, 36, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(261, 36, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(262, 36, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(263, 36, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(264, 36, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(265, 37, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(266, 37, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(267, 37, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(268, 37, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(269, 37, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(270, 37, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(271, 38, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(272, 38, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(273, 38, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(274, 38, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(275, 38, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(276, 38, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(277, 39, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(278, 39, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(279, 39, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(280, 39, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(281, 39, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(282, 39, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(283, 40, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(284, 40, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(285, 40, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(286, 40, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(287, 40, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(288, 40, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(289, 41, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(290, 41, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(291, 41, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(292, 41, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(293, 41, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(294, 41, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(295, 42, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(296, 42, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(297, 42, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(298, 42, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(299, 42, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(300, 42, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(301, 43, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(302, 43, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(303, 43, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(304, 43, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(305, 43, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(306, 43, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(307, 44, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(308, 44, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(309, 44, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(310, 44, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(311, 44, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(312, 44, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(313, 45, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(314, 45, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(315, 45, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(316, 45, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(317, 45, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(318, 45, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(319, 46, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(320, 46, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(321, 46, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(322, 46, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(323, 46, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(324, 46, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(325, 47, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(326, 47, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(327, 47, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(328, 47, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(329, 47, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(330, 47, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(331, 48, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(332, 48, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(333, 48, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(334, 48, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(335, 48, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(336, 48, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(337, 49, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(338, 49, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(339, 49, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(340, 49, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(341, 49, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(342, 49, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(343, 50, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(344, 50, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(345, 50, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(346, 50, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(347, 50, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(348, 50, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(349, 51, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(350, 51, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(351, 51, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(352, 51, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(353, 51, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(354, 51, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(355, 52, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(356, 52, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(357, 52, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(358, 52, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(359, 52, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(360, 52, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(361, 53, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(362, 53, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(363, 53, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(364, 53, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(365, 53, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(366, 53, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(367, 54, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(368, 54, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(369, 54, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(370, 54, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(371, 54, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(372, 54, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(373, 55, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(374, 55, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(375, 55, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(376, 55, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(377, 55, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(378, 55, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(379, 56, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(380, 56, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(381, 56, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(382, 56, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(383, 56, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(384, 56, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(385, 57, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(386, 57, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(387, 57, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(388, 57, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(389, 57, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(390, 57, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(391, 58, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(392, 58, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(393, 58, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(394, 58, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(395, 58, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(396, 58, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(397, 59, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(398, 59, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(399, 59, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(400, 59, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(401, 59, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(402, 59, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(403, 60, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(404, 60, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(405, 60, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(406, 60, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(407, 60, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(408, 60, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(409, 61, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(410, 61, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(411, 61, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(412, 61, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(413, 61, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(414, 61, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(415, 62, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(416, 62, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(417, 62, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(418, 62, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(419, 62, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(420, 62, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(421, 63, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(422, 63, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(423, 63, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(424, 63, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(425, 63, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(426, 63, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(427, 64, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(428, 64, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(429, 64, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(430, 64, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(431, 64, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(432, 64, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(433, 65, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(434, 65, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(435, 65, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(436, 65, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(437, 65, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(438, 65, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(439, 66, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(440, 66, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(441, 66, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(442, 66, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(443, 66, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(444, 66, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(445, 67, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(446, 67, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(447, 67, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(448, 67, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(449, 67, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(450, 67, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(451, 68, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(452, 68, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(453, 68, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(454, 68, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(455, 68, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(456, 68, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(457, 69, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(458, 69, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(459, 69, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(460, 69, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(461, 69, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(462, 69, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(463, 70, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(464, 70, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(465, 70, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(466, 70, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(467, 70, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(468, 70, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(469, 71, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(470, 71, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(471, 71, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(472, 71, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(473, 71, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(474, 71, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(475, 72, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(476, 72, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(477, 72, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(478, 72, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(479, 72, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(480, 72, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(481, 73, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(482, 73, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(483, 73, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(484, 73, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(485, 73, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(486, 73, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(487, 74, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(488, 74, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(489, 74, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(490, 74, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(491, 74, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(492, 74, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(493, 75, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(494, 75, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(495, 75, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(496, 75, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(497, 75, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(498, 75, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(499, 76, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(500, 76, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(501, 76, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(502, 76, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(503, 76, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(504, 76, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(505, 77, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(506, 77, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(507, 77, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(508, 77, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(509, 77, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(510, 77, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(511, 78, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(512, 78, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(513, 78, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(514, 78, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(515, 78, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(516, 78, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(517, 79, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(518, 79, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(519, 79, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(520, 79, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(521, 79, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(522, 79, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(523, 80, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(524, 80, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(525, 80, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(526, 80, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(527, 80, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(528, 80, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(529, 81, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(530, 81, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(531, 81, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(532, 81, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(533, 81, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(534, 81, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(535, 82, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(536, 82, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(537, 82, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(538, 82, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(539, 82, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(540, 82, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(541, 83, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(542, 83, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(543, 83, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(544, 83, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(545, 83, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(546, 83, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(547, 84, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(548, 84, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(549, 84, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(550, 84, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(551, 84, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(552, 84, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(553, 85, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(554, 85, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(555, 85, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(556, 85, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(557, 85, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(558, 85, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(559, 86, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(560, 86, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(561, 86, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(562, 86, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(563, 86, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(564, 86, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(565, 87, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(566, 87, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(567, 87, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(568, 87, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(569, 87, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(570, 87, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(571, 88, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(572, 88, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(573, 88, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(574, 88, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(575, 88, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(576, 88, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(577, 89, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(578, 89, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(579, 89, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(580, 89, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(581, 89, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(582, 89, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(583, 90, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(584, 90, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(585, 90, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(586, 90, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(587, 90, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(588, 90, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(589, 91, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(590, 91, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(591, 91, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(592, 91, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(593, 91, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(594, 91, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(595, 92, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(596, 92, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(597, 92, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(598, 92, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(599, 92, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(600, 92, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(601, 93, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(602, 93, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(603, 93, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(604, 93, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(605, 93, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(606, 93, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(607, 94, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(608, 94, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(609, 94, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(610, 94, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(611, 94, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(612, 94, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(613, 95, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(614, 95, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(615, 95, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(616, 95, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(617, 95, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(618, 95, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(619, 96, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(620, 96, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(621, 96, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(622, 96, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(623, 96, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(624, 96, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(625, 97, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(626, 97, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(627, 97, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(628, 97, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(629, 97, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(630, 97, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(631, 98, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(632, 98, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(633, 98, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(634, 98, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(635, 98, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(636, 98, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(637, 99, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(638, 99, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(639, 99, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(640, 99, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(641, 99, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(642, 99, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(643, 100, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(644, 100, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(645, 100, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(646, 100, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(647, 100, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(648, 100, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(649, 101, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(650, 101, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(651, 101, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(652, 101, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(653, 101, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(654, 101, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(655, 102, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(656, 102, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(657, 102, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(658, 102, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(659, 102, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(660, 102, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(661, 103, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(662, 103, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(663, 103, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(664, 103, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(665, 103, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(666, 103, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(667, 104, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(668, 104, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(669, 104, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(670, 104, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(671, 104, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(672, 104, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(673, 105, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(674, 105, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(675, 105, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(676, 105, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(677, 105, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(678, 105, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(679, 106, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(680, 106, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(681, 106, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(682, 106, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(683, 106, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(684, 106, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(685, 107, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(686, 107, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(687, 107, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(688, 107, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(689, 107, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(690, 107, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(691, 108, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(692, 108, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(693, 108, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(694, 108, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(695, 108, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(696, 108, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(697, 109, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(698, 109, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(699, 109, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(700, 109, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(701, 109, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(702, 109, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(703, 110, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(704, 110, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(705, 110, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(706, 110, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(707, 110, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(708, 110, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(709, 111, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(710, 111, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(711, 111, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(712, 111, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(713, 111, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(714, 111, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(715, 112, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(716, 112, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(717, 112, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(718, 112, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(719, 112, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(720, 112, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(721, 113, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(722, 113, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(723, 113, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(724, 113, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(725, 113, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(726, 113, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(727, 114, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(728, 114, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(729, 114, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(730, 114, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(731, 114, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(732, 114, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(733, 115, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(734, 115, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(735, 115, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(736, 115, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(737, 115, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(738, 115, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(739, 116, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(740, 116, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(741, 116, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(742, 116, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(743, 116, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(744, 116, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(745, 117, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(746, 117, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(747, 117, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(748, 117, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(749, 117, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(750, 117, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(751, 118, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(752, 118, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(753, 118, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(754, 118, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(755, 118, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(756, 118, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(757, 119, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(758, 119, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(759, 119, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(760, 119, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(761, 119, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(762, 119, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(763, 120, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(764, 120, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(765, 120, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(766, 120, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(767, 120, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(768, 120, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(769, 121, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(770, 121, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(771, 121, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(772, 121, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(773, 121, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(774, 121, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(775, 122, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(776, 122, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(777, 122, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(778, 122, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(779, 122, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(780, 122, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(781, 123, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(782, 123, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(783, 123, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(784, 123, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(785, 123, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(786, 123, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(787, 124, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(788, 124, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(789, 124, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(790, 124, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(791, 124, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(792, 124, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(793, 125, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(794, 125, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(795, 125, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(796, 125, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(797, 125, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(798, 125, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(799, 126, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(800, 126, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(801, 126, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(802, 126, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(803, 126, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(804, 126, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(805, 127, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(806, 127, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(807, 127, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(808, 127, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(809, 127, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(810, 127, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(811, 128, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(812, 128, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(813, 128, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(814, 128, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(815, 128, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(816, 128, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(817, 129, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(818, 129, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(819, 129, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(820, 129, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(821, 129, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(822, 129, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(823, 130, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(824, 130, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(825, 130, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(826, 130, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(827, 130, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(828, 130, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(829, 131, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(830, 131, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(831, 131, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(832, 131, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(833, 131, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(834, 131, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(835, 132, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(836, 132, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(837, 132, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(838, 132, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(839, 132, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(840, 132, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(841, 133, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(842, 133, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(843, 133, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(844, 133, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(845, 133, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(846, 133, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(847, 134, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(848, 134, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(849, 134, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(850, 134, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(851, 134, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(852, 134, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(853, 135, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(854, 135, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(855, 135, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(856, 135, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(857, 135, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(858, 135, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(859, 136, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(860, 136, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(861, 136, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(862, 136, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(863, 136, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(864, 136, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(865, 137, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(866, 137, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(867, 137, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(868, 137, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(869, 137, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(870, 137, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(871, 138, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(872, 138, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(873, 138, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(874, 138, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(875, 138, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(876, 138, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(877, 139, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(878, 139, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(879, 139, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(880, 139, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(881, 139, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(882, 139, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(883, 140, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(884, 140, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(885, 140, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(886, 140, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(887, 140, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(888, 140, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(889, 141, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(890, 141, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(891, 141, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(892, 141, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(893, 141, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(894, 141, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(895, 142, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(896, 142, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(897, 142, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(898, 142, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(899, 142, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(900, 142, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(901, 143, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(902, 143, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(903, 143, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(904, 143, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(905, 143, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(906, 143, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(907, 144, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(908, 144, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(909, 144, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(910, 144, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(911, 144, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(912, 144, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(913, 145, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(914, 145, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(915, 145, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(916, 145, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(917, 145, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(918, 145, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(919, 146, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(920, 146, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(921, 146, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(922, 146, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(923, 146, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(924, 146, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(925, 147, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(926, 147, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(927, 147, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(928, 147, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(929, 147, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(930, 147, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(931, 148, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(932, 148, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(933, 148, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(934, 148, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(935, 148, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(936, 148, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(937, 149, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(938, 149, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(939, 149, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(940, 149, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(941, 149, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(942, 149, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(943, 150, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(944, 150, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(945, 150, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(946, 150, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(947, 150, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(948, 150, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(949, 151, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(950, 151, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(951, 151, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(952, 151, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(953, 151, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(954, 151, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(955, 152, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(956, 152, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(957, 152, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(958, 152, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(959, 152, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(960, 152, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(961, 153, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(962, 153, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(963, 153, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(964, 153, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(965, 153, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(966, 153, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(967, 154, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(968, 154, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(969, 154, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(970, 154, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(971, 154, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(972, 154, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(973, 155, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(974, 155, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(975, 155, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(976, 155, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(977, 155, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(978, 155, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(979, 156, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(980, 156, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(981, 156, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(982, 156, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(983, 156, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(984, 156, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(985, 157, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(986, 157, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(987, 157, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(988, 157, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(989, 157, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(990, 157, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(991, 158, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(992, 158, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(993, 158, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(994, 158, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(995, 158, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(996, 158, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(997, 159, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(998, 159, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(999, 159, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1000, 159, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1001, 159, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1002, 159, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1003, 160, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1004, 160, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1005, 160, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1006, 160, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1007, 160, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1008, 160, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1009, 161, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1010, 161, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1011, 161, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1012, 161, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1013, 161, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1014, 161, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1015, 162, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1016, 162, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1017, 162, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1018, 162, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1019, 162, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1020, 162, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1021, 163, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1022, 163, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1023, 163, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1024, 163, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1025, 163, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1026, 163, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1027, 164, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1028, 164, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1029, 164, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1030, 164, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1031, 164, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1032, 164, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1033, 165, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1034, 165, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1035, 165, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1036, 165, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1037, 165, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1038, 165, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1039, 166, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1040, 166, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1041, 166, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1042, 166, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1043, 166, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1044, 166, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1045, 167, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1046, 167, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1047, 167, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1048, 167, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1049, 167, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1050, 167, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1051, 168, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1052, 168, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1053, 168, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1054, 168, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1055, 168, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1056, 168, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1057, 169, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1058, 169, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1059, 169, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1060, 169, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1061, 169, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1062, 169, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1063, 170, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1064, 170, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1065, 170, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1066, 170, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1067, 170, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1068, 170, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1069, 171, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1070, 171, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1071, 171, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1072, 171, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1073, 171, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1074, 171, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1075, 172, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1076, 172, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1077, 172, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1078, 172, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1079, 172, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1080, 172, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1081, 173, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1082, 173, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1083, 173, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1084, 173, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1085, 173, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1086, 173, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1087, 174, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1088, 174, 2, 1, NULL, NULL, NULL, NULL, NULL, 0);
-INSERT INTO `product_country` (`id`, `product_id`, `country_id`, `is_visible`, `slug_override`, `meta_title_en`, `meta_title_ar`, `meta_desc_en`, `meta_desc_ar`, `sort_order`) VALUES
-(1089, 174, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1090, 174, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1091, 174, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1092, 174, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1093, 175, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1094, 175, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1095, 175, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1096, 175, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1097, 175, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1098, 175, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1099, 176, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1100, 176, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1101, 176, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1102, 176, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1103, 176, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1104, 176, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1105, 177, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1106, 177, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1107, 177, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1108, 177, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1109, 177, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1110, 177, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1111, 178, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1112, 178, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1113, 178, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1114, 178, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1115, 178, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1116, 178, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1117, 179, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1118, 179, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1119, 179, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1120, 179, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1121, 179, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1122, 179, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1123, 180, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1124, 180, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1125, 180, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1126, 180, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1127, 180, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1128, 180, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1129, 181, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1130, 181, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1131, 181, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1132, 181, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1133, 181, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1134, 181, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1135, 182, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1136, 182, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1137, 182, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1138, 182, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1139, 182, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1140, 182, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1141, 183, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1142, 183, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1143, 183, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1144, 183, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1145, 183, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1146, 183, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1147, 184, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1148, 184, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1149, 184, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1150, 184, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1151, 184, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1152, 184, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1153, 185, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1154, 185, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1155, 185, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1156, 185, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1157, 185, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1158, 185, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1159, 186, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1160, 186, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1161, 186, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1162, 186, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1163, 186, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1164, 186, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1165, 187, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1166, 187, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1167, 187, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1168, 187, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1169, 187, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1170, 187, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1171, 188, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1172, 188, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1173, 188, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1174, 188, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1175, 188, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1176, 188, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1177, 189, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1178, 189, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1179, 189, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1180, 189, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1181, 189, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1182, 189, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1183, 190, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1184, 190, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1185, 190, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1186, 190, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1187, 190, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1188, 190, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1189, 191, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1190, 191, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1191, 191, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1192, 191, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1193, 191, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1194, 191, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1195, 192, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1196, 192, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1197, 192, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1198, 192, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1199, 192, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1200, 192, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1201, 193, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1202, 193, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1203, 193, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1204, 193, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1205, 193, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1206, 193, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1207, 194, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1208, 194, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1209, 194, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1210, 194, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1211, 194, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1212, 194, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1213, 195, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1214, 195, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1215, 195, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1216, 195, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1217, 195, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1218, 195, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1219, 196, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1220, 196, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1221, 196, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1222, 196, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1223, 196, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1224, 196, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1225, 197, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1226, 197, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1227, 197, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1228, 197, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1229, 197, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1230, 197, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1231, 198, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1232, 198, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1233, 198, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1234, 198, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1235, 198, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1236, 198, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1237, 199, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1238, 199, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1239, 199, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1240, 199, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1241, 199, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1242, 199, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1243, 200, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1244, 200, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1245, 200, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1246, 200, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1247, 200, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1248, 200, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1249, 201, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1250, 201, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1251, 201, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1252, 201, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1253, 201, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1254, 201, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1255, 202, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1256, 202, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1257, 202, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1258, 202, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1259, 202, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1260, 202, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1261, 203, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1262, 203, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1263, 203, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1264, 203, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1265, 203, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1266, 203, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1267, 204, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1268, 204, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1269, 204, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1270, 204, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1271, 204, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1272, 204, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1273, 205, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1274, 205, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1275, 205, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1276, 205, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1277, 205, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1278, 205, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1279, 206, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1280, 206, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1281, 206, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1282, 206, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1283, 206, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1284, 206, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1285, 207, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1286, 207, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1287, 207, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1288, 207, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1289, 207, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1290, 207, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1291, 208, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1292, 208, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1293, 208, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1294, 208, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1295, 208, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1296, 208, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1297, 209, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1298, 209, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1299, 209, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1300, 209, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1301, 209, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1302, 209, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1303, 210, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1304, 210, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1305, 210, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1306, 210, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1307, 210, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1308, 210, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1309, 211, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1310, 211, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1311, 211, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1312, 211, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1313, 211, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1314, 211, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1315, 212, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1316, 212, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1317, 212, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1318, 212, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1319, 212, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1320, 212, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1321, 213, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1322, 213, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1323, 213, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1324, 213, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1325, 213, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1326, 213, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1327, 214, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1328, 214, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1329, 214, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1330, 214, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1331, 214, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1332, 214, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1333, 215, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1334, 215, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1335, 215, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1336, 215, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1337, 215, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1338, 215, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1339, 216, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1340, 216, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1341, 216, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1342, 216, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1343, 216, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1344, 216, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1345, 217, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1346, 217, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1347, 217, 3, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1348, 217, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1349, 217, 5, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1350, 217, 6, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1351, 218, 1, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1352, 218, 2, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1353, 218, 3, 0, NULL, NULL, NULL, NULL, NULL, 0),
-(1354, 218, 4, 1, NULL, NULL, NULL, NULL, NULL, 0),
-(1355, 218, 5, 0, NULL, NULL, NULL, NULL, NULL, 0),
-(1356, 218, 6, 1, NULL, NULL, NULL, NULL, NULL, 0);
-
-
---
--- Dumping data for table `product_prices`
---
-
-INSERT INTO `product_prices` (`id`, `product_id`, `country_id`, `currency_id`, `regular_price`) VALUES
-(1, 1, 1, 1, 10.000),
-(2, 1, 2, 2, 11.000),
-(3, 1, 3, 3, 1.000),
-(4, 1, 4, 4, 14.000),
-(5, 1, 5, 5, 9.000),
-(6, 1, 6, 6, 2.000),
-(13, 4, 1, 1, 11.000),
-(14, 4, 2, 2, 22.000),
-(15, 4, 3, 3, 33.000),
-(16, 4, 4, 4, 44.000),
-(17, 4, 5, 5, 55.000),
-(18, 4, 6, 6, 66.000),
-(37, 5, 1, 1, 175.000),
-(38, 5, 2, 2, 175.000),
-(39, 5, 3, 3, 175.000),
-(40, 5, 4, 4, 175.000),
-(41, 5, 5, 5, 175.000),
-(42, 5, 6, 6, 175.000),
-(43, 6, 1, 1, 300.000),
-(44, 6, 2, 2, 300.000),
-(45, 6, 3, 3, 300.000),
-(46, 6, 4, 4, 300.000),
-(47, 6, 5, 5, 300.000),
-(48, 6, 6, 6, 300.000),
-(49, 7, 1, 1, 70.000),
-(50, 7, 2, 2, 70.000),
-(51, 7, 3, 3, 70.000),
-(52, 7, 4, 4, 70.000),
-(53, 7, 5, 5, 70.000),
-(54, 7, 6, 6, 70.000),
-(55, 8, 1, 1, 225.000),
-(56, 8, 2, 2, 225.000),
-(57, 8, 3, 3, 225.000),
-(58, 8, 4, 4, 225.000),
-(59, 8, 5, 5, 225.000),
-(60, 8, 6, 6, 225.000),
-(61, 9, 1, 1, 225.000),
-(62, 9, 2, 2, 225.000),
-(63, 9, 3, 3, 225.000),
-(64, 9, 4, 4, 225.000),
-(65, 9, 5, 5, 225.000),
-(66, 9, 6, 6, 225.000),
-(67, 10, 1, 1, 60.000),
-(68, 10, 2, 2, 60.000),
-(69, 10, 3, 3, 60.000),
-(70, 10, 4, 4, 60.000),
-(71, 10, 5, 5, 60.000),
-(72, 10, 6, 6, 60.000),
-(73, 11, 1, 1, 175.000),
-(74, 11, 2, 2, 175.000),
-(75, 11, 3, 3, 175.000),
-(76, 11, 4, 4, 175.000),
-(77, 11, 5, 5, 175.000),
-(78, 11, 6, 6, 175.000),
-(79, 12, 1, 1, 175.000),
-(80, 12, 2, 2, 175.000),
-(81, 12, 3, 3, 175.000),
-(82, 12, 4, 4, 175.000),
-(83, 12, 5, 5, 175.000),
-(84, 12, 6, 6, 175.000),
-(85, 13, 1, 1, 140.000),
-(86, 13, 2, 2, 140.000),
-(87, 13, 3, 3, 140.000),
-(88, 13, 4, 4, 140.000),
-(89, 13, 5, 5, 140.000),
-(90, 13, 6, 6, 140.000),
-(91, 14, 1, 1, 140.000),
-(92, 14, 2, 2, 140.000),
-(93, 14, 3, 3, 140.000),
-(94, 14, 4, 4, 140.000),
-(95, 14, 5, 5, 140.000),
-(96, 14, 6, 6, 140.000),
-(97, 15, 1, 1, 250.000),
-(98, 15, 2, 2, 250.000),
-(99, 15, 3, 3, 250.000),
-(100, 15, 4, 4, 250.000),
-(101, 15, 5, 5, 250.000),
-(102, 15, 6, 6, 250.000),
-(103, 16, 1, 1, 250.000),
-(104, 16, 2, 2, 250.000),
-(105, 16, 3, 3, 250.000),
-(106, 16, 4, 4, 250.000),
-(107, 16, 5, 5, 250.000),
-(108, 16, 6, 6, 250.000),
-(109, 17, 1, 1, 125.000),
-(110, 17, 2, 2, 125.000),
-(111, 17, 3, 3, 125.000),
-(112, 17, 4, 4, 125.000),
-(113, 17, 5, 5, 125.000),
-(114, 17, 6, 6, 125.000),
-(115, 18, 1, 1, 185.000),
-(116, 18, 2, 2, 185.000),
-(117, 18, 3, 3, 185.000),
-(118, 18, 4, 4, 185.000),
-(119, 18, 5, 5, 185.000),
-(120, 18, 6, 6, 185.000),
-(121, 19, 1, 1, 70.000),
-(122, 19, 2, 2, 70.000),
-(123, 19, 3, 3, 70.000),
-(124, 19, 4, 4, 70.000),
-(125, 19, 5, 5, 70.000),
-(126, 19, 6, 6, 70.000),
-(127, 20, 1, 1, 60.000),
-(128, 20, 2, 2, 60.000),
-(129, 20, 3, 3, 60.000),
-(130, 20, 4, 4, 60.000),
-(131, 20, 5, 5, 60.000),
-(132, 20, 6, 6, 60.000),
-(133, 21, 1, 1, 60.000),
-(134, 21, 2, 2, 60.000),
-(135, 21, 3, 3, 60.000),
-(136, 21, 4, 4, 60.000),
-(137, 21, 5, 5, 60.000),
-(138, 21, 6, 6, 60.000),
-(139, 22, 1, 1, 175.000),
-(140, 22, 2, 2, 175.000),
-(141, 22, 3, 3, 175.000),
-(142, 22, 4, 4, 175.000),
-(143, 22, 5, 5, 175.000),
-(144, 22, 6, 6, 175.000),
-(145, 23, 1, 1, 70.000),
-(146, 23, 2, 2, 70.000),
-(147, 23, 3, 3, 70.000),
-(148, 23, 4, 4, 70.000),
-(149, 23, 5, 5, 70.000),
-(150, 23, 6, 6, 70.000),
-(151, 24, 1, 1, 120.000),
-(152, 24, 2, 2, 120.000),
-(153, 24, 3, 3, 120.000),
-(154, 24, 4, 4, 120.000),
-(155, 24, 5, 5, 120.000),
-(156, 24, 6, 6, 120.000),
-(157, 25, 1, 1, 90.000),
-(158, 25, 2, 2, 90.000),
-(159, 25, 3, 3, 90.000),
-(160, 25, 4, 4, 90.000),
-(161, 25, 5, 5, 90.000),
-(162, 25, 6, 6, 90.000),
-(163, 26, 1, 1, 100.000),
-(164, 26, 2, 2, 100.000),
-(165, 26, 3, 3, 100.000),
-(166, 26, 4, 4, 100.000),
-(167, 26, 5, 5, 100.000),
-(168, 26, 6, 6, 100.000),
-(169, 27, 1, 1, 60.000),
-(170, 27, 2, 2, 60.000),
-(171, 27, 3, 3, 60.000),
-(172, 27, 4, 4, 60.000),
-(173, 27, 5, 5, 60.000),
-(174, 27, 6, 6, 60.000),
-(175, 28, 1, 1, 70.000),
-(176, 28, 2, 2, 70.000),
-(177, 28, 3, 3, 70.000),
-(178, 28, 4, 4, 70.000),
-(179, 28, 5, 5, 70.000),
-(180, 28, 6, 6, 70.000),
-(181, 29, 1, 1, 150.000),
-(182, 29, 2, 2, 150.000),
-(183, 29, 3, 3, 150.000),
-(184, 29, 4, 4, 150.000),
-(185, 29, 5, 5, 150.000),
-(186, 29, 6, 6, 150.000),
-(187, 30, 1, 1, 150.000),
-(188, 30, 2, 2, 150.000),
-(189, 30, 3, 3, 150.000),
-(190, 30, 4, 4, 150.000),
-(191, 30, 5, 5, 150.000),
-(192, 30, 6, 6, 150.000),
-(193, 31, 1, 1, 325.000),
-(194, 31, 2, 2, 325.000),
-(195, 31, 3, 3, 325.000),
-(196, 31, 4, 4, 325.000),
-(197, 31, 5, 5, 325.000),
-(198, 31, 6, 6, 325.000),
-(199, 32, 1, 1, 145.000),
-(200, 32, 2, 2, 145.000),
-(201, 32, 3, 3, 145.000),
-(202, 32, 4, 4, 145.000),
-(203, 32, 5, 5, 145.000),
-(204, 32, 6, 6, 145.000),
-(205, 33, 1, 1, 260.000),
-(206, 33, 2, 2, 260.000),
-(207, 33, 3, 3, 260.000),
-(208, 33, 4, 4, 260.000),
-(209, 33, 5, 5, 260.000),
-(210, 33, 6, 6, 260.000),
-(211, 34, 1, 1, 215.000),
-(212, 34, 2, 2, 215.000),
-(213, 34, 3, 3, 215.000),
-(214, 34, 4, 4, 215.000),
-(215, 34, 5, 5, 215.000),
-(216, 34, 6, 6, 215.000),
-(217, 35, 1, 1, 120.000),
-(218, 35, 2, 2, 120.000),
-(219, 35, 3, 3, 120.000),
-(220, 35, 4, 4, 120.000),
-(221, 35, 5, 5, 120.000),
-(222, 35, 6, 6, 120.000),
-(223, 36, 1, 1, 70.000),
-(224, 36, 2, 2, 70.000),
-(225, 36, 3, 3, 70.000),
-(226, 36, 4, 4, 70.000),
-(227, 36, 5, 5, 70.000),
-(228, 36, 6, 6, 70.000),
-(229, 37, 1, 1, 125.000),
-(230, 37, 2, 2, 125.000),
-(231, 37, 3, 3, 125.000),
-(232, 37, 4, 4, 125.000),
-(233, 37, 5, 5, 125.000),
-(234, 37, 6, 6, 125.000),
-(235, 38, 1, 1, 170.000),
-(236, 38, 2, 2, 170.000),
-(237, 38, 3, 3, 170.000),
-(238, 38, 4, 4, 170.000),
-(239, 38, 5, 5, 170.000),
-(240, 38, 6, 6, 170.000),
-(241, 39, 1, 1, 70.000),
-(242, 39, 2, 2, 70.000),
-(243, 39, 3, 3, 70.000),
-(244, 39, 4, 4, 70.000),
-(245, 39, 5, 5, 70.000),
-(246, 39, 6, 6, 70.000),
-(247, 40, 1, 1, 140.000),
-(248, 40, 2, 2, 140.000),
-(249, 40, 3, 3, 140.000),
-(250, 40, 4, 4, 140.000),
-(251, 40, 5, 5, 140.000),
-(252, 40, 6, 6, 140.000),
-(253, 41, 1, 1, 140.000),
-(254, 41, 2, 2, 140.000),
-(255, 41, 3, 3, 140.000),
-(256, 41, 4, 4, 140.000),
-(257, 41, 5, 5, 140.000),
-(258, 41, 6, 6, 140.000),
-(259, 42, 1, 1, 165.000),
-(260, 42, 2, 2, 165.000),
-(261, 42, 3, 3, 165.000),
-(262, 42, 4, 4, 165.000),
-(263, 42, 5, 5, 165.000),
-(264, 42, 6, 6, 165.000),
-(265, 43, 1, 1, 35.000),
-(266, 43, 2, 2, 35.000),
-(267, 43, 3, 3, 35.000),
-(268, 43, 4, 4, 35.000),
-(269, 43, 5, 5, 35.000),
-(270, 43, 6, 6, 35.000),
-(271, 44, 1, 1, 35.000),
-(272, 44, 2, 2, 35.000),
-(273, 44, 3, 3, 35.000),
-(274, 44, 4, 4, 35.000),
-(275, 44, 5, 5, 35.000),
-(276, 44, 6, 6, 35.000),
-(277, 45, 1, 1, 35.000),
-(278, 45, 2, 2, 35.000),
-(279, 45, 3, 3, 35.000),
-(280, 45, 4, 4, 35.000),
-(281, 45, 5, 5, 35.000),
-(282, 45, 6, 6, 35.000),
-(283, 46, 1, 1, 35.000),
-(284, 46, 2, 2, 35.000),
-(285, 46, 3, 3, 35.000),
-(286, 46, 4, 4, 35.000),
-(287, 46, 5, 5, 35.000),
-(288, 46, 6, 6, 35.000),
-(289, 47, 1, 1, 35.000),
-(290, 47, 2, 2, 35.000),
-(291, 47, 3, 3, 35.000),
-(292, 47, 4, 4, 35.000),
-(293, 47, 5, 5, 35.000),
-(294, 47, 6, 6, 35.000),
-(295, 48, 1, 1, 50.000),
-(296, 48, 2, 2, 50.000),
-(297, 48, 3, 3, 50.000),
-(298, 48, 4, 4, 50.000),
-(299, 48, 5, 5, 50.000),
-(300, 48, 6, 6, 50.000),
-(301, 49, 1, 1, 80.000),
-(302, 49, 2, 2, 80.000),
-(303, 49, 3, 3, 80.000),
-(304, 49, 4, 4, 80.000),
-(305, 49, 5, 5, 80.000),
-(306, 49, 6, 6, 80.000),
-(307, 50, 1, 1, 50.000),
-(308, 50, 2, 2, 50.000),
-(309, 50, 3, 3, 50.000),
-(310, 50, 4, 4, 50.000),
-(311, 50, 5, 5, 50.000),
-(312, 50, 6, 6, 50.000),
-(313, 51, 1, 1, 80.000),
-(314, 51, 2, 2, 80.000),
-(315, 51, 3, 3, 80.000),
-(316, 51, 4, 4, 80.000),
-(317, 51, 5, 5, 80.000),
-(318, 51, 6, 6, 80.000),
-(319, 52, 1, 1, 50.000),
-(320, 52, 2, 2, 50.000),
-(321, 52, 3, 3, 50.000),
-(322, 52, 4, 4, 50.000),
-(323, 52, 5, 5, 50.000),
-(324, 52, 6, 6, 50.000),
-(325, 53, 1, 1, 75.000),
-(326, 53, 2, 2, 75.000),
-(327, 53, 3, 3, 75.000),
-(328, 53, 4, 4, 75.000),
-(329, 53, 5, 5, 75.000),
-(330, 53, 6, 6, 75.000),
-(331, 54, 1, 1, 185.000),
-(332, 54, 2, 2, 185.000),
-(333, 54, 3, 3, 185.000),
-(334, 54, 4, 4, 185.000),
-(335, 54, 5, 5, 185.000),
-(336, 54, 6, 6, 185.000),
-(337, 55, 1, 1, 263.000),
-(338, 55, 2, 2, 263.000),
-(339, 55, 3, 3, 263.000),
-(340, 55, 4, 4, 263.000),
-(341, 55, 5, 5, 263.000),
-(342, 55, 6, 6, 263.000),
-(343, 56, 1, 1, 367.500),
-(344, 56, 2, 2, 367.500),
-(345, 56, 3, 3, 367.500),
-(346, 56, 4, 4, 367.500),
-(347, 56, 5, 5, 367.500),
-(348, 56, 6, 6, 367.500),
-(349, 57, 1, 1, 42.000),
-(350, 57, 2, 2, 42.000),
-(351, 57, 3, 3, 42.000),
-(352, 57, 4, 4, 42.000),
-(353, 57, 5, 5, 42.000),
-(354, 57, 6, 6, 42.000),
-(355, 58, 1, 1, 50.000),
-(356, 58, 2, 2, 50.000),
-(357, 58, 3, 3, 50.000),
-(358, 58, 4, 4, 50.000),
-(359, 58, 5, 5, 50.000),
-(360, 58, 6, 6, 50.000),
-(361, 59, 1, 1, 37.000),
-(362, 59, 2, 2, 37.000),
-(363, 59, 3, 3, 37.000),
-(364, 59, 4, 4, 37.000),
-(365, 59, 5, 5, 37.000),
-(366, 59, 6, 6, 37.000),
-(367, 60, 1, 1, 50.000),
-(368, 60, 2, 2, 50.000),
-(369, 60, 3, 3, 50.000),
-(370, 60, 4, 4, 50.000),
-(371, 60, 5, 5, 50.000),
-(372, 60, 6, 6, 50.000),
-(373, 61, 1, 1, 200.000),
-(374, 61, 2, 2, 200.000),
-(375, 61, 3, 3, 200.000),
-(376, 61, 4, 4, 200.000),
-(377, 61, 5, 5, 200.000),
-(378, 61, 6, 6, 200.000),
-(379, 62, 1, 1, 50.000),
-(380, 62, 2, 2, 50.000),
-(381, 62, 3, 3, 50.000),
-(382, 62, 4, 4, 50.000),
-(383, 62, 5, 5, 50.000),
-(384, 62, 6, 6, 50.000),
-(385, 63, 1, 1, 200.000),
-(386, 63, 2, 2, 200.000),
-(387, 63, 3, 3, 200.000),
-(388, 63, 4, 4, 200.000),
-(389, 63, 5, 5, 200.000),
-(390, 63, 6, 6, 200.000),
-(391, 64, 1, 1, 50.000),
-(392, 64, 2, 2, 50.000),
-(393, 64, 3, 3, 50.000),
-(394, 64, 4, 4, 50.000),
-(395, 64, 5, 5, 50.000),
-(396, 64, 6, 6, 50.000),
-(397, 65, 1, 1, 50.000),
-(398, 65, 2, 2, 50.000),
-(399, 65, 3, 3, 50.000),
-(400, 65, 4, 4, 50.000),
-(401, 65, 5, 5, 50.000),
-(402, 65, 6, 6, 50.000),
-(403, 66, 1, 1, 50.000),
-(404, 66, 2, 2, 50.000),
-(405, 66, 3, 3, 50.000),
-(406, 66, 4, 4, 50.000),
-(407, 66, 5, 5, 50.000),
-(408, 66, 6, 6, 50.000),
-(409, 67, 1, 1, 50.000),
-(410, 67, 2, 2, 50.000),
-(411, 67, 3, 3, 50.000),
-(412, 67, 4, 4, 50.000),
-(413, 67, 5, 5, 50.000),
-(414, 67, 6, 6, 50.000),
-(415, 68, 1, 1, 50.000),
-(416, 68, 2, 2, 50.000),
-(417, 68, 3, 3, 50.000),
-(418, 68, 4, 4, 50.000),
-(419, 68, 5, 5, 50.000),
-(420, 68, 6, 6, 50.000),
-(421, 69, 1, 1, 150.000),
-(422, 69, 2, 2, 150.000),
-(423, 69, 3, 3, 150.000),
-(424, 69, 4, 4, 150.000),
-(425, 69, 5, 5, 150.000),
-(426, 69, 6, 6, 150.000),
-(427, 70, 1, 1, 110.000),
-(428, 70, 2, 2, 110.000),
-(429, 70, 3, 3, 110.000),
-(430, 70, 4, 4, 110.000),
-(431, 70, 5, 5, 110.000),
-(432, 70, 6, 6, 110.000),
-(433, 71, 1, 1, 130.000),
-(434, 71, 2, 2, 130.000),
-(435, 71, 3, 3, 130.000),
-(436, 71, 4, 4, 130.000),
-(437, 71, 5, 5, 130.000),
-(438, 71, 6, 6, 130.000),
-(439, 72, 1, 1, 230.000),
-(440, 72, 2, 2, 230.000),
-(441, 72, 3, 3, 230.000),
-(442, 72, 4, 4, 230.000),
-(443, 72, 5, 5, 230.000),
-(444, 72, 6, 6, 230.000),
-(445, 73, 1, 1, 160.000),
-(446, 73, 2, 2, 160.000),
-(447, 73, 3, 3, 160.000),
-(448, 73, 4, 4, 160.000),
-(449, 73, 5, 5, 160.000),
-(450, 73, 6, 6, 160.000),
-(451, 74, 1, 1, 80.000),
-(452, 74, 2, 2, 80.000),
-(453, 74, 3, 3, 80.000),
-(454, 74, 4, 4, 80.000),
-(455, 74, 5, 5, 80.000),
-(456, 74, 6, 6, 80.000),
-(457, 75, 1, 1, 350.000),
-(458, 75, 2, 2, 350.000),
-(459, 75, 3, 3, 350.000),
-(460, 75, 4, 4, 350.000),
-(461, 75, 5, 5, 350.000),
-(462, 75, 6, 6, 350.000),
-(463, 76, 1, 1, 250.000),
-(464, 76, 2, 2, 250.000),
-(465, 76, 3, 3, 250.000),
-(466, 76, 4, 4, 250.000),
-(467, 76, 5, 5, 250.000),
-(468, 76, 6, 6, 250.000),
-(469, 77, 1, 1, 250.000),
-(470, 77, 2, 2, 250.000),
-(471, 77, 3, 3, 250.000),
-(472, 77, 4, 4, 250.000),
-(473, 77, 5, 5, 250.000),
-(474, 77, 6, 6, 250.000),
-(475, 78, 1, 1, 270.000),
-(476, 78, 2, 2, 270.000),
-(477, 78, 3, 3, 270.000),
-(478, 78, 4, 4, 270.000),
-(479, 78, 5, 5, 270.000),
-(480, 78, 6, 6, 270.000),
-(481, 79, 1, 1, 125.000),
-(482, 79, 2, 2, 125.000),
-(483, 79, 3, 3, 125.000),
-(484, 79, 4, 4, 125.000),
-(485, 79, 5, 5, 125.000),
-(486, 79, 6, 6, 125.000),
-(487, 80, 1, 1, 350.000),
-(488, 80, 2, 2, 350.000),
-(489, 80, 3, 3, 350.000),
-(490, 80, 4, 4, 350.000),
-(491, 80, 5, 5, 350.000),
-(492, 80, 6, 6, 350.000),
-(493, 81, 1, 1, 42.000),
-(494, 81, 2, 2, 42.000),
-(495, 81, 3, 3, 42.000),
-(496, 81, 4, 4, 42.000),
-(497, 81, 5, 5, 42.000),
-(498, 81, 6, 6, 42.000),
-(499, 82, 1, 1, 45.000),
-(500, 82, 2, 2, 45.000),
-(501, 82, 3, 3, 45.000),
-(502, 82, 4, 4, 45.000),
-(503, 82, 5, 5, 45.000),
-(504, 82, 6, 6, 45.000),
-(505, 83, 1, 1, 42.000),
-(506, 83, 2, 2, 42.000),
-(507, 83, 3, 3, 42.000),
-(508, 83, 4, 4, 42.000),
-(509, 83, 5, 5, 42.000),
-(510, 83, 6, 6, 42.000),
-(511, 84, 1, 1, 100.000),
-(512, 84, 2, 2, 100.000),
-(513, 84, 3, 3, 100.000),
-(514, 84, 4, 4, 100.000),
-(515, 84, 5, 5, 100.000),
-(516, 84, 6, 6, 100.000),
-(517, 85, 1, 1, 42.000),
-(518, 85, 2, 2, 42.000),
-(519, 85, 3, 3, 42.000),
-(520, 85, 4, 4, 42.000),
-(521, 85, 5, 5, 42.000),
-(522, 85, 6, 6, 42.000),
-(523, 86, 1, 1, 31.500),
-(524, 86, 2, 2, 31.500),
-(525, 86, 3, 3, 31.500),
-(526, 86, 4, 4, 31.500),
-(527, 86, 5, 5, 31.500),
-(528, 86, 6, 6, 31.500),
-(529, 87, 1, 1, 50.000),
-(530, 87, 2, 2, 50.000),
-(531, 87, 3, 3, 50.000),
-(532, 87, 4, 4, 50.000),
-(533, 87, 5, 5, 50.000),
-(534, 87, 6, 6, 50.000),
-(535, 88, 1, 1, 80.000),
-(536, 88, 2, 2, 80.000),
-(537, 88, 3, 3, 80.000),
-(538, 88, 4, 4, 80.000),
-(539, 88, 5, 5, 80.000),
-(540, 88, 6, 6, 80.000),
-(541, 89, 1, 1, 120.000),
-(542, 89, 2, 2, 120.000),
-(543, 89, 3, 3, 120.000),
-(544, 89, 4, 4, 120.000),
-(545, 89, 5, 5, 120.000),
-(546, 89, 6, 6, 120.000),
-(547, 90, 1, 1, 35.000),
-(548, 90, 2, 2, 35.000),
-(549, 90, 3, 3, 35.000),
-(550, 90, 4, 4, 35.000),
-(551, 90, 5, 5, 35.000),
-(552, 90, 6, 6, 35.000),
-(553, 91, 1, 1, 70.000),
-(554, 91, 2, 2, 70.000),
-(555, 91, 3, 3, 70.000),
-(556, 91, 4, 4, 70.000),
-(557, 91, 5, 5, 70.000),
-(558, 91, 6, 6, 70.000),
-(559, 92, 1, 1, 60.000),
-(560, 92, 2, 2, 60.000),
-(561, 92, 3, 3, 60.000),
-(562, 92, 4, 4, 60.000),
-(563, 92, 5, 5, 60.000),
-(564, 92, 6, 6, 60.000),
-(565, 93, 1, 1, 50.000),
-(566, 93, 2, 2, 50.000),
-(567, 93, 3, 3, 50.000),
-(568, 93, 4, 4, 50.000),
-(569, 93, 5, 5, 50.000),
-(570, 93, 6, 6, 50.000),
-(571, 94, 1, 1, 100.000),
-(572, 94, 2, 2, 100.000),
-(573, 94, 3, 3, 100.000),
-(574, 94, 4, 4, 100.000),
-(575, 94, 5, 5, 100.000),
-(576, 94, 6, 6, 100.000),
-(577, 95, 1, 1, 70.000),
-(578, 95, 2, 2, 70.000),
-(579, 95, 3, 3, 70.000),
-(580, 95, 4, 4, 70.000),
-(581, 95, 5, 5, 70.000),
-(582, 95, 6, 6, 70.000),
-(583, 96, 1, 1, 40.000),
-(584, 96, 2, 2, 40.000),
-(585, 96, 3, 3, 40.000),
-(586, 96, 4, 4, 40.000),
-(587, 96, 5, 5, 40.000),
-(588, 96, 6, 6, 40.000),
-(589, 97, 1, 1, 65.000),
-(590, 97, 2, 2, 65.000),
-(591, 97, 3, 3, 65.000),
-(592, 97, 4, 4, 65.000),
-(593, 97, 5, 5, 65.000),
-(594, 97, 6, 6, 65.000),
-(595, 98, 1, 1, 95.000),
-(596, 98, 2, 2, 95.000),
-(597, 98, 3, 3, 95.000),
-(598, 98, 4, 4, 95.000),
-(599, 98, 5, 5, 95.000),
-(600, 98, 6, 6, 95.000),
-(601, 99, 1, 1, 110.000),
-(602, 99, 2, 2, 110.000),
-(603, 99, 3, 3, 110.000),
-(604, 99, 4, 4, 110.000),
-(605, 99, 5, 5, 110.000),
-(606, 99, 6, 6, 110.000),
-(607, 100, 1, 1, 110.000),
-(608, 100, 2, 2, 110.000),
-(609, 100, 3, 3, 110.000),
-(610, 100, 4, 4, 110.000),
-(611, 100, 5, 5, 110.000),
-(612, 100, 6, 6, 110.000),
-(613, 101, 1, 1, 110.000),
-(614, 101, 2, 2, 110.000),
-(615, 101, 3, 3, 110.000),
-(616, 101, 4, 4, 110.000),
-(617, 101, 5, 5, 110.000),
-(618, 101, 6, 6, 110.000),
-(619, 102, 1, 1, 50.000),
-(620, 102, 2, 2, 50.000),
-(621, 102, 3, 3, 50.000),
-(622, 102, 4, 4, 50.000),
-(623, 102, 5, 5, 50.000),
-(624, 102, 6, 6, 50.000),
-(625, 103, 1, 1, 80.000),
-(626, 103, 2, 2, 80.000),
-(627, 103, 3, 3, 80.000),
-(628, 103, 4, 4, 80.000),
-(629, 103, 5, 5, 80.000),
-(630, 103, 6, 6, 80.000),
-(631, 104, 1, 1, 35.000),
-(632, 104, 2, 2, 35.000),
-(633, 104, 3, 3, 35.000),
-(634, 104, 4, 4, 35.000),
-(635, 104, 5, 5, 35.000),
-(636, 104, 6, 6, 35.000),
-(637, 105, 1, 1, 45.000),
-(638, 105, 2, 2, 45.000),
-(639, 105, 3, 3, 45.000),
-(640, 105, 4, 4, 45.000),
-(641, 105, 5, 5, 45.000),
-(642, 105, 6, 6, 45.000),
-(643, 106, 1, 1, 180.000),
-(644, 106, 2, 2, 180.000),
-(645, 106, 3, 3, 180.000),
-(646, 106, 4, 4, 180.000),
-(647, 106, 5, 5, 180.000),
-(648, 106, 6, 6, 180.000),
-(649, 107, 1, 1, 215.000),
-(650, 107, 2, 2, 215.000),
-(651, 107, 3, 3, 215.000),
-(652, 107, 4, 4, 215.000),
-(653, 107, 5, 5, 215.000),
-(654, 107, 6, 6, 215.000),
-(655, 108, 1, 1, 50.000),
-(656, 108, 2, 2, 50.000),
-(657, 108, 3, 3, 50.000),
-(658, 108, 4, 4, 50.000),
-(659, 108, 5, 5, 50.000),
-(660, 108, 6, 6, 50.000),
-(661, 109, 1, 1, 45.000),
-(662, 109, 2, 2, 45.000),
-(663, 109, 3, 3, 45.000),
-(664, 109, 4, 4, 45.000),
-(665, 109, 5, 5, 45.000),
-(666, 109, 6, 6, 45.000),
-(667, 110, 1, 1, 350.000),
-(668, 110, 2, 2, 350.000),
-(669, 110, 3, 3, 350.000),
-(670, 110, 4, 4, 350.000),
-(671, 110, 5, 5, 350.000),
-(672, 110, 6, 6, 350.000),
-(673, 111, 1, 1, 85.000),
-(674, 111, 2, 2, 85.000),
-(675, 111, 3, 3, 85.000),
-(676, 111, 4, 4, 85.000),
-(677, 111, 5, 5, 85.000),
-(678, 111, 6, 6, 85.000),
-(679, 112, 1, 1, 210.000),
-(680, 112, 2, 2, 210.000),
-(681, 112, 3, 3, 210.000),
-(682, 112, 4, 4, 210.000),
-(683, 112, 5, 5, 210.000),
-(684, 112, 6, 6, 210.000),
-(685, 113, 1, 1, 105.000),
-(686, 113, 2, 2, 105.000),
-(687, 113, 3, 3, 105.000),
-(688, 113, 4, 4, 105.000),
-(689, 113, 5, 5, 105.000),
-(690, 113, 6, 6, 105.000),
-(691, 114, 1, 1, 125.000),
-(692, 114, 2, 2, 125.000),
-(693, 114, 3, 3, 125.000),
-(694, 114, 4, 4, 125.000),
-(695, 114, 5, 5, 125.000),
-(696, 114, 6, 6, 125.000),
-(697, 115, 1, 1, 275.000),
-(698, 115, 2, 2, 275.000),
-(699, 115, 3, 3, 275.000),
-(700, 115, 4, 4, 275.000),
-(701, 115, 5, 5, 275.000),
-(702, 115, 6, 6, 275.000),
-(703, 116, 1, 1, 100.000),
-(704, 116, 2, 2, 100.000),
-(705, 116, 3, 3, 100.000),
-(706, 116, 4, 4, 100.000),
-(707, 116, 5, 5, 100.000),
-(708, 116, 6, 6, 100.000),
-(709, 117, 1, 1, 100.000),
-(710, 117, 2, 2, 100.000),
-(711, 117, 3, 3, 100.000),
-(712, 117, 4, 4, 100.000),
-(713, 117, 5, 5, 100.000),
-(714, 117, 6, 6, 100.000),
-(715, 118, 1, 1, 100.000),
-(716, 118, 2, 2, 100.000),
-(717, 118, 3, 3, 100.000),
-(718, 118, 4, 4, 100.000),
-(719, 118, 5, 5, 100.000),
-(720, 118, 6, 6, 100.000),
-(721, 119, 1, 1, 100.000),
-(722, 119, 2, 2, 100.000),
-(723, 119, 3, 3, 100.000),
-(724, 119, 4, 4, 100.000),
-(725, 119, 5, 5, 100.000),
-(726, 119, 6, 6, 100.000),
-(727, 120, 1, 1, 60.000),
-(728, 120, 2, 2, 60.000),
-(729, 120, 3, 3, 60.000),
-(730, 120, 4, 4, 60.000),
-(731, 120, 5, 5, 60.000),
-(732, 120, 6, 6, 60.000),
-(733, 121, 1, 1, 50.000),
-(734, 121, 2, 2, 50.000),
-(735, 121, 3, 3, 50.000),
-(736, 121, 4, 4, 50.000),
-(737, 121, 5, 5, 50.000),
-(738, 121, 6, 6, 50.000),
-(739, 122, 1, 1, 185.000),
-(740, 122, 2, 2, 185.000),
-(741, 122, 3, 3, 185.000),
-(742, 122, 4, 4, 185.000),
-(743, 122, 5, 5, 185.000),
-(744, 122, 6, 6, 185.000),
-(745, 123, 1, 1, 50.000),
-(746, 123, 2, 2, 50.000),
-(747, 123, 3, 3, 50.000),
-(748, 123, 4, 4, 50.000),
-(749, 123, 5, 5, 50.000),
-(750, 123, 6, 6, 50.000),
-(751, 124, 1, 1, 50.000),
-(752, 124, 2, 2, 50.000),
-(753, 124, 3, 3, 50.000),
-(754, 124, 4, 4, 50.000),
-(755, 124, 5, 5, 50.000),
-(756, 124, 6, 6, 50.000),
-(757, 125, 1, 1, 65.000),
-(758, 125, 2, 2, 65.000),
-(759, 125, 3, 3, 65.000),
-(760, 125, 4, 4, 65.000),
-(761, 125, 5, 5, 65.000),
-(762, 125, 6, 6, 65.000),
-(763, 126, 1, 1, 50.000),
-(764, 126, 2, 2, 50.000),
-(765, 126, 3, 3, 50.000),
-(766, 126, 4, 4, 50.000),
-(767, 126, 5, 5, 50.000),
-(768, 126, 6, 6, 50.000),
-(769, 127, 1, 1, 50.000),
-(770, 127, 2, 2, 50.000),
-(771, 127, 3, 3, 50.000),
-(772, 127, 4, 4, 50.000),
-(773, 127, 5, 5, 50.000),
-(774, 127, 6, 6, 50.000),
-(775, 128, 1, 1, 110.000),
-(776, 128, 2, 2, 110.000),
-(777, 128, 3, 3, 110.000),
-(778, 128, 4, 4, 110.000),
-(779, 128, 5, 5, 110.000),
-(780, 128, 6, 6, 110.000),
-(781, 129, 1, 1, 125.000),
-(782, 129, 2, 2, 125.000),
-(783, 129, 3, 3, 125.000),
-(784, 129, 4, 4, 125.000),
-(785, 129, 5, 5, 125.000),
-(786, 129, 6, 6, 125.000),
-(787, 130, 1, 1, 125.000),
-(788, 130, 2, 2, 125.000),
-(789, 130, 3, 3, 125.000),
-(790, 130, 4, 4, 125.000),
-(791, 130, 5, 5, 125.000),
-(792, 130, 6, 6, 125.000),
-(793, 131, 1, 1, 125.000),
-(794, 131, 2, 2, 125.000),
-(795, 131, 3, 3, 125.000),
-(796, 131, 4, 4, 125.000),
-(797, 131, 5, 5, 125.000),
-(798, 131, 6, 6, 125.000),
-(799, 132, 1, 1, 100.000),
-(800, 132, 2, 2, 100.000),
-(801, 132, 3, 3, 100.000),
-(802, 132, 4, 4, 100.000),
-(803, 132, 5, 5, 100.000),
-(804, 132, 6, 6, 100.000),
-(805, 133, 1, 1, 80.000),
-(806, 133, 2, 2, 80.000),
-(807, 133, 3, 3, 80.000),
-(808, 133, 4, 4, 80.000),
-(809, 133, 5, 5, 80.000),
-(810, 133, 6, 6, 80.000),
-(811, 134, 1, 1, 125.000),
-(812, 134, 2, 2, 125.000),
-(813, 134, 3, 3, 125.000),
-(814, 134, 4, 4, 125.000),
-(815, 134, 5, 5, 125.000),
-(816, 134, 6, 6, 125.000),
-(817, 135, 1, 1, 125.000),
-(818, 135, 2, 2, 125.000),
-(819, 135, 3, 3, 125.000),
-(820, 135, 4, 4, 125.000),
-(821, 135, 5, 5, 125.000),
-(822, 135, 6, 6, 125.000),
-(823, 136, 1, 1, 125.000),
-(824, 136, 2, 2, 125.000),
-(825, 136, 3, 3, 125.000),
-(826, 136, 4, 4, 125.000),
-(827, 136, 5, 5, 125.000),
-(828, 136, 6, 6, 125.000),
-(829, 137, 1, 1, 450.000),
-(830, 137, 2, 2, 450.000),
-(831, 137, 3, 3, 450.000),
-(832, 137, 4, 4, 450.000),
-(833, 137, 5, 5, 450.000),
-(834, 137, 6, 6, 450.000),
-(835, 138, 1, 1, 131.250),
-(836, 138, 2, 2, 131.250),
-(837, 138, 3, 3, 131.250),
-(838, 138, 4, 4, 131.250),
-(839, 138, 5, 5, 131.250),
-(840, 138, 6, 6, 131.250),
-(841, 139, 1, 1, 131.250),
-(842, 139, 2, 2, 131.250),
-(843, 139, 3, 3, 131.250),
-(844, 139, 4, 4, 131.250),
-(845, 139, 5, 5, 131.250),
-(846, 139, 6, 6, 131.250),
-(847, 140, 1, 1, 175.000),
-(848, 140, 2, 2, 175.000),
-(849, 140, 3, 3, 175.000),
-(850, 140, 4, 4, 175.000),
-(851, 140, 5, 5, 175.000),
-(852, 140, 6, 6, 175.000),
-(853, 141, 1, 1, 125.000),
-(854, 141, 2, 2, 125.000),
-(855, 141, 3, 3, 125.000),
-(856, 141, 4, 4, 125.000),
-(857, 141, 5, 5, 125.000),
-(858, 141, 6, 6, 125.000),
-(859, 142, 1, 1, 110.000),
-(860, 142, 2, 2, 110.000),
-(861, 142, 3, 3, 110.000),
-(862, 142, 4, 4, 110.000),
-(863, 142, 5, 5, 110.000),
-(864, 142, 6, 6, 110.000),
-(865, 143, 1, 1, 70.000),
-(866, 143, 2, 2, 70.000),
-(867, 143, 3, 3, 70.000),
-(868, 143, 4, 4, 70.000),
-(869, 143, 5, 5, 70.000),
-(870, 143, 6, 6, 70.000),
-(871, 144, 1, 1, 100.000),
-(872, 144, 2, 2, 100.000),
-(873, 144, 3, 3, 100.000),
-(874, 144, 4, 4, 100.000),
-(875, 144, 5, 5, 100.000),
-(876, 144, 6, 6, 100.000),
-(877, 145, 1, 1, 100.000),
-(878, 145, 2, 2, 100.000),
-(879, 145, 3, 3, 100.000),
-(880, 145, 4, 4, 100.000),
-(881, 145, 5, 5, 100.000),
-(882, 145, 6, 6, 100.000),
-(883, 146, 1, 1, 100.000),
-(884, 146, 2, 2, 100.000),
-(885, 146, 3, 3, 100.000),
-(886, 146, 4, 4, 100.000),
-(887, 146, 5, 5, 100.000),
-(888, 146, 6, 6, 100.000),
-(889, 147, 1, 1, 60.000),
-(890, 147, 2, 2, 60.000),
-(891, 147, 3, 3, 60.000),
-(892, 147, 4, 4, 60.000),
-(893, 147, 5, 5, 60.000),
-(894, 147, 6, 6, 60.000),
-(895, 148, 1, 1, 80.000),
-(896, 148, 2, 2, 80.000),
-(897, 148, 3, 3, 80.000),
-(898, 148, 4, 4, 80.000),
-(899, 148, 5, 5, 80.000),
-(900, 148, 6, 6, 80.000),
-(901, 149, 1, 1, 80.000),
-(902, 149, 2, 2, 80.000),
-(903, 149, 3, 3, 80.000),
-(904, 149, 4, 4, 80.000),
-(905, 149, 5, 5, 80.000),
-(906, 149, 6, 6, 80.000),
-(907, 150, 1, 1, 50.000),
-(908, 150, 2, 2, 50.000),
-(909, 150, 3, 3, 50.000),
-(910, 150, 4, 4, 50.000),
-(911, 150, 5, 5, 50.000),
-(912, 150, 6, 6, 50.000),
-(913, 151, 1, 1, 100.000),
-(914, 151, 2, 2, 100.000),
-(915, 151, 3, 3, 100.000),
-(916, 151, 4, 4, 100.000),
-(917, 151, 5, 5, 100.000),
-(918, 151, 6, 6, 100.000),
-(919, 152, 1, 1, 130.000),
-(920, 152, 2, 2, 130.000),
-(921, 152, 3, 3, 130.000),
-(922, 152, 4, 4, 130.000),
-(923, 152, 5, 5, 130.000),
-(924, 152, 6, 6, 130.000),
-(925, 153, 1, 1, 125.000),
-(926, 153, 2, 2, 125.000),
-(927, 153, 3, 3, 125.000),
-(928, 153, 4, 4, 125.000),
-(929, 153, 5, 5, 125.000),
-(930, 153, 6, 6, 125.000),
-(931, 154, 1, 1, 175.000),
-(932, 154, 2, 2, 175.000),
-(933, 154, 3, 3, 175.000),
-(934, 154, 4, 4, 175.000),
-(935, 154, 5, 5, 175.000),
-(936, 154, 6, 6, 175.000),
-(937, 155, 1, 1, 110.000),
-(938, 155, 2, 2, 110.000),
-(939, 155, 3, 3, 110.000),
-(940, 155, 4, 4, 110.000),
-(941, 155, 5, 5, 110.000),
-(942, 155, 6, 6, 110.000),
-(943, 156, 1, 1, 190.000),
-(944, 156, 2, 2, 190.000),
-(945, 156, 3, 3, 190.000),
-(946, 156, 4, 4, 190.000),
-(947, 156, 5, 5, 190.000),
-(948, 156, 6, 6, 190.000),
-(949, 157, 1, 1, 135.000),
-(950, 157, 2, 2, 135.000),
-(951, 157, 3, 3, 135.000),
-(952, 157, 4, 4, 135.000),
-(953, 157, 5, 5, 135.000),
-(954, 157, 6, 6, 135.000),
-(955, 158, 1, 1, 135.000),
-(956, 158, 2, 2, 135.000),
-(957, 158, 3, 3, 135.000),
-(958, 158, 4, 4, 135.000),
-(959, 158, 5, 5, 135.000),
-(960, 158, 6, 6, 135.000),
-(961, 159, 1, 1, 110.000),
-(962, 159, 2, 2, 110.000),
-(963, 159, 3, 3, 110.000),
-(964, 159, 4, 4, 110.000),
-(965, 159, 5, 5, 110.000),
-(966, 159, 6, 6, 110.000),
-(967, 160, 1, 1, 350.000),
-(968, 160, 2, 2, 350.000),
-(969, 160, 3, 3, 350.000),
-(970, 160, 4, 4, 350.000),
-(971, 160, 5, 5, 350.000),
-(972, 160, 6, 6, 350.000),
-(973, 161, 1, 1, 100.000),
-(974, 161, 2, 2, 100.000),
-(975, 161, 3, 3, 100.000),
-(976, 161, 4, 4, 100.000),
-(977, 161, 5, 5, 100.000),
-(978, 161, 6, 6, 100.000),
-(979, 162, 1, 1, 105.000),
-(980, 162, 2, 2, 105.000),
-(981, 162, 3, 3, 105.000),
-(982, 162, 4, 4, 105.000),
-(983, 162, 5, 5, 105.000),
-(984, 162, 6, 6, 105.000),
-(985, 163, 1, 1, 105.000),
-(986, 163, 2, 2, 105.000),
-(987, 163, 3, 3, 105.000),
-(988, 163, 4, 4, 105.000),
-(989, 163, 5, 5, 105.000),
-(990, 163, 6, 6, 105.000),
-(991, 164, 1, 1, 50.000),
-(992, 164, 2, 2, 50.000),
-(993, 164, 3, 3, 50.000),
-(994, 164, 4, 4, 50.000),
-(995, 164, 5, 5, 50.000),
-(996, 164, 6, 6, 50.000),
-(997, 165, 1, 1, 50.000),
-(998, 165, 2, 2, 50.000),
-(999, 165, 3, 3, 50.000),
-(1000, 165, 4, 4, 50.000),
-(1001, 165, 5, 5, 50.000),
-(1002, 165, 6, 6, 50.000),
-(1003, 166, 1, 1, 141.750),
-(1004, 166, 2, 2, 141.750),
-(1005, 166, 3, 3, 141.750),
-(1006, 166, 4, 4, 141.750),
-(1007, 166, 5, 5, 141.750),
-(1008, 166, 6, 6, 141.750),
-(1009, 167, 1, 1, 105.000),
-(1010, 167, 2, 2, 105.000),
-(1011, 167, 3, 3, 105.000),
-(1012, 167, 4, 4, 105.000),
-(1013, 167, 5, 5, 105.000),
-(1014, 167, 6, 6, 105.000),
-(1015, 168, 1, 1, 275.000),
-(1016, 168, 2, 2, 275.000),
-(1017, 168, 3, 3, 275.000),
-(1018, 168, 4, 4, 275.000),
-(1019, 168, 5, 5, 275.000),
-(1020, 168, 6, 6, 275.000),
-(1021, 169, 1, 1, 150.000),
-(1022, 169, 2, 2, 150.000),
-(1023, 169, 3, 3, 150.000),
-(1024, 169, 4, 4, 150.000),
-(1025, 169, 5, 5, 150.000),
-(1026, 169, 6, 6, 150.000),
-(1027, 170, 1, 1, 100.000),
-(1028, 170, 2, 2, 100.000),
-(1029, 170, 3, 3, 100.000),
-(1030, 170, 4, 4, 100.000),
-(1031, 170, 5, 5, 100.000),
-(1032, 170, 6, 6, 100.000),
-(1033, 171, 1, 1, 110.000),
-(1034, 171, 2, 2, 110.000),
-(1035, 171, 3, 3, 110.000),
-(1036, 171, 4, 4, 110.000),
-(1037, 171, 5, 5, 110.000),
-(1038, 171, 6, 6, 110.000),
-(1039, 172, 1, 1, 126.000),
-(1040, 172, 2, 2, 126.000),
-(1041, 172, 3, 3, 126.000),
-(1042, 172, 4, 4, 126.000),
-(1043, 172, 5, 5, 126.000),
-(1044, 172, 6, 6, 126.000),
-(1045, 173, 1, 1, 126.000),
-(1046, 173, 2, 2, 126.000),
-(1047, 173, 3, 3, 126.000),
-(1048, 173, 4, 4, 126.000),
-(1049, 173, 5, 5, 126.000),
-(1050, 173, 6, 6, 126.000),
-(1051, 174, 1, 1, 400.000),
-(1052, 174, 2, 2, 400.000),
-(1053, 174, 3, 3, 400.000),
-(1054, 174, 4, 4, 400.000),
-(1055, 174, 5, 5, 400.000),
-(1056, 174, 6, 6, 400.000),
-(1057, 175, 1, 1, 35.000),
-(1058, 175, 2, 2, 35.000),
-(1059, 175, 3, 3, 35.000),
-(1060, 175, 4, 4, 35.000),
-(1061, 175, 5, 5, 35.000),
-(1062, 175, 6, 6, 35.000),
-(1063, 176, 1, 1, 35.000),
-(1064, 176, 2, 2, 35.000),
-(1065, 176, 3, 3, 35.000),
-(1066, 176, 4, 4, 35.000),
-(1067, 176, 5, 5, 35.000),
-(1068, 176, 6, 6, 35.000),
-(1069, 177, 1, 1, 35.000),
-(1070, 177, 2, 2, 35.000),
-(1071, 177, 3, 3, 35.000),
-(1072, 177, 4, 4, 35.000),
-(1073, 177, 5, 5, 35.000),
-(1074, 177, 6, 6, 35.000),
-(1075, 178, 1, 1, 125.000),
-(1076, 178, 2, 2, 125.000),
-(1077, 178, 3, 3, 125.000),
-(1078, 178, 4, 4, 125.000),
-(1079, 178, 5, 5, 125.000),
-(1080, 178, 6, 6, 125.000),
-(1081, 179, 1, 1, 125.000),
-(1082, 179, 2, 2, 125.000),
-(1083, 179, 3, 3, 125.000),
-(1084, 179, 4, 4, 125.000),
-(1085, 179, 5, 5, 125.000),
-(1086, 179, 6, 6, 125.000),
-(1087, 180, 1, 1, 260.000),
-(1088, 180, 2, 2, 260.000),
-(1089, 180, 3, 3, 260.000),
-(1090, 180, 4, 4, 260.000),
-(1091, 180, 5, 5, 260.000),
-(1092, 180, 6, 6, 260.000),
-(1093, 181, 1, 1, 42.000),
-(1094, 181, 2, 2, 42.000),
-(1095, 181, 3, 3, 42.000),
-(1096, 181, 4, 4, 42.000),
-(1097, 181, 5, 5, 42.000),
-(1098, 181, 6, 6, 42.000),
-(1099, 182, 1, 1, 42.000),
-(1100, 182, 2, 2, 42.000),
-(1101, 182, 3, 3, 42.000),
-(1102, 182, 4, 4, 42.000),
-(1103, 182, 5, 5, 42.000),
-(1104, 182, 6, 6, 42.000),
-(1105, 183, 1, 1, 42.000),
-(1106, 183, 2, 2, 42.000),
-(1107, 183, 3, 3, 42.000),
-(1108, 183, 4, 4, 42.000),
-(1109, 183, 5, 5, 42.000),
-(1110, 183, 6, 6, 42.000),
-(1111, 184, 1, 1, 35.000),
-(1112, 184, 2, 2, 35.000),
-(1113, 184, 3, 3, 35.000),
-(1114, 184, 4, 4, 35.000),
-(1115, 184, 5, 5, 35.000),
-(1116, 184, 6, 6, 35.000),
-(1117, 185, 1, 1, 110.000),
-(1118, 185, 2, 2, 110.000),
-(1119, 185, 3, 3, 110.000),
-(1120, 185, 4, 4, 110.000),
-(1121, 185, 5, 5, 110.000),
-(1122, 185, 6, 6, 110.000),
-(1123, 186, 1, 1, 150.000),
-(1124, 186, 2, 2, 150.000),
-(1125, 186, 3, 3, 150.000),
-(1126, 186, 4, 4, 150.000),
-(1127, 186, 5, 5, 150.000),
-(1128, 186, 6, 6, 150.000),
-(1129, 187, 1, 1, 200.000),
-(1130, 187, 2, 2, 200.000),
-(1131, 187, 3, 3, 200.000),
-(1132, 187, 4, 4, 200.000),
-(1133, 187, 5, 5, 200.000),
-(1134, 187, 6, 6, 200.000),
-(1135, 188, 1, 1, 300.000),
-(1136, 188, 2, 2, 300.000),
-(1137, 188, 3, 3, 300.000),
-(1138, 188, 4, 4, 300.000),
-(1139, 188, 5, 5, 300.000),
-(1140, 188, 6, 6, 300.000),
-(1141, 189, 1, 1, 30.000),
-(1142, 189, 2, 2, 30.000),
-(1143, 189, 3, 3, 30.000),
-(1144, 189, 4, 4, 30.000),
-(1145, 189, 5, 5, 30.000),
-(1146, 189, 6, 6, 30.000),
-(1147, 190, 1, 1, 30.000),
-(1148, 190, 2, 2, 30.000),
-(1149, 190, 3, 3, 30.000),
-(1150, 190, 4, 4, 30.000),
-(1151, 190, 5, 5, 30.000),
-(1152, 190, 6, 6, 30.000),
-(1153, 191, 1, 1, 375.000),
-(1154, 191, 2, 2, 375.000),
-(1155, 191, 3, 3, 375.000),
-(1156, 191, 4, 4, 375.000),
-(1157, 191, 5, 5, 375.000),
-(1158, 191, 6, 6, 375.000),
-(1159, 192, 1, 1, 70.000),
-(1160, 192, 2, 2, 70.000),
-(1161, 192, 3, 3, 70.000),
-(1162, 192, 4, 4, 70.000),
-(1163, 192, 5, 5, 70.000),
-(1164, 192, 6, 6, 70.000),
-(1165, 193, 1, 1, 140.000),
-(1166, 193, 2, 2, 140.000),
-(1167, 193, 3, 3, 140.000),
-(1168, 193, 4, 4, 140.000),
-(1169, 193, 5, 5, 140.000),
-(1170, 193, 6, 6, 140.000),
-(1171, 194, 1, 1, 150.000),
-(1172, 194, 2, 2, 150.000),
-(1173, 194, 3, 3, 150.000),
-(1174, 194, 4, 4, 150.000),
-(1175, 194, 5, 5, 150.000),
-(1176, 194, 6, 6, 150.000),
-(1177, 195, 1, 1, 140.000),
-(1178, 195, 2, 2, 140.000),
-(1179, 195, 3, 3, 140.000),
-(1180, 195, 4, 4, 140.000),
-(1181, 195, 5, 5, 140.000),
-(1182, 195, 6, 6, 140.000),
-(1183, 196, 1, 1, 375.000),
-(1184, 196, 2, 2, 375.000),
-(1185, 196, 3, 3, 375.000),
-(1186, 196, 4, 4, 375.000),
-(1187, 196, 5, 5, 375.000),
-(1188, 196, 6, 6, 375.000),
-(1189, 197, 1, 1, 375.000),
-(1190, 197, 2, 2, 375.000),
-(1191, 197, 3, 3, 375.000),
-(1192, 197, 4, 4, 375.000),
-(1193, 197, 5, 5, 375.000),
-(1194, 197, 6, 6, 375.000),
-(1195, 198, 1, 1, 375.000),
-(1196, 198, 2, 2, 375.000),
-(1197, 198, 3, 3, 375.000),
-(1198, 198, 4, 4, 375.000),
-(1199, 198, 5, 5, 375.000),
-(1200, 198, 6, 6, 375.000),
-(1201, 199, 1, 1, 130.000),
-(1202, 199, 2, 2, 130.000),
-(1203, 199, 3, 3, 130.000),
-(1204, 199, 4, 4, 130.000),
-(1205, 199, 5, 5, 130.000),
-(1206, 199, 6, 6, 130.000),
-(1207, 200, 1, 1, 135.000),
-(1208, 200, 2, 2, 135.000),
-(1209, 200, 3, 3, 135.000),
-(1210, 200, 4, 4, 135.000),
-(1211, 200, 5, 5, 135.000),
-(1212, 200, 6, 6, 135.000),
-(1213, 201, 1, 1, 357.000),
-(1214, 201, 2, 2, 357.000),
-(1215, 201, 3, 3, 357.000),
-(1216, 201, 4, 4, 357.000),
-(1217, 201, 5, 5, 357.000),
-(1218, 201, 6, 6, 357.000),
-(1219, 202, 1, 1, 195.000),
-(1220, 202, 2, 2, 195.000),
-(1221, 202, 3, 3, 195.000),
-(1222, 202, 4, 4, 195.000),
-(1223, 202, 5, 5, 195.000),
-(1224, 202, 6, 6, 195.000),
-(1225, 203, 1, 1, 135.000),
-(1226, 203, 2, 2, 135.000),
-(1227, 203, 3, 3, 135.000),
-(1228, 203, 4, 4, 135.000),
-(1229, 203, 5, 5, 135.000),
-(1230, 203, 6, 6, 135.000),
-(1231, 204, 1, 1, 340.000),
-(1232, 204, 2, 2, 340.000),
-(1233, 204, 3, 3, 340.000),
-(1234, 204, 4, 4, 340.000),
-(1235, 204, 5, 5, 340.000),
-(1236, 204, 6, 6, 340.000),
-(1237, 205, 1, 1, 270.000),
-(1238, 205, 2, 2, 270.000),
-(1239, 205, 3, 3, 270.000),
-(1240, 205, 4, 4, 270.000),
-(1241, 205, 5, 5, 270.000),
-(1242, 205, 6, 6, 270.000),
-(1243, 206, 1, 1, 275.000),
-(1244, 206, 2, 2, 275.000),
-(1245, 206, 3, 3, 275.000),
-(1246, 206, 4, 4, 275.000),
-(1247, 206, 5, 5, 275.000),
-(1248, 206, 6, 6, 275.000),
-(1249, 207, 1, 1, 80.000),
-(1250, 207, 2, 2, 80.000),
-(1251, 207, 3, 3, 80.000),
-(1252, 207, 4, 4, 80.000),
-(1253, 207, 5, 5, 80.000),
-(1254, 207, 6, 6, 80.000),
-(1255, 208, 1, 1, 125.000),
-(1256, 208, 2, 2, 125.000),
-(1257, 208, 3, 3, 125.000),
-(1258, 208, 4, 4, 125.000),
-(1259, 208, 5, 5, 125.000),
-(1260, 208, 6, 6, 125.000),
-(1261, 209, 1, 1, 125.000),
-(1262, 209, 2, 2, 125.000),
-(1263, 209, 3, 3, 125.000),
-(1264, 209, 4, 4, 125.000),
-(1265, 209, 5, 5, 125.000),
-(1266, 209, 6, 6, 125.000),
-(1267, 210, 1, 1, 125.000),
-(1268, 210, 2, 2, 125.000),
-(1269, 210, 3, 3, 125.000),
-(1270, 210, 4, 4, 125.000),
-(1271, 210, 5, 5, 125.000),
-(1272, 210, 6, 6, 125.000),
-(1273, 211, 1, 1, 125.000),
-(1274, 211, 2, 2, 125.000),
-(1275, 211, 3, 3, 125.000),
-(1276, 211, 4, 4, 125.000),
-(1277, 211, 5, 5, 125.000),
-(1278, 211, 6, 6, 125.000),
-(1279, 212, 1, 1, 125.000),
-(1280, 212, 2, 2, 125.000),
-(1281, 212, 3, 3, 125.000),
-(1282, 212, 4, 4, 125.000),
-(1283, 212, 5, 5, 125.000),
-(1284, 212, 6, 6, 125.000),
-(1285, 213, 1, 1, 125.000),
-(1286, 213, 2, 2, 125.000),
-(1287, 213, 3, 3, 125.000),
-(1288, 213, 4, 4, 125.000),
-(1289, 213, 5, 5, 125.000),
-(1290, 213, 6, 6, 125.000),
-(1291, 214, 1, 1, 125.000),
-(1292, 214, 2, 2, 125.000),
-(1293, 214, 3, 3, 125.000),
-(1294, 214, 4, 4, 125.000),
-(1295, 214, 5, 5, 125.000),
-(1296, 214, 6, 6, 125.000),
-(1297, 215, 1, 1, 125.000),
-(1298, 215, 2, 2, 125.000),
-(1299, 215, 3, 3, 125.000),
-(1300, 215, 4, 4, 125.000),
-(1301, 215, 5, 5, 125.000),
-(1302, 215, 6, 6, 125.000),
-(1303, 216, 1, 1, 100.000),
-(1304, 216, 2, 2, 100.000),
-(1305, 216, 3, 3, 100.000),
-(1306, 216, 4, 4, 100.000),
-(1307, 216, 5, 5, 100.000),
-(1308, 216, 6, 6, 100.000),
-(1309, 217, 1, 1, 70.000),
-(1310, 217, 2, 2, 70.000),
-(1311, 217, 3, 3, 70.000),
-(1312, 217, 4, 4, 70.000),
-(1313, 217, 5, 5, 70.000),
-(1314, 217, 6, 6, 70.000),
-(1315, 218, 1, 1, 70.000),
-(1316, 218, 2, 2, 70.000),
-(1317, 218, 3, 3, 70.000),
-(1318, 218, 4, 4, 70.000),
-(1319, 218, 5, 5, 70.000),
-(1320, 218, 6, 6, 70.000);
-
-
---
--- Dumping data for table `product_stock`
---
-
-INSERT INTO `product_stock` (`product_id`, `country_id`, `quantity`, `updated_at`) VALUES
-(1, 1, 0, '2026-04-01 13:20:50'),
-(1, 2, 0, '2026-04-01 13:20:50'),
-(1, 3, 0, '2026-04-01 13:20:50'),
-(1, 4, 0, '2026-04-01 13:20:50'),
-(1, 5, 0, '2026-04-01 13:20:50'),
-(1, 6, 0, '2026-04-01 13:20:50'),
-(4, 1, 0, '2026-04-01 13:28:50'),
-(4, 2, 0, '2026-04-01 13:28:50'),
-(4, 3, 0, '2026-04-01 13:28:50'),
-(4, 4, 0, '2026-04-01 13:28:50'),
-(4, 5, 0, '2026-04-01 13:28:50'),
-(4, 6, 0, '2026-04-01 13:28:50'),
-(5, 1, 0, '2026-04-02 11:57:42'),
-(5, 2, 0, '2026-04-02 11:57:42'),
-(5, 3, 0, '2026-04-02 11:57:42'),
-(5, 4, 0, '2026-04-02 11:57:42'),
-(5, 5, 0, '2026-04-02 11:57:42'),
-(5, 6, 0, '2026-04-02 11:57:42'),
-(218, 1, 0, '2026-04-02 12:29:04'),
-(218, 2, 0, '2026-04-02 12:29:04'),
-(218, 3, 0, '2026-04-02 12:29:04'),
-(218, 4, 0, '2026-04-02 12:29:04'),
-(218, 5, 0, '2026-04-02 12:29:04'),
-(218, 6, 0, '2026-04-02 12:29:04');
-
-
---
--- Dumping data for table `subcategories`
---
-
-INSERT INTO `subcategories` (`id`, `category_id`, `slug`, `name_en`, `name_ar`, `image_url`, `meta_title_en`, `meta_title_ar`, `meta_desc_en`, `meta_desc_ar`, `mobile_image`, `video`, `description_en`, `description_ar`, `sort_order`, `is_active`, `deleted_status`, `created_at`, `updated_at`) VALUES
-(3, 23, 'oriental-fragrance', 'Oriental Fragrance', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:04'),
-(4, 23, 'occidental-fragrance', 'Occidental Fragrance', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 'active', '2026-04-01 13:17:56', '2026-04-03 13:46:04'),
-(5, 24, 'concentrated-oil', 'Concentrated Oil', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 'active', '2026-04-01 13:17:56', '2026-04-01 13:17:56'),
-(6, 24, 'dehn-al-oud', 'Dehn Al Oud', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, 1, 'active', '2026-04-01 13:17:56', '2026-04-01 13:17:56'),
-(7, 25, 'bakhoor', 'Bakhoor', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 'active', '2026-04-01 13:17:56', '2026-04-01 13:17:56'),
-(8, 25, 'oud-maattar', 'Oud Ma\'attar', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, 1, 'active', '2026-04-01 13:17:56', '2026-04-01 13:17:56'),
-(9, 29, 'air-freshener', 'Air Freshener', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, 1, 'active', '2026-04-01 13:17:56', '2026-04-01 13:46:06'),
-(10, 29, 'body-gel', 'Body Gel', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, 'active', '2026-04-01 13:17:56', '2026-04-01 13:17:56'),
-(11, 29, 'hair-mist', 'Hair Mist', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, 'active', '2026-04-01 13:17:56', '2026-04-01 13:46:06');
-
-
---
--- Dumping data for table `users`
---
-
-INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `role`, `permissions`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'admin', 'admin@ahmedalmaghribi.com', '$2b$10$0.QYx3ViR2CWxGFNqVzjVejyR0rtkdHWmVvjPmQovdXd6bF5x5.s6', 'Saood', 'admin', '[\"products\",\"categories\",\"pricing\",\"bundles\",\"sales\",\"gallery\",\"analytics\",\"users\",\"audit_logs\"]', 1, '2026-04-01 11:52:00', '2026-04-03 05:27:37'),
-(4, 'ecom', 'ecom@ahmedalmaghribi.com', '$2b$10$A213ObQh4fliAeqBDGib2.dknuzKXk3Loy/Vgdv6B.6AmqGVAl.RC', 'Ecommerce', 'user', '[\"products\",\"products.core\",\"products.fragrance\",\"products.media\",\"products.seo\",\"products.inventory\",\"categories\",\"categories.core\",\"categories.seo\",\"pricing\",\"bundles\",\"sales\",\"gallery\",\"campaigns\"]', 1, '2026-04-03 13:09:32', '2026-04-03 13:33:28'),
-(5, 'seo', 'digitizer@ahmedalmaghribi.com', '$2b$10$fdVAM0O7HJmmI5c06RaeQesRUXEHo1tkA4IpkdMMKexD3cxC6lhhK', 'Digitizer Team', 'user', '[\"products.seo\",\"products\",\"categories\",\"categories.seo\"]', 1, '2026-04-03 13:16:12', '2026-04-03 13:16:12');
-
---
--- Indexes for dumped tables
---
-
---
--- Indexes for table `audit_logs`
---
-ALTER TABLE `audit_logs`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_audit_user` (`user_id`),
-  ADD KEY `idx_audit_module` (`module`),
-  ADD KEY `idx_audit_created` (`created_at`);
-
---
--- Indexes for table `bundles`
---
-ALTER TABLE `bundles`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_bundle_product` (`product_id`);
-
---
--- Indexes for table `bundle_items`
---
-ALTER TABLE `bundle_items`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_bitem_bundle` (`bundle_id`),
-  ADD KEY `fk_bitem_product` (`product_id`);
-
---
--- Indexes for table `campaigns`
---
-ALTER TABLE `campaigns`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_campaign_status` (`status`),
-  ADD KEY `idx_campaign_dates` (`start_at`,`end_at`);
-
---
--- Indexes for table `campaign_countries`
---
-ALTER TABLE `campaign_countries`
-  ADD PRIMARY KEY (`campaign_id`,`country_id`),
-  ADD KEY `fk_cc_v2_country` (`country_id`);
-
---
--- Indexes for table `campaign_discounts`
---
-ALTER TABLE `campaign_discounts`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_cd_v2_campaign` (`campaign_id`);
-
---
--- Indexes for table `campaign_items`
---
-ALTER TABLE `campaign_items`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_ci_v2_campaign_product` (`campaign_id`,`product_id`),
-  ADD KEY `fk_ci_v2_product` (`product_id`);
-
---
--- Indexes for table `categories`
---
-ALTER TABLE `categories`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_category_slug` (`slug`);
-
---
--- Indexes for table `category_country`
---
-ALTER TABLE `category_country`
-  ADD PRIMARY KEY (`category_id`,`country_id`),
-  ADD KEY `fk_cc_country` (`country_id`);
-
---
--- Indexes for table `countries`
---
-ALTER TABLE `countries`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_country_code` (`code`),
-  ADD KEY `fk_country_currency` (`currency_id`);
-
---
--- Indexes for table `currencies`
---
-ALTER TABLE `currencies`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_currency_code` (`code`);
-
---
--- Indexes for table `fragrance_notes`
---
-ALTER TABLE `fragrance_notes`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_product_note_type` (`product_id`,`note_type`);
-
---
--- Indexes for table `products`
---
-ALTER TABLE `products`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_product_fgd` (`fgd`),
-  ADD UNIQUE KEY `uq_product_slug` (`slug`),
-  ADD KEY `fk_product_category` (`category_id`),
-  ADD KEY `fk_product_subcategory` (`subcategory_id`);
-
---
--- Indexes for table `product_country`
---
-ALTER TABLE `product_country`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_product_country` (`product_id`,`country_id`),
-  ADD KEY `fk_pc_country` (`country_id`);
-
---
--- Indexes for table `product_media`
---
-ALTER TABLE `product_media`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_media_product` (`product_id`),
-  ADD KEY `fk_media_size` (`size_id`);
-
---
--- Indexes for table `product_prices`
---
-ALTER TABLE `product_prices`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_price_product_country` (`product_id`,`country_id`),
-  ADD KEY `fk_price_country` (`country_id`),
-  ADD KEY `fk_price_currency` (`currency_id`);
-
---
--- Indexes for table `product_sales_log`
---
-ALTER TABLE `product_sales_log`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_sales_product` (`product_id`),
-  ADD KEY `idx_sales_country` (`country_id`),
-  ADD KEY `idx_sales_sold_at` (`sold_at`),
-  ADD KEY `fk_sales_currency` (`currency_id`);
-
---
--- Indexes for table `product_sizes`
---
-ALTER TABLE `product_sizes`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_size_product` (`product_id`);
-
---
--- Indexes for table `product_stock`
---
-ALTER TABLE `product_stock`
-  ADD PRIMARY KEY (`product_id`,`country_id`),
-  ADD KEY `country_id` (`country_id`);
-
---
--- Indexes for table `subcategories`
---
-ALTER TABLE `subcategories`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_subcategory_slug` (`slug`),
-  ADD KEY `fk_sub_category` (`category_id`);
-
---
--- Indexes for table `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_user_username` (`username`),
-  ADD UNIQUE KEY `uq_user_email` (`email`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `audit_logs`
---
-ALTER TABLE `audit_logs`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=165;
-
---
--- AUTO_INCREMENT for table `bundles`
---
-ALTER TABLE `bundles`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT for table `bundle_items`
---
-ALTER TABLE `bundle_items`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT for table `campaigns`
---
-ALTER TABLE `campaigns`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT for table `campaign_discounts`
---
-ALTER TABLE `campaign_discounts`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT for table `campaign_items`
---
-ALTER TABLE `campaign_items`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
-
---
--- AUTO_INCREMENT for table `categories`
---
-ALTER TABLE `categories`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
-
---
--- AUTO_INCREMENT for table `countries`
---
-ALTER TABLE `countries`
-  MODIFY `id` tinyint(3) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT for table `currencies`
---
-ALTER TABLE `currencies`
-  MODIFY `id` tinyint(3) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT for table `fragrance_notes`
---
-ALTER TABLE `fragrance_notes`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=632;
-
---
--- AUTO_INCREMENT for table `products`
---
-ALTER TABLE `products`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=219;
-
---
--- AUTO_INCREMENT for table `product_country`
---
-ALTER TABLE `product_country`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1549;
-
---
--- AUTO_INCREMENT for table `product_media`
---
-ALTER TABLE `product_media`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `product_prices`
---
-ALTER TABLE `product_prices`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1411;
-
---
--- AUTO_INCREMENT for table `product_sales_log`
---
-ALTER TABLE `product_sales_log`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `product_sizes`
---
-ALTER TABLE `product_sizes`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
-
---
--- AUTO_INCREMENT for table `subcategories`
---
-ALTER TABLE `subcategories`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
-
---
--- AUTO_INCREMENT for table `users`
---
-ALTER TABLE `users`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `audit_logs`
---
-ALTER TABLE `audit_logs`
-  ADD CONSTRAINT `fk_audit_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `bundles`
---
-ALTER TABLE `bundles`
-  ADD CONSTRAINT `fk_bundle_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `bundle_items`
---
-ALTER TABLE `bundle_items`
+-- bundle_items
+ALTER TABLE `bundle_items` 
   ADD CONSTRAINT `fk_bitem_bundle` FOREIGN KEY (`bundle_id`) REFERENCES `bundles` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_bitem_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE SET NULL;
 
---
--- Constraints for table `campaign_countries`
---
-ALTER TABLE `campaign_countries`
+-- campaigns
+ALTER TABLE `campaign_countries` 
   ADD CONSTRAINT `fk_cc_v2_campaign` FOREIGN KEY (`campaign_id`) REFERENCES `campaigns` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_cc_v2_country` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE;
 
---
--- Constraints for table `campaign_discounts`
---
-ALTER TABLE `campaign_discounts`
-  ADD CONSTRAINT `fk_cd_v2_campaign` FOREIGN KEY (`campaign_id`) REFERENCES `campaigns` (`id`) ON DELETE CASCADE;
+ALTER TABLE `campaign_discounts` ADD CONSTRAINT `fk_cd_v2_campaign` FOREIGN KEY (`campaign_id`) REFERENCES `campaigns` (`id`) ON DELETE CASCADE;
 
---
--- Constraints for table `campaign_items`
---
-ALTER TABLE `campaign_items`
+ALTER TABLE `campaign_items` 
   ADD CONSTRAINT `fk_ci_v2_campaign` FOREIGN KEY (`campaign_id`) REFERENCES `campaigns` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_ci_v2_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
 
---
--- Constraints for table `category_country`
---
-ALTER TABLE `category_country`
+-- categories/subcategories/countries
+ALTER TABLE `category_country` 
   ADD CONSTRAINT `fk_cc_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_cc_country` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE;
 
---
--- Constraints for table `countries`
---
-ALTER TABLE `countries`
-  ADD CONSTRAINT `fk_country_currency` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`);
+ALTER TABLE `subcategories` ADD CONSTRAINT `fk_sub_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`);
 
---
--- Constraints for table `fragrance_notes`
---
-ALTER TABLE `fragrance_notes`
-  ADD CONSTRAINT `fk_note_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+ALTER TABLE `countries` ADD CONSTRAINT `fk_country_currency` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`);
 
---
--- Constraints for table `products`
---
-ALTER TABLE `products`
+-- products
+ALTER TABLE `products` 
   ADD CONSTRAINT `fk_product_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`),
-  ADD CONSTRAINT `fk_product_subcategory` FOREIGN KEY (`subcategory_id`) REFERENCES `subcategories` (`id`);
+  ADD CONSTRAINT `fk_product_subcategory` FOREIGN KEY (`subcategory_id`) REFERENCES `subcategories` (`id`),
+  ADD CONSTRAINT `fk_product_size` FOREIGN KEY (`size_id`) REFERENCES `product_sizes` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_product_label` FOREIGN KEY (`label_id`) REFERENCES `product_labels` (`id`) ON DELETE SET NULL;
 
---
--- Constraints for table `product_country`
---
-ALTER TABLE `product_country`
+ALTER TABLE `fragrance_notes` ADD CONSTRAINT `fk_note_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `product_country` 
   ADD CONSTRAINT `fk_pc_country` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_pc_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
 
---
--- Constraints for table `product_media`
---
-ALTER TABLE `product_media`
+ALTER TABLE `product_media` 
   ADD CONSTRAINT `fk_media_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_media_size` FOREIGN KEY (`size_id`) REFERENCES `product_sizes` (`id`) ON DELETE SET NULL;
 
---
--- Constraints for table `product_prices`
---
-ALTER TABLE `product_prices`
+ALTER TABLE `product_prices` 
   ADD CONSTRAINT `fk_price_country` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`),
   ADD CONSTRAINT `fk_price_currency` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`),
   ADD CONSTRAINT `fk_price_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
 
---
--- Constraints for table `product_sales_log`
---
-ALTER TABLE `product_sales_log`
+ALTER TABLE `product_sales_log` 
   ADD CONSTRAINT `fk_sales_country` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`),
   ADD CONSTRAINT `fk_sales_currency` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`),
   ADD CONSTRAINT `fk_sales_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`);
 
---
--- Constraints for table `product_sizes`
---
-ALTER TABLE `product_sizes`
-  ADD CONSTRAINT `fk_size_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+ALTER TABLE `product_stock` 
+  ADD CONSTRAINT `fk_stock_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_stock_country` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE;
 
---
--- Constraints for table `product_stock`
---
-ALTER TABLE `product_stock`
-  ADD CONSTRAINT `product_stock_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `product_stock_ibfk_2` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE;
+-- related_products
+ALTER TABLE `related_products`
+  ADD CONSTRAINT `fk_related_base` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_related_target` FOREIGN KEY (`related_product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
 
---
--- Constraints for table `subcategories`
---
-ALTER TABLE `subcategories`
-  ADD CONSTRAINT `fk_sub_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`);
+SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;
-
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

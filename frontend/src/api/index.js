@@ -23,8 +23,6 @@ export const createProduct = (data) => api.post('/products', data);
 export const updateProduct = (id, data) => api.put(`/products/${id}`, data);
 export const toggleProduct = (id, country) => api.patch(`/products/${id}/toggle${country ? `?country=${country}` : ''}`);
 export const deleteProduct = (id) => api.delete(`/products/${id}`);
-export const restoreProduct = (id) => api.patch(`/products/${id}/restore`);
-export const hardDeleteProduct = (id) => api.delete(`/products/${id}/permanent`);
 
 // ── Categories ──────────────────────────────────────────────
 export const getCategories = (params) => api.get('/categories', { params });
@@ -32,15 +30,9 @@ export const getCategory = (id) => api.get(`/categories/${id}`);
 export const createCategory = (data) => api.post('/categories', data);
 export const updateCategory = (id, data) => api.put(`/categories/${id}`, data);
 export const deleteCategory = (id) => api.delete(`/categories/${id}`);
-export const restoreCategory = (id) => api.patch(`/categories/${id}/restore`);
-export const hardDeleteCategory = (id) => api.delete(`/categories/${id}/permanent`);
-
 export const createSubcategory = (catId, data) => api.post(`/categories/${catId}/subcategories`, data);
 export const updateSubcategory = (subId, data) => api.put(`/categories/subcategories/${subId}`, data);
-export const deleteSubcategory = (subId) => api.delete(`/categories/subcategories/${subId}`);
-export const restoreSubcategory = (subId) => api.patch(`/categories/subcategories/${subId}/restore`);
-export const hardDeleteSubcategory = (subId) => api.delete(`/categories/subcategories/${subId}/permanent`);
-export const importCategories = (formData, dryRun = false) => api.post(`/categories/import?dry_run=${dryRun}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const deleteSubcategory = (subId) => api.delete(`/categories/subcategories/${subId}`);export const importCategories = (formData, dryRun = false) => api.post(`/categories/import?dry_run=${dryRun}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const reorderCategories = (items) => api.put('/categories/reorder', { items });
 export const reorderSubcategories = (items) => api.put('/categories/subcategories/reorder', { items });
 

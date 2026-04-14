@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  createCategory, updateCategory, deleteCategory, restoreCategory, hardDeleteCategory,
-  createSubcategory, updateSubcategory, restoreSubcategory, hardDeleteSubcategory,
+  createCategory, updateCategory, deleteCategory,
+  createSubcategory, updateSubcategory,
   reorderCategories, reorderSubcategories, importCategories
 } from '../../api'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
@@ -20,7 +20,7 @@ import { useAuth } from '../../context/AuthContext'
 
 // ── API helpers that need direct client access ───────────────
 import api from '../../api/client'
-const getAdminCategories = (status) => api.get(`/categories?admin=1${status === 'bin' ? '&status=bin' : ''}`)
+const getAdminCategories = () => api.get(`/categories?admin=1`)
 const deleteSubcategoryAction = (subId) => api.delete(`/categories/subcategories/${subId}`)
 
 
@@ -352,13 +352,12 @@ export default function Categories() {
 
   const [catDrawer, setCatDrawer] = useState({ open: false, data: null })
   const [subDrawer, setSubDrawer] = useState({ open: false, data: null, catId: null, catName: '' })
-  const [showBin, setShowBin] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
 
 
   const { data, isLoading } = useQuery({
-    queryKey: ['categories-admin', showBin],
-    queryFn: () => getAdminCategories(showBin ? 'bin' : undefined),
+    queryKey: ['categories-admin'],
+    queryFn: () => getAdminCategories(),
   })
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['categories-admin'] })
@@ -367,62 +366,41 @@ export default function Categories() {
 
   const handleDeleteCat = async (id) => {
     const res = await Swal.fire({
-      title: 'Delete Category?',
-      text: 'All subcategories will also be removed. This cannot be undone.',
+      title: 'Permanently Delete Category?',
+      text: 'All linked subcategories will also be removed. This action cannot be undone and will erase it from the database.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Yes, delete it!'
+      confirmButtonText: 'Yes, delete forever!'
     })
     if (!res.isConfirmed) return
     try {
-      await deleteCategory(id); toast.success('Category deleted'); refresh()
-    } catch { toast.error('Cannot delete — products may be linked to this category') }
+      await deleteCategory(id); toast.success('Category permanently deleted'); refresh()
+    } catch (e) { 
+      toast.error(e.response?.data?.error || 'Cannot delete — products may be linked to this category') 
+    }
   }
 
   const handleDeleteSub = async (id, e) => {
     e.stopPropagation()
     const res = await Swal.fire({
-      title: 'Delete Subcategory?',
-      text: 'Are you sure you want to delete this subcategory?',
+      title: 'Permanently Delete Subcategory?',
+      text: 'This action cannot be undone and will erase it from the database.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Yes, delete it!'
+      confirmButtonText: 'Yes, delete forever!'
     })
     if (!res.isConfirmed) return
     try {
-      await deleteSubcategoryAction(id); toast.success('Subcategory deleted'); refresh()
-    } catch { toast.error('Cannot delete — products may be linked') }
-  }
-
-  const handleRestoreCat = async (id) => {
-    try { await restoreCategory(id); toast.success('Category restored'); refresh() }
-    catch { toast.error('Failed to restore category') }
-  }
-
-  const handleHardDeleteCat = async (id) => {
-    const res = await Swal.fire({ title: 'Permanently Delete?', text: 'This action cannot be undone and will erase it from the database forever.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Yes, delete forever!' })
-    if (res.isConfirmed) {
-      try { await hardDeleteCategory(id); toast.success('Permanently deleted'); refresh() }
-      catch { toast.error('Failed to delete permanently') }
+      await deleteSubcategoryAction(id); toast.success('Subcategory permanently deleted'); refresh()
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Cannot delete — products may be linked') 
     }
   }
 
-  const handleRestoreSub = async (id) => {
-    try { await restoreSubcategory(id); toast.success('Subcategory restored'); refresh() }
-    catch { toast.error('Failed to restore subcategory') }
-  }
-
-  const handleHardDeleteSub = async (id) => {
-    const res = await Swal.fire({ title: 'Permanently Delete?', text: 'This action cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Yes, delete forever!' })
-    if (res.isConfirmed) {
-      try { await hardDeleteSubcategory(id); toast.success('Permanently deleted'); refresh() }
-      catch { toast.error('Failed to delete permanently') }
-    }
-  }
 
   const openAddSub = (cat, e) => {
     e.stopPropagation()
@@ -442,7 +420,7 @@ export default function Categories() {
     if (!destination) return
     if (source.droppableId === destination.droppableId && source.index === destination.index) return
 
-    const queryKey = ['categories-admin', showBin]
+    const queryKey = ['categories-admin']
     const oldData = qc.getQueryData(queryKey)
     const newCategories = Array.from(oldData?.data || [])
 
@@ -491,25 +469,12 @@ export default function Categories() {
         <div>
           <h1 className="text-3xl font-black tracking-tight flex items-center gap-2" style={{ color: 'var(--text)' }}>
             Categories
-            {showBin ? (
-              <span className="text-[12px] font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 uppercase tracking-widest leading-none flex items-center gap-1">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
-                Recycle Bin
-              </span>
-            ) : null}
           </h1>
           <p className="text-[14px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
             {categories.length} categories · Click row to expand subcategories
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowBin(!showBin)}
-            className={`t-btn-bin ${showBin ? 'active' : ''}`}
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
-            {showBin ? 'Exit Bin' : 'View Bin'}
-          </button>
           <button
             onClick={() => setImportOpen(true)}
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-bold transition-all shadow-sm border bg-white text-black/60 border-black/10 hover:bg-black/5 active:scale-95"
@@ -539,7 +504,7 @@ export default function Categories() {
               <p className="text-[15px]">No categories yet</p>
             </div>
           ) : (
-            <StrictModeDroppable droppableId="categoriesRoot" type="category" isDropDisabled={showBin}>
+            <StrictModeDroppable droppableId="categoriesRoot" type="category">
               {(providedRoot) => (
                 <div ref={providedRoot.innerRef} {...providedRoot.droppableProps} className="flex flex-col gap-3">
                   {categories.map((cat, index) => (
@@ -594,20 +559,6 @@ export default function Categories() {
                             </div>
 
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {showBin ? (
-                                <>
-                                  <button
-                                    onClick={e => { e.stopPropagation(); handleRestoreCat(cat.id) }}
-                                    className="text-[13px] px-3 py-1.5 rounded-lg font-medium transition-all hover:scale-105"
-                                    style={{ backgroundColor: 'color-mix(in srgb, #10b981 10%, transparent)', color: '#10b981' }}
-                                  >Restore</button>
-                                  <button
-                                    onClick={e => { e.stopPropagation(); handleHardDeleteCat(cat.id) }}
-                                    className="text-[13px] px-3 py-1.5 rounded-lg font-medium transition-all hover:scale-105"
-                                    style={{ backgroundColor: '#ef4444', color: 'white' }}
-                                  >Delete Forever</button>
-                                </>
-                              ) : (
                                 <>
                                   <button
                                     onClick={e => { e.stopPropagation(); openAddSub(cat, e) }}
@@ -625,13 +576,12 @@ export default function Categories() {
                                     style={{ backgroundColor: '#ef4444', color: 'white' }}
                                   >Delete</button>
                                 </>
-                              )}
                             </div>
                           </div>
 
                           {/* Subcategories Container */}
                           {expanded.includes(cat.id) && (
-                            <StrictModeDroppable droppableId={`sub-drop-${cat.id}`} type="subcategory" isDropDisabled={showBin}>
+                            <StrictModeDroppable droppableId={`sub-drop-${cat.id}`} type="subcategory">
                               {(provSubDrop, snapSubDrop) => (
                                 <div className="p-4 pt-0" style={{ backgroundColor: 'var(--surface)' }}>
                                   <div ref={provSubDrop.innerRef} {...provSubDrop.droppableProps} className="mt-2 ml-3 pl-6 border-l-2 space-y-3 min-h-[60px] transition-colors rounded-br-xl" style={{ borderColor: 'var(--border-soft)', backgroundColor: snapSubDrop.isDraggingOver ? 'var(--surface-2)' : '' }}>
@@ -669,18 +619,6 @@ export default function Categories() {
                                             </div>
 
                                             <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                              {showBin || sub.deleted_status === 'bin' ? (
-                                                <>
-                                                  <button
-                                                    onClick={e => { e.stopPropagation(); handleRestoreSub(sub.id) }}
-                                                    className="t-bulk-restore text-[12px]"
-                                                  >Restore</button>
-                                                  <button
-                                                    onClick={e => { e.stopPropagation(); handleHardDeleteSub(sub.id) }}
-                                                    className="t-bulk-delete text-[12px]"
-                                                  >Delete Forever</button>
-                                                </>
-                                              ) : (
                                                 <>
                                                   <button
                                                     onClick={e => openEditSub(sub, cat, e)}
@@ -691,7 +629,6 @@ export default function Categories() {
                                                     className="t-bulk-delete text-[11px]"
                                                   >Delete</button>
                                                 </>
-                                              )}
                                             </div>
                                           </div>
                                         )}

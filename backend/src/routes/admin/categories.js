@@ -203,10 +203,9 @@ router.post('/import', upload.single('file'), async (req, res, next) => {
 // GET /api/categories?country=AE&admin=1
 router.get('/', async (req, res, next) => {
   try {
-    const { country, admin, status } = req.query;
-    const statusFilter = status === 'bin' ? 'bin' : 'active';
-    let query = `SELECT c.* FROM categories c WHERE c.deleted_status = ?`;
-    const params = [statusFilter];
+    const { country, admin } = req.query;
+    let query = `SELECT c.* FROM categories c WHERE 1=1`;
+    const params = [];
 
     if (country) {
       query += `
@@ -227,8 +226,8 @@ router.get('/', async (req, res, next) => {
     if (admin) {
       for (const cat of rows) {
         const [subs] = await db.query(
-          `SELECT * FROM subcategories WHERE category_id = ? AND deleted_status = ? ORDER BY sort_order, id`,
-          [cat.id, statusFilter]
+          `SELECT * FROM subcategories WHERE category_id = ? ORDER BY sort_order, id`,
+          [cat.id]
         );
         cat.subcategories = subs;
       }
@@ -305,58 +304,33 @@ router.put('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// DELETE /api/categories/:id (Soft delete)
+// DELETE /api/categories/:id (Permanent delete)
 router.delete('/:id', async (req, res, next) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
     const categoryId = req.params.id;
 
-    await connection.query(`UPDATE subcategories SET deleted_status = 'bin' WHERE category_id = ?`, [categoryId]);
-    const [result] = await connection.query(`UPDATE categories SET deleted_status = 'bin' WHERE id = ?`, [categoryId]);
+    // First delete subcategories
+    await connection.query(`DELETE FROM subcategories WHERE category_id = ?`, [categoryId]);
+    // Then delete the category
+    const [result] = await connection.query(`DELETE FROM categories WHERE id = ?`, [categoryId]);
 
     await connection.commit();
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Category not found' });
     
-    await logAudit(req, 'update', 'categories', categoryId, { action: 'move_to_bin_with_subcategories' });
-    res.json({ message: 'Category and subcategories moved to recycle bin' });
-  } catch (err) { await connection.rollback(); next(err); }
+    await logAudit(req, 'delete', 'categories', categoryId, { action: 'permanent_delete_category_with_subcategories' });
+    res.json({ message: 'Category and all its subcategories have been permanently deleted' });
+  } catch (err) { 
+    await connection.rollback(); 
+    if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(400).json({ error: 'Cannot delete category because it is linked to products. Please remove the products or reassign them first.' });
+    }
+    next(err); 
+  }
   finally { connection.release(); }
 });
 
-// DELETE /api/categories/:id/permanent
-router.delete('/:id/permanent', async (req, res, next) => {
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-    const categoryId = req.params.id;
-    await connection.query(`UPDATE subcategories SET deleted_status = 'permanent' WHERE category_id = ? AND deleted_status = 'bin'`, [categoryId]);
-    const [result] = await connection.query(`UPDATE categories SET deleted_status = 'permanent' WHERE id = ? AND deleted_status = 'bin'`, [categoryId]);
-    await connection.commit();
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Category not found in bin' });
-    
-    await logAudit(req, 'delete', 'categories', categoryId, { action: 'permanent_delete_category' });
-    res.json({ message: 'Category permanently deleted' });
-  } catch (err) { await connection.rollback(); next(err); }
-  finally { connection.release(); }
-});
-
-// PATCH /api/categories/:id/restore
-router.patch('/:id/restore', async (req, res, next) => {
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-    const categoryId = req.params.id;
-    await connection.query(`UPDATE subcategories SET deleted_status = 'active' WHERE category_id = ? AND deleted_status = 'bin'`, [categoryId]);
-    const [result] = await connection.query(`UPDATE categories SET deleted_status = 'active' WHERE id = ? AND deleted_status = 'bin'`, [categoryId]);
-    await connection.commit();
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Category not found in bin' });
-    
-    await logAudit(req, 'update', 'categories', categoryId, { action: 'restore_category' });
-    res.json({ message: 'Category restored' });
-  } catch (err) { await connection.rollback(); next(err); }
-  finally { connection.release(); }
-});
 
 // ── SUBCATEGORY ROUTES ──────────────────────────────────────
 
@@ -414,31 +388,20 @@ router.put('/subcategories/:subId', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// DELETE /api/categories/subcategories/:subId
+// DELETE /api/categories/subcategories/:subId (Permanent delete)
 router.delete('/subcategories/:subId', async (req, res, next) => {
   try {
-    await db.query(`UPDATE subcategories SET deleted_status = 'bin' WHERE id = ?`, [req.params.subId]);
-    await logAudit(req, 'update', 'subcategories', req.params.subId, { action: 'move_to_bin' });
-    res.json({ message: 'Subcategory moved to recycle bin' });
-  } catch (err) { next(err); }
-});
-
-// DELETE /api/categories/subcategories/:subId/permanent
-router.delete('/subcategories/:subId/permanent', async (req, res, next) => {
-  try {
-    await db.query(`UPDATE subcategories SET deleted_status = 'permanent' WHERE id = ? AND deleted_status = 'bin'`, [req.params.subId]);
-    await logAudit(req, 'delete', 'subcategories', req.params.subId, { action: 'permanent_delete' });
+    const [result] = await db.query(`DELETE FROM subcategories WHERE id = ?`, [req.params.subId]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Subcategory not found' });
+    
+    await logAudit(req, 'delete', 'subcategories', req.params.subId, { action: 'permanent_delete_subcategory' });
     res.json({ message: 'Subcategory permanently deleted' });
-  } catch (err) { next(err); }
-});
-
-// PATCH /api/categories/subcategories/:subId/restore
-router.patch('/subcategories/:subId/restore', async (req, res, next) => {
-  try {
-    await db.query(`UPDATE subcategories SET deleted_status = 'active' WHERE id = ? AND deleted_status = 'bin'`, [req.params.subId]);
-    await logAudit(req, 'update', 'subcategories', req.params.subId, { action: 'restore_from_bin' });
-    res.json({ message: 'Subcategory restored' });
-  } catch (err) { next(err); }
+  } catch (err) { 
+    if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(400).json({ error: 'Cannot delete subcategory because it is linked to products. Please remove the products or reassign them first.' });
+    }
+    next(err); 
+  }
 });
 
 export default router;

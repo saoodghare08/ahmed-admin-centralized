@@ -1,14 +1,26 @@
 import { useQuery } from '@tanstack/react-query'
-import { getSalesReport } from '../../api'
+import { getSalesReport, getCountries } from '../../api'
 import { useState } from 'react'
 
-const COUNTRIES = ['AE','SA','QA','BH','KW','OM']
-const FLAGS     = { AE:'🇦🇪', SA:'🇸🇦', QA:'🇶🇦', BH:'🇧🇭', KW:'🇰🇼', OM:'🇴🇲' }
+const getFlagEmoji = (countryCode) => {
+  if (!countryCode) return '';
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+}
 
 export default function Sales() {
   const [country, setCountry] = useState('')
   const [from, setFrom]       = useState('')
   const [to, setTo]           = useState('')
+
+  const { data: countriesData } = useQuery({
+    queryKey: ['countries'],
+    queryFn: getCountries,
+    select: res => res.data?.data || res.data || []
+  })
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['sales', country, from, to],
@@ -51,9 +63,9 @@ export default function Sales() {
             <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--text-subtle)' }}>Country</label>
             <div className="flex gap-1.5 flex-wrap">
               <button onClick={() => setCountry('')} style={filterBtn(country === '')}>All</button>
-              {COUNTRIES.map(c => (
-                <button key={c} onClick={() => setCountry(c)} style={filterBtn(country === c)}>
-                  {FLAGS[c]} {c}
+              {(countriesData || []).map(c => (
+                <button key={c.code} onClick={() => setCountry(c.code)} style={filterBtn(country === c.code)}>
+                  {getFlagEmoji(c.code)} {c.code}
                 </button>
               ))}
             </div>
@@ -119,7 +131,7 @@ export default function Sales() {
                     <span className="font-mono text-[12px] px-2 py-0.5 rounded"
                       style={{ backgroundColor: 'var(--surface-2)', color: 'var(--color-brand)' }}>{row.fgd}</span>
                   </td>
-                  <td className="t-td">{FLAGS[row.country_code]} {row.country_code}</td>
+                  <td className="t-td">{getFlagEmoji(row.country_code)} {row.country_code}</td>
                   <td className="t-td">
                     <span className="font-bold text-[15px]" style={{ color: 'var(--text)' }}>{Number(row.total_units).toLocaleString()}</span>
                   </td>
