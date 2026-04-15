@@ -195,6 +195,7 @@ CREATE TABLE `products` (
   `size_id` int(10) UNSIGNED DEFAULT NULL,
   `label_id` int(10) UNSIGNED DEFAULT NULL,
   `media_url` varchar(255) DEFAULT NULL,
+  `maximum_order_quantity` int(10) UNSIGNED NOT NULL DEFAULT 0,
   `deleted_status` enum('active','bin','permanent') DEFAULT 'active',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_product_fgd` (`fgd`),

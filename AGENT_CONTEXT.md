@@ -114,6 +114,7 @@
 | `attributes` | JSON (longtext) | key-value object |
 | `size_id` | int FK → `product_sizes.id` nullable | |
 | `label_id` | int FK → `product_labels.id` nullable | |
+| `maximum_order_quantity` | int(10) UNSIGNED | Max items per order (0=unlimited) |
 | `media_url` | varchar(255) | legacy/primary image field |
 | `deleted_status` | enum(`active`,`bin`,`permanent`) | [DEPRECATED] System performs hard DELETEs in transactions. |
 | `created_at`, `updated_at` | timestamp | |
@@ -710,6 +711,21 @@ updateCampaignStatus(id, status)       // PATCH /campaigns/{id}/status
 validateCampaign(data)                 // POST /campaigns/validate
 previewCampaign(data)                  // POST /campaigns/preview
 searchCampaignProducts(params)         // GET  /campaigns/products/search
+```
+
+---
+
+## 4.15 Storefront API (Public)
+Public-facing endpoints for the storefront application. Registration: `/api/storefront`.
+
+```js
+// Products
+// GET  /storefront/products/{idOrSlug}?country=AE
+// Response: Detailed product info including attributes, fragrance notes, and related products.
+
+// Subcategories
+// GET  /storefront/subcategories/{idOrSlug}?country=AE
+// Response: { id, name, image, mobile_image, description, description_ar, products: [ EnrichedProduct ] }
 ```
 
 ---

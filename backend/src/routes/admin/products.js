@@ -208,7 +208,7 @@ router.post('/', async (req, res, next) => {
       fgd, slug, name_en, name_ar, description_en, description_ar,
       category_id, subcategory_id, barcode,
       is_active = 1, is_featured = 0, tags, attributes,
-      size_id, label_id,
+      size_id, label_id, maximum_order_quantity = 0,
       fragrance_notes = [], country_configs = [], prices = []
     } = req.body;
 
@@ -216,15 +216,16 @@ router.post('/', async (req, res, next) => {
     const [result] = await conn.query(
       `INSERT INTO products
         (fgd, barcode, slug, name_en, name_ar, description_en, description_ar,
-         category_id, subcategory_id, is_active, is_featured, tags, attributes, size_id, label_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         category_id, subcategory_id, is_active, is_featured, tags, attributes, size_id, label_id, maximum_order_quantity)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [fgd, barcode || fgd || null, slug, name_en, name_ar, description_en, description_ar,
         category_id, subcategory_id || null,
         is_active, is_featured,
         tags ? JSON.stringify(tags) : null,
         attributes ? JSON.stringify(attributes) : null,
         size_id || null,
-        label_id || null]
+        label_id || null,
+        maximum_order_quantity || 0]
     );
     const productId = result.insertId;
 
@@ -294,7 +295,7 @@ router.put('/:id', async (req, res, next) => {
       fgd, slug, name_en, name_ar, description_en, description_ar,
       category_id, subcategory_id, barcode,
       is_active, is_featured, tags, attributes,
-      size_id, label_id
+      size_id, label_id, maximum_order_quantity
     } = req.body;
 
     await db.query(
@@ -302,7 +303,7 @@ router.put('/:id', async (req, res, next) => {
         fgd=?, barcode=?, slug=?, name_en=?, name_ar=?, description_en=?, description_ar=?,
         category_id=?, subcategory_id=?,
         is_active=?, is_featured=?, tags=?, attributes=?,
-        size_id=?, label_id=?
+        size_id=?, label_id=?, maximum_order_quantity=?
        WHERE id=?`,
       [fgd, barcode || fgd || null, slug, name_en, name_ar, description_en, description_ar,
         category_id, subcategory_id || null,
@@ -311,6 +312,7 @@ router.put('/:id', async (req, res, next) => {
         attributes ? JSON.stringify(attributes) : null,
         size_id || null,
         label_id || null,
+        maximum_order_quantity || 0,
         req.params.id]
     );
 

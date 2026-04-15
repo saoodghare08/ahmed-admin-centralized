@@ -37,7 +37,8 @@ const EMPTY = {
   is_active: true, is_featured: false,
   tags: '',
   size_id: '',
-  label_id: ''
+  label_id: '',
+  maximum_order_quantity: 0
 }
 
 const EMPTY_NOTE = { ingredients_en: '', ingredients_ar: '', description_en: '', description_ar: '', image_url: '' }
@@ -189,6 +190,10 @@ function CoreTab({ form, set, categories, sizes, labels, isEdit, prices, setPric
           <Field label="URL Slug" required>
             <input className="t-input font-mono text-[12px]" value={form.slug}
               onChange={e => set('slug', toSlug(e.target.value))} placeholder="auto-generated" />
+          </Field>
+          <Field label="Max Order Quantity" hint="0 = no limit">
+            <input type="number" min="0" className="t-input" value={form.maximum_order_quantity || 0}
+              onChange={e => set('maximum_order_quantity', parseInt(e.target.value) || 0)} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Toggle checked={form.is_active} onChange={v => set('is_active', v)} label="Active" />
@@ -1215,6 +1220,7 @@ export default function ProductForm() {
       is_active: !!p.is_active, is_featured: !!p.is_featured,
       size_id: p.size_id || '',
       label_id: p.label_id || '',
+      maximum_order_quantity: p.maximum_order_quantity || 0,
       tags: Array.isArray(p.tags) ? p.tags.join(', ') : (p.tags || ''),
       attributes: p.attributes ? Object.entries(p.attributes).map(([k, v]) => ({ key: k, value: String(v) })) : [],
     }
