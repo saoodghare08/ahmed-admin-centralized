@@ -726,6 +726,11 @@ Public-facing endpoints for the storefront application. Registration: `/api/stor
 // Subcategories
 // GET  /storefront/subcategories/{idOrSlug}?country=AE
 // Response: { id, name, image, mobile_image, description, description_ar, products: [ EnrichedProduct ] }
+
+// Categories
+// GET  /storefront/categories/{idOrSlug}?country=AE
+// Response: { id, name, image, mobile_image, description, description_ar, productSubCategories: [ { id, name, image, mobile_image, video, products: [ EnrichedProduct ] } ] }
+
 ```
 
 ---
